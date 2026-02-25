@@ -16,7 +16,7 @@ export default function Home() {
         </Typography>
       </Box>
 
-      <Grid container spacing={3} sx={{ flexGrow: 1 }}>
+      {/* <Grid container spacing={3} sx={{ flexGrow: 1 }}>
         <Grid item xs={12} md={8}>
           <Box sx={{ backgroundColor: '#F8FAFD', borderRadius: '16px', p: 3, height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: '#333' }}>学習時間の推移</Typography>
@@ -51,7 +51,7 @@ export default function Home() {
           </Box>
         </Grid>
 
-      </Grid>
+      </Grid> */}
     </Box>
   );
 }
