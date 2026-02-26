@@ -1,95 +1,95 @@
-// src/components/Materials.tsx
-
-import React, { useState } from 'react';
-import { 
-  Box, Typography, Grid, Button, Dialog, DialogTitle, DialogContent, 
-  TextField, List, ListItemButton, ListItemAvatar, Avatar, ListItemText, CircularProgress 
-} from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Grid, Button, CircularProgress } from '@mui/material';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
 
 import MaterialCard from './MaterialCard';
+import { supabase } from '../lib/supabase';
 
 interface Material {
-  id: number;
-  group: string;
+  id: string;
+  categoryName: string;
   name: string;
   image: string;
+  colorCode: string;
 }
 
 export default function Materials() {
-  // ==================
-  //  API設定とState管理
-  // ==================
-  const RAKUTEN_APP_ID = "dc241411-9570-4d4b-9f14-6cb97250ca0e";
-  const RAKUTEN_ACCESS_KEY = "pk_9AWuHPDhzA1a7XmQ2zayuGdsHfDWF3stLcahdm5DIz8";
+  const navigate = useNavigate();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const dummyImages = { app: 'https://via.placeholder.com/150x220/1A73E8/FFFFFF?text=App' };
-  const createMaterial = (id: number, group: string, name: string, image?: string): Material => {
-    return { id, group, name, image: image || dummyImages.app };
+  const fetchMaterials = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('materials')
+        .select(`
+          id,
+          title,
+          image_url,
+          categories (
+            name,
+            color_code
+          )
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedData: Material[] = data.map((item: any) => ({
+          id: item.id,
+          categoryName: item.categories?.name || 'カテゴリなし',
+          name: item.title,
+          image: item.image_url,
+          colorCode: item.categories?.color_code || '#e0e0e0',
+        }));
+        setMaterials(formattedData);
+      }
+    } catch (error) {
+      console.error('データ取得エラー:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const [materials, setMaterials] = useState<Material[]>([
-    createMaterial(1, 'TOEIC L&R テスト', '出る単特急 金のフレーズ', 'https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/5482/9784023315482.jpg'),
-    createMaterial(4, '応用情報技術者試験', 'キタミ式イラストIT塾', 'https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/4009/9784297134009.jpg'),
-  ]);
+  useEffect(() => {
+    fetchMaterials();
+  }, []);
 
+  // ==========================================
+  // 　データの仕分けと操作
+  // ==========================================
+  // カテゴリ名ごとに仕分けする処理
   const groupedMaterials = materials.reduce((acc: Record<string, Material[]>, material) => {
-    if (!acc[material.group]) acc[material.group] = [];
-    acc[material.group].push(material);
+    if (!acc[material.categoryName]) acc[material.categoryName] = [];
+    acc[material.categoryName].push(material);
     return acc;
   }, {});
 
-  //  子（カード）から呼ばれる処理
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: string) => {
+    // 画面上から消す前に、DBのステータスを 'archived' に変更する
+    const { error } = await supabase
+      .from('materials')
+      .update({ status: 'archived' })
+      .eq('id', id);
+
+    if (error) {
+      alert("削除に失敗しました");
+      console.error(error);
+      return;
+    }
+
+    // DBの更新に成功したら、画面上のリストからも見えなくする
     setMaterials(materials.filter(m => m.id !== id));
   };
 
-  const handleEdit = (id: number) => {
+  const handleEdit = (id: string) => {
     alert(`編集機能は準備中です！（対象ID: ${id}）`);
-  };
-
-  //  検索と追加の処理
-  const searchBooks = async () => {
-    if (!searchQuery) return;
-    setIsSearching(true);
-    try {
-      const res = await fetch(`/api/rakuten/services/api/BooksBook/Search/20170404?format=json&title=${encodeURIComponent(searchQuery)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=20&sort=sales&outOfStockFlag=1`);
-      const data = await res.json();
-      if (data.Items) {
-        setSearchResults(data.Items); 
-      } else {
-        setSearchResults([]);
-      }
-    } catch (error) {
-      console.error("検索エラー:", error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleAddFromSearch = (book: any) => {
-    const inputGroup = window.prompt(`「${book.title}」をどのグループに追加しますか？\n（例: プログラミング, TOEIC L&R テスト）`, "新しいグループ");
-    if (!inputGroup) return;
-
-    let imageUrl = book.largeImageUrl || book.mediumImageUrl;
-    if (imageUrl && imageUrl.includes('?')) {
-      imageUrl = imageUrl.split('?')[0];
-    }
-
-    const newId = Date.now();
-    const newInstance = createMaterial(newId, inputGroup, book.title, imageUrl);
-
-    setMaterials([...materials, newInstance]);
-    setIsDialogOpen(false); 
-    setSearchQuery("");     
-    setSearchResults([]);   
   };
 
   return (
@@ -109,71 +109,56 @@ export default function Materials() {
         <Button 
           variant="contained" 
           startIcon={<AddIcon />} 
-          onClick={() => setIsDialogOpen(true)}
+          onClick={() => navigate('/materials/add-new-material')}
           sx={{ borderRadius: '5px', boxShadow: 'none', fontWeight: 'bold', px: 3 }}
         >
           教材を追加
         </Button>
       </Box>
 
-      {/* 教材一覧の表示部分 */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 1, px: 1.5, pb: 3, pt: 1 }}>
-        <Grid container spacing={4} direction="column">
-          {Object.entries(groupedMaterials).map(([groupName, items]) => (
-            <Grid size={12} key={groupName} sx={{ mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', mb: 2, pl: 1, borderLeft: '4px solid #1A73E8' }}>
-                {groupName}
-              </Typography>
-              <Grid container spacing={2}>
-                {items.map(item => (
-                  <Grid size={{ xs: 4, sm: 3, md: 2, lg: 2 }} key={item.id}>
+      {/* ローディング中の表示 */}
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
+          <CircularProgress />
+        </Box>
+      ) : materials.length === 0 ? (
+        /* 教材が1つもない時の表示 */
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, flexDirection: 'column', color: '#999' }}>
+          <MenuBookOutlinedIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
+          <Typography variant="h6">まだ教材がありません</Typography>
+          <Typography variant="body2">右上のボタンから追加してみましょう！</Typography>
+        </Box>
+      ) : (
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 1, px: 1.5, pb: 3, pt: 1 }}>
+          <Grid container spacing={4} direction="column">
+            {Object.entries(groupedMaterials).map(([categoryName, items]) => {
+              // カテゴリの色を取得（カテゴリ内の最初の本の色を借りる）
+              const groupColor = items.length > 0 ? items[0].colorCode : '#1A73E8';
 
-                    <MaterialCard 
-                      material={item} 
-                      onDelete={handleDelete} 
-                      onEdit={handleEdit} 
-                    />
+              return (
+                <Grid size={12} key={categoryName} sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', mb: 2, pl: 1, borderLeft: `4px solid ${groupColor}` }}>
+                    {categoryName}
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {items.map(item => (
+                      <Grid size={{ xs: 4, sm: 3, md: 2, lg: 2 }} key={item.id}>
+                        <MaterialCard 
+                          material={item} 
+                          onDelete={handleDelete} 
+                          onEdit={handleEdit} 
+                          borderColor={item.colorCode} 
+                          borderWidth={2}
+                        />
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
-      {/*  検索＆追加ポップアップ */}
-      <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}>
-        <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>📚 新しい教材を検索</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', gap: 1, mt: 1, mb: 2 }}>
-            <TextField fullWidth size="small" placeholder="本のタイトルやキーワード（例: TOEIC）" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') searchBooks(); }} />
-            <Button variant="contained" onClick={searchBooks} disableElevation sx={{ borderRadius: '8px' }}><SearchIcon /></Button>
-          </Box>
-
-          {isSearching && <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>}
-
-          {!isSearching && searchResults.length > 0 && (
-            <List sx={{ maxHeight: '400px', overflowY: 'auto', bgcolor: '#f8fafd', borderRadius: '8px' }}>
-              {searchResults.map((item, index) => {
-                const book = item.Item;
-                return (
-                  <ListItemButton key={index} onClick={() => handleAddFromSearch(book)} sx={{ borderBottom: '1px solid #eee', '&:last-child': { borderBottom: 'none' } }}>
-                    <ListItemAvatar sx={{ mr: 2 }}>
-                      <Avatar src={book.mediumImageUrl} variant="rounded" sx={{ width: 48, height: 64, bgcolor: '#eee' }} />
-                    </ListItemAvatar>
-                    <ListItemText primary={<Typography sx={{ fontWeight: 'bold', fontSize: '14px' }}>{book.title}</Typography>} secondary={<Typography variant="caption" color="text.secondary">{book.author}</Typography>} />
-                    <Button size="small" variant="outlined" sx={{ borderRadius: '20px', minWidth: '60px' }}>追加</Button>
-                  </ListItemButton>
-                );
-              })}
-            </List>
-          )}
-
-          {!isSearching && searchResults.length === 0 && searchQuery && (
-            <Typography align="center" color="text.secondary" sx={{ py: 4 }}>見つかりませんでした。別のキーワードで試してみてください。</Typography>
-          )}
-        </DialogContent>
-      </Dialog>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </Box>
+      )}
     </Box>
   );
 }

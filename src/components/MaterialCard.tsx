@@ -8,12 +8,12 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 interface MaterialCardProps {
   material: {
-    id: number;
+    id: string;
     name: string;
     image: string;
   };
-  onDelete: (id: number) => void;
-  onEdit: (id: number) => void;
+  onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
   borderColor?: string;
   borderWidth?: number;
 }
@@ -46,7 +46,7 @@ return (
   <>
     <Card 
       sx={{ 
-        height: '100%', 
+        height: '260px', 
         display: 'flex', 
         flexDirection: 'column', 
         borderRadius: '12px', 

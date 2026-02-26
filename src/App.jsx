@@ -12,6 +12,7 @@ import Record from './components/Record';
 import Report from './components/Report';
 import Materials from './components/Materials';
 import Settings from './components/Settings';
+import AddMaterial from './components/AddMaterial';
 
 function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -106,6 +107,7 @@ function App() {
               <Route path="/report" element={<Report />} />
               <Route path="/materials" element={<Materials />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/materials/add-new-material" element={<AddMaterial />} />
 
             </Routes>
             
