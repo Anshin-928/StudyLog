@@ -19,6 +19,7 @@ interface Material {
   name: string;
   image: string;
   colorCode: string;
+  sortOrder: number;
 }
 
 export default function Materials() {
@@ -53,7 +54,8 @@ export default function Materials() {
           image_url,
           categories (
             name,
-            color_code
+            color_code,
+            sort_order
           )
         `)
         .eq('status', 'active')
@@ -68,6 +70,7 @@ export default function Materials() {
           name: item.title,
           image: item.image_url,
           colorCode: item.categories?.color_code || '#e0e0e0',
+          sortOrder: item.categories?.sort_order || 0,
         }));
         setMaterials(formattedData);
       }
@@ -91,6 +94,12 @@ export default function Materials() {
     acc[material.categoryName].push(material);
     return acc;
   }, {});
+
+  const sortedCategoryEntries = Object.entries(groupedMaterials).sort((a, b) => {
+    const orderA = a[1][0]?.sortOrder || 0;
+    const orderB = b[1][0]?.sortOrder || 0;
+    return orderA - orderB;
+  });
 
   const handleDelete = async (id: string) => {
     // 画面上から消す前に、DBのステータスを 'archived' に変更する
@@ -188,8 +197,7 @@ export default function Materials() {
       ) : (
         <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 1, px: 1.5, pb: 3, pt: 1 }}>
           <Grid container spacing={4} direction="column">
-            {Object.entries(groupedMaterials).map(([categoryName, items]) => {
-              // カテゴリの色を取得（カテゴリ内の最初の本の色を借りる）
+            {sortedCategoryEntries.map(([categoryName, items]) => {
               const groupColor = items.length > 0 ? items[0].colorCode : '#1A73E8';
 
               return (

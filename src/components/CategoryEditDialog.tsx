@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
-  Button, Box, Typography, IconButton, TextField, Popover, CircularProgress 
+  Button, Box, IconButton, TextField, Popover, CircularProgress 
 } from '@mui/material';
 import DragIndicatorOutlinedIcon from '@mui/icons-material/DragIndicatorOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -11,13 +11,13 @@ import AddIcon from '@mui/icons-material/Add';
 import CircleIcon from '@mui/icons-material/Circle';
 import { supabase } from '../lib/supabase';
 
-// カラーパレットの選択肢
 const PALETTE = ['#1A73E8', '#E53935', '#43A047', '#FFB300', '#8E24AA', '#00ACC1', '#9E9E9E'];
 
 interface Category {
   id: string;
   name: string;
   color_code: string;
+  sort_order: number;
 }
 
 interface CategoryEditDialogProps {
@@ -31,26 +31,22 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // カラーピッカー用のState
   const [colorAnchorEl, setColorAnchorEl] = useState<null | HTMLElement>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
-  // ドラッグ＆ドロップ用のRef
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  // ダイアログが開くたびに最新のカテゴリを取得
+  const listContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (open) {
-      fetchCategories();
-    }
+    if (open) fetchCategories();
   }, [open]);
 
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      // 実際にはsort_orderなどの列で並び替えるのが理想ですが、今回は作成順で取得します
-      const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: true });
+      const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
@@ -60,26 +56,46 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
     }
   };
 
-  // ドラッグ＆ドロップの処理
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
-    dragItem.current = position;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      setDraggedIndex(position);
+      setDragOverIndex(position);
+    }, 0);
   };
 
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
-    dragOverItem.current = position;
+  const handleContainerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (draggedIndex === null || !listContainerRef.current) return;
+
+    const items = Array.from(listContainerRef.current.children) as HTMLElement[];
+    const categoryItems = items.slice(0, categories.length);
+
+    let newIndex = categories.length - 1;
+    for (let i = 0; i < categoryItems.length; i++) {
+      const rect = categoryItems[i].getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) {
+        newIndex = i;
+        break;
+      }
+    }
+
+    if (newIndex !== dragOverIndex) {
+      setDragOverIndex(newIndex);
+    }
   };
 
   const handleDragEnd = () => {
-    if (dragItem.current === null || dragOverItem.current === null) return;
-    const newCategories = [...categories];
-    const draggedItemContent = newCategories.splice(dragItem.current, 1)[0];
-    newCategories.splice(dragOverItem.current, 0, draggedItemContent);
-    dragItem.current = null;
-    dragOverItem.current = null;
-    setCategories(newCategories);
+    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      const newCategories = [...categories];
+      const draggedItem = newCategories.splice(draggedIndex, 1)[0];
+      newCategories.splice(dragOverIndex, 0, draggedItem);
+      setCategories(newCategories);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
-  // カテゴリの操作
   const handleNameChange = (id: string, newName: string) => {
     setCategories(categories.map(cat => cat.id === id ? { ...cat, name: newName } : cat));
   };
@@ -98,9 +114,10 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
 
   const handleAddCategory = () => {
     const newCat: Category = {
-      id: `new-${Date.now()}`, // 保存用の一時的なID
+      id: `new-${Date.now()}`,
       name: '新しいカテゴリ',
-      color_code: PALETTE[0]
+      color_code: PALETTE[0],
+      sort_order: categories.length
     };
     setCategories([...categories, newCat]);
   };
@@ -111,44 +128,38 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
     }
   };
 
-  // DBへ保存
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // 「カテゴリなし」のIDを確保（なければ作る）
       let nullCategoryId;
       const { data: nullCat } = await supabase.from('categories').select('id').eq('name', 'カテゴリなし').single();
       if (nullCat) {
         nullCategoryId = nullCat.id;
       } else {
-        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: '#9E9E9E' }]).select().single();
+        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: '#9E9E9E', sort_order: 0 }]).select().single();
         nullCategoryId = newNullCat?.id;
       }
 
-      // 現在のDBのカテゴリ一覧を取得して、消されたカテゴリを特定
       const { data: dbCategories } = await supabase.from('categories').select('id');
       const currentIds = categories.filter(c => !c.id.startsWith('new-')).map(c => c.id);
       const deletedIds = dbCategories?.map(c => c.id).filter(id => !currentIds.includes(id)) || [];
 
-      // 消されたカテゴリに紐づく教材を「カテゴリなし」に退避
       for (const dId of deletedIds) {
         await supabase.from('materials').update({ category_id: nullCategoryId }).eq('category_id', dId);
         await supabase.from('categories').delete().eq('id', dId);
       }
 
-      // 追加・更新されたカテゴリを保存（UPSERT）
-      for (const cat of categories) {
+      for (let i = 0; i < categories.length; i++) {
+        const cat = categories[i];
         if (cat.id.startsWith('new-')) {
-          await supabase.from('categories').insert([{ name: cat.name, color_code: cat.color_code }]);
+          await supabase.from('categories').insert([{ name: cat.name, color_code: cat.color_code, sort_order: i }]);
         } else {
-          await supabase.from('categories').update({ name: cat.name, color_code: cat.color_code }).eq('id', cat.id);
+          await supabase.from('categories').update({ name: cat.name, color_code: cat.color_code, sort_order: i }).eq('id', cat.id);
         }
       }
-
-      // 注意: 今回は順番(sort_order)のDB保存は省略しています（実装にはDBのカラム追加が必要です）
       
-      onUpdated(); // メイン画面の再読み込みをトリガー
-      onClose();   // ダイアログを閉じる
+      onUpdated();
+      onClose();
     } catch (error) {
       console.error("保存エラー:", error);
       alert("保存中にエラーが発生しました。");
@@ -165,31 +176,58 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress /></Box>
           ) : (
-            <Box sx={{ pt: 1 }}>
-{categories.map((cat, index) => {
+            <Box
+              ref={listContainerRef}
+              sx={{ pt: 1 }}
+              onDragOver={handleContainerDragOver}
+            >
+              {categories.map((cat, index) => {
                 const isDefault = cat.name === 'カテゴリなし';
+                const isDraggingThis = draggedIndex === index;
+
+                let translateY = '0px';
+                if (draggedIndex !== null && dragOverIndex !== null) {
+                  if (isDraggingThis) {
+                    const shift = dragOverIndex - draggedIndex;
+                    translateY = `calc(${shift} * (100% + 12px))`;
+                  } else if (draggedIndex < dragOverIndex && index > draggedIndex && index <= dragOverIndex) {
+                    translateY = `calc(-100% - 12px)`;
+                  } else if (draggedIndex > dragOverIndex && index >= dragOverIndex && index < draggedIndex) {
+                    translateY = `calc(100% + 12px)`;
+                  }
+                }
+
                 return (
                   <Box 
                     key={cat.id}
-                    draggable={!isDefault}
+                    draggable
                     onDragStart={(e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, index)}
-                    onDragEnter={(e: React.DragEvent<HTMLDivElement>) => handleDragEnter(e, index)}
                     onDragEnd={handleDragEnd}
-                    onDragOver={(e: React.DragEvent<HTMLDivElement>) => e.preventDefault()}
                     sx={{ 
-                      display: 'flex', alignItems: 'center', mb: 1.5, 
-                      opacity: isDefault ? 0.8 : 1
+                      pb: 1.5,
+                      position: 'relative',
+                      zIndex: isDraggingThis ? 10 : 1, 
                     }}
                   >
-                    {/* グリップアイコン */}
-                    <DragIndicatorOutlinedIcon sx={{ color: isDefault ? 'transparent' : '#ccc', cursor: isDefault ? 'default' : 'grab', mr: 1 }} />
-                    
-                    {/* カード部分 */}
-                    <Box sx={{ 
-                      flexGrow: 1, display: 'flex', alignItems: 'center', p: 1.5, 
-                      backgroundColor: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                    }}>
+                    <Box 
+                      sx={{ 
+                        display: 'flex', alignItems: 'center', p: 1.5,
+                        backgroundColor: isDraggingThis ? '#f8fafd' : '#fff', 
+                        border: isDraggingThis ? '2px dashed #1A73E8' : '1px solid #e0e0e0', 
+                        borderRadius: '8px',
+                        opacity: isDraggingThis ? 0.6 : 1, 
+                        
+                        transform: `translateY(${translateY})`,
+                        transition: draggedIndex !== null ? 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)' : 'none',
+                        pointerEvents: draggedIndex !== null ? 'none' : 'auto',
+                        
+                        cursor: 'grab',
+                        '&:active': { cursor: 'grabbing' },
+                        boxShadow: isDraggingThis ? '0 8px 24px rgba(26,115,232,0.15)' : '0 2px 4px rgba(0,0,0,0.02)',
+                      }}
+                    >
+                      <DragIndicatorOutlinedIcon sx={{ color: isDefault ? 'transparent' : '#ccc', mr: 1 }} />
+                      
                       <IconButton size="small" onClick={(e: React.MouseEvent<HTMLButtonElement>) => !isDefault && handleColorClick(e, cat.id)} sx={{ mr: 1, p: 0.5 }} disabled={isDefault}>
                         <CircleIcon sx={{ color: cat.color_code, fontSize: '20px' }} />
                       </IconButton>
@@ -213,7 +251,6 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                 );
               })}
 
-
               <Button startIcon={<AddIcon />} onClick={handleAddCategory} sx={{ mt: 2, fontWeight: 'bold', pl: 4 }}>
                 新しいカテゴリを追加
               </Button>
@@ -228,7 +265,6 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
         </DialogActions>
       </Dialog>
 
-      {/* カラーパレットのポップオーバー */}
       <Popover 
         open={Boolean(colorAnchorEl)} 
         anchorEl={colorAnchorEl} 
