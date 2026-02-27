@@ -128,7 +128,7 @@ export default function AddMaterial() {
         .insert([{
           category_id: categoryId,
           title: book.title,
-          image_url: imageUrl
+          image_url: imageUrl || '/images/templates/book_gray.png'
         }]);
 
       if (materialError) throw materialError;
@@ -267,7 +267,14 @@ export default function AddMaterial() {
                   return (
                     <React.Fragment key={index}>
                       <ListItemButton onClick={() => handleAddFromSearch(book)} sx={{ borderRadius: '12px', mb: 1, py: 2, transition: '0.2s', '&:hover': { backgroundColor: '#f8fafd' } }}>
-                        <ListItemAvatar sx={{ mr: 3 }}><Avatar src={book.mediumImageUrl} variant="rounded" sx={{ width: 64, height: 88, bgcolor: '#f5f5f5', border: '1px solid #ddd' }} /></ListItemAvatar>
+                        <ListItemAvatar sx={{ mr: 3 }}>
+                          {/* <Avatar src={book.mediumImageUrl} variant="rounded" sx={{ width: 64, height: 88, bgcolor: '#f5f5f5', border: '1px solid #ddd' }} /> */}
+                          <img 
+                            src={book.mediumImageUrl} 
+                            alt="表紙" 
+                            style={{ height: '88px', width: 'auto', objectFit: 'contain', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f5f5f5' }} 
+                          />
+                        </ListItemAvatar>
                         <ListItemText primary={<Typography sx={{ fontWeight: 'bold', fontSize: '16px', mb: 0.5 }}>{book.title}</Typography>} secondary={<Typography variant="body2" color="text.secondary">{book.author} / {book.publisherName}</Typography>} />
                         <Button size="small" variant="outlined" sx={{ borderRadius: '20px', minWidth: '80px', fontWeight: 'bold' }}>追加</Button>
                       </ListItemButton>
@@ -297,13 +304,13 @@ export default function AddMaterial() {
           <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>オリジナル教材の詳細を入力</Typography>
           
           <TextField 
-            fullWidth label="教材のタイトル (必須)" placeholder="例: 後期の小テストまとめ" 
+            fullWidth label="教材名 (必須)" placeholder="" 
             value={originalTitle} onChange={(e) => setOriginalTitle(e.target.value)} 
             sx={{ mb: 3 }} disabled={isAdding}
           />
 
           <TextField 
-            fullWidth label="カテゴリ (任意)" placeholder="空欄の場合は「カテゴリなし」に分類されます" 
+            fullWidth label="カテゴリ名" placeholder="空欄の場合は「カテゴリなし」に分類されます" 
             value={originalCategory} onChange={(e) => setOriginalCategory(e.target.value)} 
             sx={{ mb: 4 }} disabled={isAdding}
           />
@@ -320,7 +327,8 @@ export default function AddMaterial() {
                   setPreviewUrl(null);
                 }}
                 sx={{
-                  width: 48, height: 64, cursor: 'pointer', borderRadius: '4px', overflow: 'hidden',
+                  width: 48, height: 64, 
+                  cursor: 'pointer', borderRadius: '4px', overflow: 'hidden',
                   border: selectedTemplate === tmpl.url && !originalImage ? '3px solid #1A73E8' : '1px solid transparent',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   transition: '0.2s', '&:hover': { opacity: 0.8, transform: 'translateY(-2px)' }
@@ -341,7 +349,6 @@ export default function AddMaterial() {
             disabled={isAdding}
           />
           <label htmlFor="image-upload-input">
-            {/* <Box sx={{ border: '2px dashed #ddd', borderRadius: '12px', p: 4, textAlign: 'center', mb: 4, backgroundColor: '#fafafa', color: '#999', cursor: 'pointer', transition: '0.2s', '&:hover': { borderColor: '#1A73E8', color: '#1A73E8', backgroundColor: '#f0f4f9' } }}> */}
             <Box sx={{ 
               border: originalImage ? '3px solid #1A73E8' : '2px dashed #ddd', 
               borderRadius: '12px', p: 4, textAlign: 'center', mb: 4, 

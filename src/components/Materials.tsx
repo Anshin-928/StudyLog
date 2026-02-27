@@ -1,8 +1,14 @@
+// src/components/Materials
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Grid, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon, Tooltip } from '@mui/material';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
+import SwapVertOutlinedIcon from '@mui/icons-material/SwapVertOutlined';
+import CategoryEditDialog from './CategoryEditDialog';
 
 import MaterialCard from './MaterialCard';
 import { supabase } from '../lib/supabase';
@@ -20,6 +26,21 @@ export default function Materials() {
 
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  }
+
+  const openCategoryDialog = () => {
+    handleMenuClose();
+    setIsCategoryDialogOpen(true);
+  }
 
   const fetchMaterials = async () => {
     setIsLoading(true);
@@ -105,15 +126,51 @@ export default function Materials() {
             教材管理
           </Typography>
         </Box>
+          
+        <Box sx = {{ display: 'flex', alignContent: 'center', gap: 2}}>
+          <Tooltip title="カテゴリや教材の整理">
 
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
-          onClick={() => navigate('/materials/add-new-material')}
-          sx={{ borderRadius: '5px', boxShadow: 'none', fontWeight: 'bold', px: 3 }}
-        >
-          教材を追加
-        </Button>
+            <IconButton
+              onClick={handleMenuOpen}
+              sx={{
+                color: '#666',
+                borderRadius: '50%',
+                '&:hover': { backgroundColor: '#e0e0e0' }
+              }}
+            >
+              <FormatListBulletedIcon/>
+            </IconButton>
+          </Tooltip>
+
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            sx={{ '& .MuiPaper-root': { borderRadius: '12px', minWidth: '180px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' } }}
+          >
+            <MenuItem onClick={openCategoryDialog} sx={{ borderRadius: '8px', mx: 1, mb: 0.5 }}>
+              <ListItemIcon><CategoryOutlinedIcon fontSize="small" sx={{ color: '#666' }} /></ListItemIcon>
+              カテゴリを編集
+            </MenuItem>
+            
+            <MenuItem onClick={() => { handleMenuClose(); alert("教材の並べ替えモードにします"); }} sx={{ borderRadius: '8px', mx: 1 }}>
+              <ListItemIcon><SwapVertOutlinedIcon fontSize="small" sx={{ color: '#666' }} /></ListItemIcon>
+              教材を並べ替え
+            </MenuItem>
+
+          </Menu>
+
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            size="large"
+            onClick={() => navigate('/materials/add-new-material')}
+            sx={{ borderRadius: '5px', boxShadow: 'none', fontWeight: 'bold', px: 3 }}
+          >
+            教材を追加
+          </Button>
+        </Box>
+
       </Box>
 
       {/* ローディング中の表示 */}
@@ -140,25 +197,30 @@ export default function Materials() {
                   <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', mb: 2, pl: 1, borderLeft: `4px solid ${groupColor}` }}>
                     {categoryName}
                   </Typography>
-                  <Grid container spacing={2}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                     {items.map(item => (
-                      <Grid size={{ xs: 4, sm: 3, md: 2, lg: 2 }} key={item.id}>
-                        <MaterialCard 
-                          material={item} 
-                          onDelete={handleDelete} 
-                          onEdit={handleEdit} 
-                          borderColor={item.colorCode} 
-                          borderWidth={2}
-                        />
-                      </Grid>
+                      <MaterialCard 
+                        key={item.id}
+                        material={item} 
+                        onDelete={handleDelete} 
+                        onEdit={handleEdit} 
+                        borderColor={item.colorCode} 
+                        borderWidth={2}
+                      />
                     ))}
-                  </Grid>
+                  </Box>
                 </Grid>
               );
             })}
           </Grid>
         </Box>
       )}
+
+      <CategoryEditDialog 
+        open={isCategoryDialogOpen} 
+        onClose={() => setIsCategoryDialogOpen(false)} 
+        onUpdated={() => fetchMaterials()} 
+      />
     </Box>
   );
 }

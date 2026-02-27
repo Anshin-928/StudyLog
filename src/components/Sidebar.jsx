@@ -20,7 +20,7 @@ export const mainMenus = [
 ];
 
 export const closedDrawerWidth = 72;
-export const openDrawerWidth = 310;
+export const openDrawerWidth = 250;
 
 export default function Sidebar({ isSidebarOpen }) {
   const navigate = useNavigate();

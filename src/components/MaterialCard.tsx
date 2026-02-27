@@ -46,7 +46,7 @@ return (
   <>
     <Card 
       sx={{ 
-        height: '260px', 
+        height: '260px', width: '195px',
         display: 'flex', 
         flexDirection: 'column', 
         borderRadius: '12px', 
@@ -65,12 +65,14 @@ return (
         alignItems: 'center', 
         justifyContent: 'center', 
         backgroundColor: '#ffffff',
-        p: 2
+        p: 2,
+        pt: 3
       }}>
         <CardMedia 
           component="img" 
           sx={{ 
             height: '100%',
+            maxHeight: '140px',
             width: 'auto',
             maxWidth: '100%', 
             objectFit: 'contain',
