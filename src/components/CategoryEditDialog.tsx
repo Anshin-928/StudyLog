@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
-  Button, Box, IconButton, TextField, Popover, CircularProgress 
+  Button, Box, IconButton, TextField, Popover, CircularProgress,
+  Snackbar, Alert
 } from '@mui/material';
 import DragIndicatorOutlinedIcon from '@mui/icons-material/DragIndicatorOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -12,7 +13,7 @@ import CircleIcon from '@mui/icons-material/Circle';
 import { supabase } from '../lib/supabase';
 
 const PALETTE = ['#1A73E8', '#E53935', '#43A047', '#FFB300', '#8E24AA', '#00ACC1', '#9E9E9E'];
-const ITEM_GAP_PX = 12;
+const ITEM_GAP_PX = 12; // MUIの pb: 1.5 (=12px) と連動させる定数
 
 interface Category {
   id: string;
@@ -41,6 +42,11 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const listContainerRef = useRef<HTMLDivElement>(null);
   const dragEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Snackbar の State
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
+  const showError = (message: string) => setSnackbar({ open: true, message });
+  const handleSnackbarClose = () => setSnackbar(s => ({ ...s, open: false }));
+
   useEffect(() => {
     if (open) fetchCategories();
   }, [open]);
@@ -48,7 +54,8 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+      const { data, error } = await supabase
+        .from('categories').select('*').order('sort_order', { ascending: true });
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
@@ -59,7 +66,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
-    if (dragEndTimerRef.current) clearTimeout(dragEndTimerRef.current); 
+    if (dragEndTimerRef.current) clearTimeout(dragEndTimerRef.current);
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
       setDraggedIndex(position);
@@ -74,7 +81,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
     const items = Array.from(listContainerRef.current.children) as HTMLElement[];
     const categoryItems = items.slice(0, categories.length);
 
-    let newIndex = categories.length - 1; 
+    let newIndex = categories.length - 1;
     for (let i = 0; i < categoryItems.length; i++) {
       const rect = categoryItems[i].getBoundingClientRect();
       if (e.clientY < rect.top + rect.height / 2) {
@@ -138,25 +145,29 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      let nullCategoryId;
-      const { data: nullCat } = await supabase.from('categories').select('id').eq('name', 'カテゴリなし').single();
+      let nullCategoryId: string;
+      const { data: nullCat } = await supabase
+        .from('categories').select('id').eq('name', 'カテゴリなし').single();
+
       if (nullCat) {
         nullCategoryId = nullCat.id;
       } else {
-        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: '#9E9E9E', sort_order: 0 }]).select().single();
+        const { data: newNullCat } = await supabase
+          .from('categories')
+          .insert([{ name: 'カテゴリなし', color_code: '#9E9E9E', sort_order: 0 }])
+          .select().single();
         nullCategoryId = newNullCat?.id;
       }
 
       const { data: dbCategories } = await supabase.from('categories').select('id');
       const currentIds = categories.filter(c => !c.id.startsWith('new-')).map(c => c.id);
-      
-      //「カテゴリなし」は絶対に削除対象にならないように安全対策
+
+      // 「カテゴリなし」は絶対に削除対象に含めない
       const deletedIds = dbCategories
         ?.filter(c => c.id !== nullCategoryId)
         .map(c => c.id)
         .filter(id => !currentIds.includes(id)) || [];
 
-      // Promise.all を使ってDB更新を並列化（高速化）
       await Promise.all(deletedIds.map(async (dId) => {
         await supabase.from('materials').update({ category_id: nullCategoryId }).eq('category_id', dId);
         await supabase.from('categories').delete().eq('id', dId);
@@ -169,12 +180,12 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
           return supabase.from('categories').update({ name: cat.name, color_code: cat.color_code, sort_order: i }).eq('id', cat.id);
         }
       }));
-      
+
       onUpdated();
       onClose();
     } catch (error) {
       console.error("保存エラー:", error);
-      alert("保存中にエラーが発生しました。");
+      showError("保存中にエラーが発生しました。時間をおいて再度お試しください。");
     } finally {
       setIsSaving(false);
     }
@@ -188,11 +199,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress /></Box>
           ) : (
-            <Box
-              ref={listContainerRef}
-              sx={{ pt: 1 }}
-              onDragOver={handleContainerDragOver}
-            >
+            <Box ref={listContainerRef} sx={{ pt: 1 }} onDragOver={handleContainerDragOver}>
               {categories.map((cat, index) => {
                 const isDefault = cat.name === 'カテゴリなし';
                 const isDraggingThis = draggedIndex === index;
@@ -201,7 +208,6 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                 if (draggedIndex !== null && dragOverIndex !== null) {
                   if (isDraggingThis) {
                     const shift = dragOverIndex - draggedIndex;
-                    // 🌟 ④ 隙間の計算に定数を使用
                     translateY = `calc(${shift} * (100% + ${ITEM_GAP_PX}px))`;
                   } else if (draggedIndex < dragOverIndex && index > draggedIndex && index <= dragOverIndex) {
                     translateY = `calc(-100% - ${ITEM_GAP_PX}px)`;
@@ -211,47 +217,44 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                 }
 
                 return (
-                  <Box 
+                  <Box
                     key={cat.id}
                     draggable
                     onDragStart={(e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, index)}
                     onDragEnd={handleDragEnd}
-                    sx={{ 
-                      pb: `${ITEM_GAP_PX}px`,
-                      position: 'relative',
-                      zIndex: isDraggingThis ? 10 : 1, 
-                    }}
+                    sx={{ pb: `${ITEM_GAP_PX}px`, position: 'relative', zIndex: isDraggingThis ? 10 : 1 }}
                   >
-                    <Box 
-                      sx={{ 
-                        display: 'flex', alignItems: 'center', p: 1.5,
-                        backgroundColor: isDraggingThis ? '#f8fafd' : '#fff', 
-                        border: isDraggingThis ? '2px dashed #1A73E8' : '1px solid #e0e0e0', 
-                        borderRadius: '8px',
-                        opacity: isDraggingThis ? 0.6 : 1, 
-                        
-                        transform: `translateY(${translateY})`,
-                        transition: draggedIndex !== null ? 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)' : 'none',
-                        pointerEvents: draggedIndex !== null ? 'none' : 'auto',
-                        
-                        cursor: 'grab',
-                        '&:active': { cursor: 'grabbing' },
-                        boxShadow: isDraggingThis ? '0 8px 24px rgba(26,115,232,0.15)' : '0 2px 4px rgba(0,0,0,0.02)',
-                      }}
-                    >
+                    <Box sx={{
+                      display: 'flex', alignItems: 'center', p: 1.5,
+                      backgroundColor: isDraggingThis ? '#f8fafd' : '#fff',
+                      border: isDraggingThis ? '2px dashed #1A73E8' : '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      opacity: isDraggingThis ? 0.6 : 1,
+                      transform: `translateY(${translateY})`,
+                      transition: draggedIndex !== null ? 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)' : 'none',
+                      pointerEvents: draggedIndex !== null ? 'none' : 'auto',
+                      cursor: 'grab',
+                      '&:active': { cursor: 'grabbing' },
+                      boxShadow: isDraggingThis ? '0 8px 24px rgba(26,115,232,0.15)' : '0 2px 4px rgba(0,0,0,0.02)',
+                    }}>
                       <DragIndicatorOutlinedIcon sx={{ color: '#ccc', mr: 1 }} />
-                      
-                      <IconButton size="small" onClick={(e: React.MouseEvent<HTMLButtonElement>) => !isDefault && handleColorClick(e, cat.id)} sx={{ mr: 1, p: 0.5 }} disabled={isDefault}>
+
+                      <IconButton
+                        size="small"
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => !isDefault && handleColorClick(e, cat.id)}
+                        sx={{ mr: 1, p: 0.5 }}
+                        disabled={isDefault}
+                      >
                         <CircleIcon sx={{ color: cat.color_code, fontSize: '20px' }} />
                       </IconButton>
-                      
-                      <TextField 
-                        variant="standard" 
-                        value={cat.name} 
+
+                      <TextField
+                        variant="standard"
+                        value={cat.name}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNameChange(cat.id, e.target.value)}
                         disabled={isDefault}
-                        fullWidth 
-                        InputProps={{ disableUnderline: true, sx: { fontWeight: 'bold', color: '#333' } }} 
+                        fullWidth
+                        InputProps={{ disableUnderline: true, sx: { fontWeight: 'bold', color: '#333' } }}
                       />
 
                       {!isDefault && (
@@ -278,9 +281,9 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
         </DialogActions>
       </Dialog>
 
-      <Popover 
-        open={Boolean(colorAnchorEl)} 
-        anchorEl={colorAnchorEl} 
+      <Popover
+        open={Boolean(colorAnchorEl)}
+        anchorEl={colorAnchorEl}
         onClose={() => setColorAnchorEl(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         sx={{ '& .MuiPaper-root': { borderRadius: '12px', p: 1.5, display: 'flex', gap: 1 } }}
@@ -291,6 +294,18 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
           </IconButton>
         ))}
       </Popover>
+
+      {/* エラートースト */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity="error" sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

@@ -1,14 +1,17 @@
-// src/components/Materials
+// src/components/Materials.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon, Tooltip } from '@mui/material';
+import { 
+  Box, Typography, Grid, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon, Tooltip,
+  Snackbar, Alert
+} from '@mui/material';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import SwapVertOutlinedIcon from '@mui/icons-material/SwapVertOutlined';
 import CategoryEditDialog from './CategoryEditDialog';
+import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
 
 import MaterialCard from './MaterialCard';
 import { supabase } from '../lib/supabase';
@@ -30,18 +33,27 @@ export default function Materials() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
 
+  // Snackbar の State
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'info' | 'success'}>({
+    open: false, message: '', severity: 'error'
+  });
+  const showSnackbar = (message: string, severity: 'error' | 'info' | 'success' = 'error') => {
+    setSnackbar({ open: true, message, severity });
+  };
+  const handleSnackbarClose = () => setSnackbar(s => ({ ...s, open: false }));
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-  }
+  };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-  }
+  };
 
   const openCategoryDialog = () => {
     handleMenuClose();
     setIsCategoryDialogOpen(true);
-  }
+  };
 
   const fetchMaterials = async () => {
     setIsLoading(true);
@@ -86,9 +98,8 @@ export default function Materials() {
   }, []);
 
   // ==========================================
-  // 　データの仕分けと操作
+  // データの仕分けと操作
   // ==========================================
-  // カテゴリ名ごとに仕分けする処理
   const groupedMaterials = materials.reduce((acc: Record<string, Material[]>, material) => {
     if (!acc[material.categoryName]) acc[material.categoryName] = [];
     acc[material.categoryName].push(material);
@@ -102,28 +113,28 @@ export default function Materials() {
   });
 
   const handleDelete = async (id: string) => {
-    // 画面上から消す前に、DBのステータスを 'archived' に変更する
     const { error } = await supabase
       .from('materials')
       .update({ status: 'archived' })
       .eq('id', id);
 
     if (error) {
-      alert("削除に失敗しました");
       console.error(error);
+      showSnackbar("削除に失敗しました。時間をおいて再度お試しください。");
       return;
     }
-    
+
     setMaterials(prev => prev.filter(m => m.id !== id));
+    showSnackbar("教材を削除しました", "success");
   };
 
   const handleEdit = (id: string) => {
-    alert(`編集機能は準備中です！（対象ID: ${id}）`);
+    showSnackbar("編集機能は準備中です！", "info");
   };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      
+
       {/* ヘッダー部分 */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: '#333', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -134,19 +145,14 @@ export default function Materials() {
             教材管理
           </Typography>
         </Box>
-          
-        <Box sx = {{ display: 'flex', alignContent: 'center', gap: 2}}>
-          <Tooltip title="カテゴリや教材の整理">
 
+        <Box sx={{ display: 'flex', alignContent: 'center', gap: 2 }}>
+          <Tooltip title="カテゴリや教材の整理">
             <IconButton
               onClick={handleMenuOpen}
-              sx={{
-                color: '#666',
-                borderRadius: '50%',
-                '&:hover': { backgroundColor: '#e0e0e0' }
-              }}
+              sx={{ color: '#666', borderRadius: '50%', '&:hover': { backgroundColor: '#e0e0e0' } }}
             >
-              <FormatListBulletedIcon/>
+              <FormatListBulletedIcon />
             </IconButton>
           </Tooltip>
 
@@ -157,20 +163,19 @@ export default function Materials() {
             sx={{ '& .MuiPaper-root': { borderRadius: '12px', minWidth: '180px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' } }}
           >
             <MenuItem onClick={openCategoryDialog} sx={{ borderRadius: '8px', mx: 1, mb: 0.5 }}>
-              <ListItemIcon><CategoryOutlinedIcon fontSize="small" sx={{ color: '#666' }} /></ListItemIcon>
+              <ListItemIcon><BookmarksOutlinedIcon fontSize="small" sx={{ color: '#666' }} /></ListItemIcon>
               カテゴリを編集
             </MenuItem>
-            
+
             <MenuItem onClick={() => { handleMenuClose(); alert("教材の並べ替えモードにします"); }} sx={{ borderRadius: '8px', mx: 1 }}>
               <ListItemIcon><SwapVertOutlinedIcon fontSize="small" sx={{ color: '#666' }} /></ListItemIcon>
               教材を並べ替え
             </MenuItem>
-
           </Menu>
 
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
             size="large"
             onClick={() => navigate('/materials/add-new-material')}
             sx={{ borderRadius: '5px', boxShadow: 'none', fontWeight: 'bold', px: 3 }}
@@ -178,7 +183,6 @@ export default function Materials() {
             教材を追加
           </Button>
         </Box>
-
       </Box>
 
       {/* ローディング中の表示 */}
@@ -187,7 +191,6 @@ export default function Materials() {
           <CircularProgress />
         </Box>
       ) : materials.length === 0 ? (
-        /* 教材が1つもない時の表示 */
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, flexDirection: 'column', color: '#999' }}>
           <MenuBookOutlinedIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
           <Typography variant="h6">まだ教材がありません</Typography>
@@ -198,7 +201,6 @@ export default function Materials() {
           <Grid container spacing={4} direction="column">
             {sortedCategoryEntries.map(([categoryName, items]) => {
               const groupColor = items.length > 0 ? items[0].colorCode : '#1A73E8';
-
               return (
                 <Grid size={12} key={categoryName} sx={{ mb: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', mb: 2, pl: 1, borderLeft: `4px solid ${groupColor}` }}>
@@ -206,12 +208,12 @@ export default function Materials() {
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                     {items.map(item => (
-                      <MaterialCard 
+                      <MaterialCard
                         key={item.id}
-                        material={item} 
-                        onDelete={handleDelete} 
-                        onEdit={handleEdit} 
-                        borderColor={item.colorCode} 
+                        material={item}
+                        onDelete={handleDelete}
+                        onEdit={handleEdit}
+                        borderColor={item.colorCode}
                         borderWidth={2}
                       />
                     ))}
@@ -223,11 +225,24 @@ export default function Materials() {
         </Box>
       )}
 
-      <CategoryEditDialog 
-        open={isCategoryDialogOpen} 
-        onClose={() => setIsCategoryDialogOpen(false)} 
-        onUpdated={() => fetchMaterials()} 
+      <CategoryEditDialog
+        open={isCategoryDialogOpen}
+        onClose={() => setIsCategoryDialogOpen(false)}
+        onUpdated={() => fetchMaterials()}
       />
+
+      {/* エラー・お知らせトースト */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
     </Box>
   );
 }
