@@ -5,6 +5,7 @@ import { Box, Card, CardMedia, CardContent, Typography, IconButton, Menu, MenuIt
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DragIndicatorOutlinedIcon from '@mui/icons-material/DragIndicatorOutlined';
 
 interface MaterialCardProps {
   material: {
@@ -16,9 +17,10 @@ interface MaterialCardProps {
   onEdit: (id: string) => void;
   borderColor?: string;
   borderWidth?: number;
+  isReorderMode?: boolean;
 }
 
-export default function MaterialCard({ material, onDelete, onEdit, borderColor = '#e0e0e0', borderWidth = 1 }: MaterialCardProps) {
+export default function MaterialCard({ material, onDelete, onEdit, borderColor = '#e0e0e0', borderWidth = 1, isReorderMode }: MaterialCardProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -82,14 +84,23 @@ return (
         />
       </Box>
 
-      {/* メニューボタン */}
-      <IconButton 
-        size="small" 
-        onClick={handleMenuOpen} 
-        sx={{ position: 'absolute', top: 8, right: 8, color: '#666', '&:hover': { backgroundColor: '#e0e0e0' } }}
-      >
-        <MoreVertOutlinedIcon fontSize="small" />
-      </IconButton>
+      {/* メニューボタン（モードによってアイコンを切り替える） */}
+      {isReorderMode ? (
+          <IconButton 
+            size="small" 
+            sx={{ position: 'absolute', top: 8, right: 8, color: '#999', cursor: 'grab' }}
+          >
+            <DragIndicatorOutlinedIcon fontSize="small" />
+          </IconButton>
+        ) : (
+          <IconButton 
+            size="small" 
+            onClick={handleMenuOpen} 
+            sx={{ position: 'absolute', top: 8, right: 8, color: '#666', '&:hover': { backgroundColor: '#e0e0e0' } }}
+          >
+            <MoreVertOutlinedIcon fontSize="small" />
+          </IconButton>
+        )}
 
       {/* タイトル部分 */}
       <CardContent sx={{ p: 1.5, flexGrow: 1 }}>
