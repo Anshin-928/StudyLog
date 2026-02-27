@@ -12,6 +12,7 @@ import CircleIcon from '@mui/icons-material/Circle';
 import { supabase } from '../lib/supabase';
 
 const PALETTE = ['#1A73E8', '#E53935', '#43A047', '#FFB300', '#8E24AA', '#00ACC1', '#9E9E9E'];
+const ITEM_GAP_PX = 12;
 
 interface Category {
   id: string;
@@ -38,6 +39,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const listContainerRef = useRef<HTMLDivElement>(null);
+  const dragEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open) fetchCategories();
@@ -57,6 +59,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+    if (dragEndTimerRef.current) clearTimeout(dragEndTimerRef.current); 
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
       setDraggedIndex(position);
@@ -71,7 +74,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
     const items = Array.from(listContainerRef.current.children) as HTMLElement[];
     const categoryItems = items.slice(0, categories.length);
 
-    let newIndex = categories.length - 1;
+    let newIndex = categories.length - 1; 
     for (let i = 0; i < categoryItems.length; i++) {
       const rect = categoryItems[i].getBoundingClientRect();
       if (e.clientY < rect.top + rect.height / 2) {
@@ -91,9 +94,13 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
       const draggedItem = newCategories.splice(draggedIndex, 1)[0];
       newCategories.splice(dragOverIndex, 0, draggedItem);
       setCategories(newCategories);
+      setDraggedIndex(dragOverIndex);
     }
-    setDraggedIndex(null);
-    setDragOverIndex(null);
+
+    dragEndTimerRef.current = setTimeout(() => {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+    }, 200);
   };
 
   const handleNameChange = (id: string, newName: string) => {
@@ -142,21 +149,26 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
 
       const { data: dbCategories } = await supabase.from('categories').select('id');
       const currentIds = categories.filter(c => !c.id.startsWith('new-')).map(c => c.id);
-      const deletedIds = dbCategories?.map(c => c.id).filter(id => !currentIds.includes(id)) || [];
+      
+      //「カテゴリなし」は絶対に削除対象にならないように安全対策
+      const deletedIds = dbCategories
+        ?.filter(c => c.id !== nullCategoryId)
+        .map(c => c.id)
+        .filter(id => !currentIds.includes(id)) || [];
 
-      for (const dId of deletedIds) {
+      // Promise.all を使ってDB更新を並列化（高速化）
+      await Promise.all(deletedIds.map(async (dId) => {
         await supabase.from('materials').update({ category_id: nullCategoryId }).eq('category_id', dId);
         await supabase.from('categories').delete().eq('id', dId);
-      }
+      }));
 
-      for (let i = 0; i < categories.length; i++) {
-        const cat = categories[i];
+      await Promise.all(categories.map((cat, i) => {
         if (cat.id.startsWith('new-')) {
-          await supabase.from('categories').insert([{ name: cat.name, color_code: cat.color_code, sort_order: i }]);
+          return supabase.from('categories').insert([{ name: cat.name, color_code: cat.color_code, sort_order: i }]);
         } else {
-          await supabase.from('categories').update({ name: cat.name, color_code: cat.color_code, sort_order: i }).eq('id', cat.id);
+          return supabase.from('categories').update({ name: cat.name, color_code: cat.color_code, sort_order: i }).eq('id', cat.id);
         }
-      }
+      }));
       
       onUpdated();
       onClose();
@@ -189,11 +201,12 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                 if (draggedIndex !== null && dragOverIndex !== null) {
                   if (isDraggingThis) {
                     const shift = dragOverIndex - draggedIndex;
-                    translateY = `calc(${shift} * (100% + 12px))`;
+                    // 🌟 ④ 隙間の計算に定数を使用
+                    translateY = `calc(${shift} * (100% + ${ITEM_GAP_PX}px))`;
                   } else if (draggedIndex < dragOverIndex && index > draggedIndex && index <= dragOverIndex) {
-                    translateY = `calc(-100% - 12px)`;
+                    translateY = `calc(-100% - ${ITEM_GAP_PX}px)`;
                   } else if (draggedIndex > dragOverIndex && index >= dragOverIndex && index < draggedIndex) {
-                    translateY = `calc(100% + 12px)`;
+                    translateY = `calc(100% + ${ITEM_GAP_PX}px)`;
                   }
                 }
 
@@ -204,7 +217,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                     onDragStart={(e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, index)}
                     onDragEnd={handleDragEnd}
                     sx={{ 
-                      pb: 1.5,
+                      pb: `${ITEM_GAP_PX}px`,
                       position: 'relative',
                       zIndex: isDraggingThis ? 10 : 1, 
                     }}
@@ -226,7 +239,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                         boxShadow: isDraggingThis ? '0 8px 24px rgba(26,115,232,0.15)' : '0 2px 4px rgba(0,0,0,0.02)',
                       }}
                     >
-                      <DragIndicatorOutlinedIcon sx={{ color: isDefault ? 'transparent' : '#ccc', mr: 1 }} />
+                      <DragIndicatorOutlinedIcon sx={{ color: '#ccc', mr: 1 }} />
                       
                       <IconButton size="small" onClick={(e: React.MouseEvent<HTMLButtonElement>) => !isDefault && handleColorClick(e, cat.id)} sx={{ mr: 1, p: 0.5 }} disabled={isDefault}>
                         <CircleIcon sx={{ color: cat.color_code, fontSize: '20px' }} />

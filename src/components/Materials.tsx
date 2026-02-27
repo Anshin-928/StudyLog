@@ -113,9 +113,8 @@ export default function Materials() {
       console.error(error);
       return;
     }
-
-    // DBの更新に成功したら、画面上のリストからも見えなくする
-    setMaterials(materials.filter(m => m.id !== id));
+    
+    setMaterials(prev => prev.filter(m => m.id !== id));
   };
 
   const handleEdit = (id: string) => {
