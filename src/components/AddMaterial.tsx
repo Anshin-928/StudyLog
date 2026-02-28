@@ -276,10 +276,10 @@ export default function AddMaterial() {
   // レンダリング
   // ==========================================
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
 
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: '#333' }}>
         <IconButton onClick={() => navigate('/materials')} sx={{ mr: 2, backgroundColor: '#f5f5f5' }}>
           <ArrowBackIcon />
         </IconButton>
@@ -289,7 +289,7 @@ export default function AddMaterial() {
       </Box>
 
       {/* タブ */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, color: '#333' }}>
         <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} variant="fullWidth">
           <Tab
             icon={<SearchIcon />}
