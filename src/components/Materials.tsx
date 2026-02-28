@@ -11,7 +11,8 @@ import AddIcon from '@mui/icons-material/Add';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import SwapVertOutlinedIcon from '@mui/icons-material/SwapVertOutlined';
 import CategoryEditDialog from './CategoryEditDialog';
-import MaterialEditDialog from './MaterialEditDialog'; // ★ 追加
+import MaterialEditDialog from './MaterialEditDialog';
+import ConfirmDialog from './ConfirmDialog';
 import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
 
 import MaterialCard from './MaterialCard';
@@ -85,8 +86,12 @@ export default function Materials() {
   const [draggedMaterialId, setDraggedMaterialId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // ★ 追加: 編集ダイアログ用 state（null のとき閉じる）
+  // 編集ダイアログ用 state（null のとき閉じる）
   const [editMaterialId, setEditMaterialId] = useState<string | null>(null);
+
+  // 削除確認ダイアログ用 state（null のとき閉じる）
+  const [deleteMaterialId, setDeleteMaterialId] = useState<string | null>(null);
+  const deleteMaterialName = materials.find(m => m.id === deleteMaterialId)?.name ?? '';
 
   const [allCategories, setAllCategories] = useState<CategoryInfo[]>([]);
 
@@ -447,7 +452,18 @@ export default function Materials() {
   // ==========================================
   // 削除・編集
   // ==========================================
-  const handleDelete = async (id: string) => {
+
+  // カードの削除ボタン → 確認ダイアログを開く
+  const handleDelete = (id: string) => {
+    setDeleteMaterialId(id);
+  };
+
+  // 確認ダイアログで「削除する」→ DB 更新
+  const handleConfirmDelete = async () => {
+    if (!deleteMaterialId) return;
+    const id = deleteMaterialId;
+    setDeleteMaterialId(null);
+
     const { error } = await supabase
       .from('materials')
       .update({ status: 'archived' })
@@ -463,7 +479,6 @@ export default function Materials() {
     showSnackbar("教材を削除しました", "success");
   };
 
-  // ★ 変更: alert → ダイアログを開く
   const handleEdit = (id: string) => {
     setEditMaterialId(id);
   };
@@ -626,6 +641,21 @@ export default function Materials() {
           </Grid>
         </Box>
       )}
+
+      {/* 教材削除 確認ダイアログ */}
+      <ConfirmDialog
+        open={deleteMaterialId !== null}
+        title="教材を削除しますか？"
+        message={
+          <>
+            <strong>「{deleteMaterialName}」</strong>を削除します。<br />
+            削除した教材は元に戻せません。
+          </>
+        }
+        confirmLabel="削除する"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteMaterialId(null)}
+      />
 
       <CategoryEditDialog
         open={isCategoryDialogOpen}
