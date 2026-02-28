@@ -58,7 +58,7 @@ return (
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)' 
         }, 
         position: 'relative',
-        border: `0.5px solid rgba(0, 0, 0, 0.2)`
+        border: `1px solid ${borderColor}`
       }}>
       
       <Box sx={{ 

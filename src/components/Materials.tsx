@@ -627,8 +627,6 @@ export default function Materials() {
                             material={item}
                             onDelete={handleDelete}
                             onEdit={handleEdit}
-                            borderColor={item.colorCode}
-                            borderWidth={2}
                             isReorderMode={isReorderMode}
                           />
                         </Box>

@@ -69,8 +69,8 @@ export default function AddMaterial() {
   // ==========================================
   // 検索タブ用 State
   // ==========================================
-  const RAKUTEN_APP_ID = "dc241411-9570-4d4b-9f14-6cb97250ca0e";
-  const RAKUTEN_ACCESS_KEY = "pk_9AWuHPDhzA1a7XmQ2zayuGdsHfDWF3stLcahdm5DIz8";
+  const RAKUTEN_APP_ID = import.meta.env.VITE_RAKUTEN_APP_ID;
+  const RAKUTEN_ACCESS_KEY = import.meta.env.VITE_RAKUTEN_ACCESS_KEY;
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -290,9 +290,19 @@ export default function AddMaterial() {
 
       {/* タブ */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
-        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} centered>
-          <Tab icon={<SearchIcon />} iconPosition="start" label="市販の教材を検索" sx={{ fontWeight: 'bold' }} />
-          <Tab icon={<LibraryAddOutlinedIcon />} iconPosition="start" label="オリジナル教材を登録" sx={{ fontWeight: 'bold' }} />
+        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} variant="fullWidth">
+          <Tab
+            icon={<SearchIcon />}
+            iconPosition="start"
+            label="市販の教材を検索"
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0' }}
+          />
+          <Tab
+            icon={<LibraryAddOutlinedIcon />}
+            iconPosition="start"
+            label="オリジナル教材を登録"
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0' }}
+          />
         </Tabs>
       </Box>
 

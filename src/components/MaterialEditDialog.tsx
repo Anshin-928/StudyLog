@@ -8,36 +8,12 @@ import {
 } from '@mui/material';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import { supabase } from '../lib/supabase';
-
-// AddMaterial と同じテンプレート定義
-const TEMPLATES = [
-  { id: 'book_blue',       url: '/images/templates/book_blue.png',       label: '青色の本' },
-  { id: 'book_gray',       url: '/images/templates/book_gray.png',        label: '灰色の本' },
-  { id: 'book_green',      url: '/images/templates/book_green.png',       label: '緑色の本' },
-  { id: 'book_lightblue',  url: '/images/templates/book_lightblue.png',   label: '水色の本' },
-  { id: 'book_lightgreen', url: '/images/templates/book_lightgreen.png',  label: '黄緑色の本' },
-  { id: 'book_purple',     url: '/images/templates/book_purple.png',      label: '紫色の本' },
-  { id: 'book_red',        url: '/images/templates/book_red.png',         label: '赤色の本' },
-  { id: 'book_yellow',     url: '/images/templates/book_yellow.png',      label: '黄色の本' },
-  { id: 'paper_blue',      url: '/images/templates/paper_blue.png',       label: '青色のプリント' },
-  { id: 'paper_gray',      url: '/images/templates/paper_gray.png',       label: '灰色のプリント' },
-  { id: 'paper_green',     url: '/images/templates/paper_green.png',      label: '緑色のプリント' },
-  { id: 'paper_lightblue', url: '/images/templates/paper_lightblue.png',  label: '水色のプリント' },
-  { id: 'paper_lightgreen',url: '/images/templates/paper_lightgreen.png', label: '黄緑色のプリント' },
-  { id: 'paper_purple',    url: '/images/templates/paper_purple.png',     label: '紫色のプリント' },
-  { id: 'paper_red',       url: '/images/templates/paper_red.png',        label: '赤色のプリント' },
-  { id: 'paper_yellow',    url: '/images/templates/paper_yellow.png',     label: '黄色のプリント' },
-  { id: 'audio',           url: '/images/templates/audio.png',            label: '音声教材' },
-];
-
-// 新規カテゴリ作成を示す特殊な option の型
-interface CategoryOption {
-  id: string;
-  name: string;
-  isNew?: boolean; // true のとき「新しいカテゴリとして作成」を意味する
-}
-
-const NEW_CATEGORY_PREFIX = '__new__'; // isNew option の id プレフィックス
+import { TEMPLATES, isTemplateUrl } from '../constants/materialTemplates';
+import {
+  CategoryOption,
+  buildCategoryOptions,
+  resolveCategory,
+} from '../lib/categoryUtils';
 
 interface MaterialEditDialogProps {
   materialId: string | null; // null のときダイアログは閉じる
@@ -114,7 +90,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
       setCategoryInputValue(currentCat?.name ?? '');
 
       // 現在の画像がテンプレートかどうか判定
-      const isTemplate = TEMPLATES.some(t => t.url === material.image_url);
+      const isTemplate = isTemplateUrl(material.image_url);
       if (isTemplate) {
         setSelectedTemplateUrl(material.image_url);
         setPreviewUrl(null);
@@ -145,23 +121,12 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
   };
 
   // ==========================================
-  // Autocomplete の表示用オプション生成
-  // 入力中の文字列が既存カテゴリと完全一致しない場合、末尾に「新規作成」を追加
+  // Autocomplete の表示用オプション生成（⑥ 共通関数を使用）
   // ==========================================
-  const autocompleteOptions = React.useMemo<CategoryOption[]>(() => {
-    const trimmed = categoryInputValue.trim();
-    const exactMatch = categoryOptions.some(
-      c => c.name === trimmed
-    );
-
-    if (trimmed && !exactMatch) {
-      return [
-        ...categoryOptions,
-        { id: `${NEW_CATEGORY_PREFIX}${trimmed}`, name: trimmed, isNew: true },
-      ];
-    }
-    return categoryOptions;
-  }, [categoryOptions, categoryInputValue]);
+  const autocompleteOptions = React.useMemo<CategoryOption[]>(
+    () => buildCategoryOptions(categoryInputValue, categoryOptions),
+    [categoryInputValue, categoryOptions]
+  );
 
   // ==========================================
   // 保存処理
@@ -205,7 +170,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
           .from('material-images')
           .getPublicUrl(filePath);
         finalImageUrl = publicUrlData.publicUrl;
-      } else if (previewUrl && !TEMPLATES.some(t => t.url === previewUrl)) {
+      } else if (previewUrl && !isTemplateUrl(previewUrl)) {
         // アップロード画像のまま変更なし（楽天画像なども含む）
         finalImageUrl = previewUrl;
       } else {
@@ -220,6 +185,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
         .eq('id', materialId);
       if (updateError) throw updateError;
 
+      resetForm();
       onUpdated();
       onClose();
     } catch (error) {
@@ -230,37 +196,20 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
     }
   };
 
-  // カテゴリ名から id を解決（存在しなければ INSERT して返す）
-  const resolveCategory = async (name: string, colorCode?: string): Promise<string> => {
-    const { data: existing } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('name', name)
-      .single();
-
-    if (existing) return existing.id;
-
-    const insertData: any = { name };
-    if (colorCode) insertData.color_code = colorCode;
-
-    const { data: created, error } = await supabase
-      .from('categories')
-      .insert([insertData])
-      .select()
-      .single();
-    if (error) throw error;
-    return created.id;
-  };
-
-  // ダイアログが閉じるときに state をリセット
-  const handleClose = () => {
-    if (isSaving) return;
+  // フォーム state を初期値に戻す（handleClose と handleSave 両方から呼ぶ）
+  const resetForm = () => {
     setTitle('');
     setSelectedCategory(null);
     setCategoryInputValue('');
     setSelectedTemplateUrl(TEMPLATES[0].url);
     setUploadedImage(null);
     setPreviewUrl(null);
+  };
+
+  // ダイアログが閉じるときに state をリセット
+  const handleClose = () => {
+    if (isSaving) return;
+    resetForm();
     onClose();
   };
 
@@ -372,7 +321,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                 />
                 <label htmlFor="edit-image-upload-input">
                   <Box sx={{
-                    border: (uploadedImage || (previewUrl && !TEMPLATES.some(t => t.url === previewUrl)))
+                    border: (uploadedImage || (previewUrl && !isTemplateUrl(previewUrl)))
                       ? '3px solid #1A73E8' : '2px dashed #ddd',
                     borderRadius: '12px', p: 3, textAlign: 'center',
                     backgroundColor: uploadedImage ? '#f0f4f9' : '#fafafa',
