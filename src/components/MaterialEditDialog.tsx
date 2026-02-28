@@ -14,6 +14,8 @@ import {
   buildCategoryOptions,
   resolveCategory,
 } from '../lib/categoryUtils';
+import { MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
+import UnitSelector from './UnitSelector';
 
 interface MaterialEditDialogProps {
   materialId: string | null; // null のときダイアログは閉じる
@@ -31,6 +33,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
   const [selectedTemplateUrl, setSelectedTemplateUrl] = useState(TEMPLATES[0].url);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [unit, setUnit] = useState<MaterialUnit>(DEFAULT_UNIT);
 
   // ローディング・保存
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +66,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
       const [materialRes, categoriesRes] = await Promise.all([
         supabase
           .from('materials')
-          .select('title, image_url, categories(id, name)')
+          .select('title, image_url, unit, categories(id, name)')
           .eq('id', id)
           .single(),
         supabase
@@ -88,6 +91,8 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
       const currentCat = cats.find(c => c.id === material.categories?.id) ?? null;
       setSelectedCategory(currentCat);
       setCategoryInputValue(currentCat?.name ?? '');
+
+      setUnit((material.unit as MaterialUnit) ?? DEFAULT_UNIT);
 
       // 現在の画像がテンプレートかどうか判定
       const isTemplate = isTemplateUrl(material.image_url);
@@ -181,7 +186,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
       // ③ DB 更新
       const { error: updateError } = await supabase
         .from('materials')
-        .update({ title: title.trim(), category_id: categoryId, image_url: finalImageUrl })
+        .update({ title: title.trim(), category_id: categoryId, image_url: finalImageUrl, unit })
         .eq('id', materialId);
       if (updateError) throw updateError;
 
@@ -204,6 +209,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
     setSelectedTemplateUrl(TEMPLATES[0].url);
     setUploadedImage(null);
     setPreviewUrl(null);
+    setUnit(DEFAULT_UNIT);
   };
 
   // ダイアログが閉じるときに state をリセット
@@ -277,6 +283,9 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                 )}
                 noOptionsText="カテゴリが見つかりません"
               />
+
+              {/* 単位選択 */}
+              <UnitSelector value={unit} onChange={setUnit} disabled={isSaving} />
 
               {/* テンプレート選択 */}
               <Box>

@@ -13,6 +13,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 
 import { supabase } from '../lib/supabase';
+import { MATERIAL_UNITS, MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
+import UnitSelector from './UnitSelector';
 
 const TEMPLATES = [
   { id: 'book_blue',        url: '/images/templates/book_blue.png',         label: '青色の本' },
@@ -79,6 +81,7 @@ export default function AddMaterial() {
   const [pendingBook, setPendingBook] = useState<any | null>(null); // null のとき閉じる
   const [searchCategory, setSearchCategory] = useState<CategoryOption | null>(null);
   const [searchCategoryInput, setSearchCategoryInput] = useState('');
+  const [searchUnit, setSearchUnit] = useState<MaterialUnit>(DEFAULT_UNIT);
 
   // ==========================================
   // オリジナルタブ用 State
@@ -86,6 +89,7 @@ export default function AddMaterial() {
   const [originalTitle, setOriginalTitle] = useState('');
   const [originalCategory, setOriginalCategory] = useState<CategoryOption | null>(null);
   const [originalCategoryInput, setOriginalCategoryInput] = useState('');
+  const [originalUnit, setOriginalUnit] = useState<MaterialUnit>(DEFAULT_UNIT);
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('/images/templates/book_blue.png');
@@ -163,6 +167,7 @@ export default function AddMaterial() {
     e.stopPropagation();
     setSearchCategory(null);
     setSearchCategoryInput('');
+    setSearchUnit(DEFAULT_UNIT);
     setPendingBook(book);
   };
 
@@ -185,6 +190,7 @@ export default function AddMaterial() {
         category_id: categoryId,
         title: pendingBook.title,
         image_url: imageUrl || '/images/templates/book_gray.png',
+        unit: searchUnit,
       }]);
       if (error) throw error;
 
@@ -244,6 +250,7 @@ export default function AddMaterial() {
         category_id: categoryId,
         title: originalTitle.trim(),
         image_url: finalImageUrl,
+        unit: originalUnit,
       }]);
       if (error) throw error;
 
@@ -413,6 +420,9 @@ export default function AddMaterial() {
                 )}
                 noOptionsText="カテゴリが見つかりません"
               />
+              <Box sx={{ mt: 3 }}>
+                <UnitSelector value={searchUnit} onChange={setSearchUnit} disabled={isAdding} />
+              </Box>
             </DialogContent>
             <DialogActions sx={{ p: 3, pt: 0 }}>
               <Button onClick={() => setPendingBook(null)} disabled={isAdding} sx={{ color: '#666', fontWeight: 'bold' }}>
@@ -463,8 +473,13 @@ export default function AddMaterial() {
               />
             )}
             noOptionsText="カテゴリが見つかりません"
-            sx={{ mb: 4 }}
+            sx={{ mb: 3 }}
           />
+
+          {/* 単位選択 */}
+          <Box sx={{ mb: 4 }}>
+            <UnitSelector value={originalUnit} onChange={setOriginalUnit} disabled={isAdding} />
+          </Box>
 
           {/* テンプレート選択 */}
           <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: '#666' }}>表紙画像を選択</Typography>
