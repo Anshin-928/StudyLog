@@ -11,6 +11,7 @@ import AddIcon from '@mui/icons-material/Add';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import SwapVertOutlinedIcon from '@mui/icons-material/SwapVertOutlined';
 import CategoryEditDialog from './CategoryEditDialog';
+import MaterialEditDialog from './MaterialEditDialog'; // ★ 追加
 import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
 
 import MaterialCard from './MaterialCard';
@@ -50,7 +51,6 @@ function buildSortedEntries(
     grouped[m.categoryName].push(m);
   }
 
-  // allCategories が指定されていれば、空カテゴリも含める
   if (allCategories) {
     for (const cat of allCategories) {
       if (!grouped[cat.name]) grouped[cat.name] = [];
@@ -85,7 +85,9 @@ export default function Materials() {
   const [draggedMaterialId, setDraggedMaterialId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 全カテゴリ情報（並べ替え中に空カテゴリを表示するため＆カテゴリ移動時の情報参照用）
+  // ★ 追加: 編集ダイアログ用 state（null のとき閉じる）
+  const [editMaterialId, setEditMaterialId] = useState<string | null>(null);
+
   const [allCategories, setAllCategories] = useState<CategoryInfo[]>([]);
 
   // ==========================================
@@ -138,7 +140,6 @@ export default function Materials() {
 
       if (error) throw error;
 
-      // カテゴリ一覧を別途取得（空カテゴリも含めるため）
       const { data: catData, error: catError } = await supabase
         .from('categories')
         .select('id, name, color_code, sort_order')
@@ -183,9 +184,6 @@ export default function Materials() {
 
   // ==========================================
   // FLIP アニメーション
-  //
-  // FLIP = First(旧位置) → Last(新位置) → Invert(差分で逆変換) → Play(アニメーション)
-  // materials 更新で DOM が変わった直後（描画前）に useLayoutEffect で実行
   // ==========================================
   useLayoutEffect(() => {
     if (!flipPendingRef.current) return;
@@ -197,8 +195,6 @@ export default function Materials() {
     const els = document.querySelectorAll<HTMLElement>('[data-material-id]');
     els.forEach(el => {
       const id = el.dataset.materialId!;
-
-      // ドラッグ中のカード自身はアニメーション不要
       if (id === draggedMaterialId) return;
 
       const oldRect = oldPositions.get(id);
@@ -210,22 +206,14 @@ export default function Materials() {
 
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
 
-      // ① Invert: transition なしで旧位置に瞬間移動
       el.style.transform = `translate(${dx}px, ${dy}px)`;
       el.style.transition = 'none';
-
-      // ② リフロー強制（ブラウザに Invert 状態を確定させる）
       void el.offsetHeight;
-
-      // ③ Play: transition 付きで transform を解除 → 新位置へぬるっと移動
       el.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1)';
       el.style.transform = '';
     });
   }, [materials, draggedMaterialId]);
 
-  // ==========================================
-  // 全カード位置のスナップショット（state 更新直前に呼ぶ）
-  // ==========================================
   const snapshotPositions = useCallback(() => {
     const map = new Map<string, DOMRect>();
     document.querySelectorAll<HTMLElement>('[data-material-id]').forEach(el => {
@@ -238,8 +226,6 @@ export default function Materials() {
   // ==========================================
   // ドラッグ＆ドロップ処理
   // ==========================================
-
-  // ドラッグ状態のクリーンアップ（複数箇所から安全に呼べるように冪等に設計）
   const cleanupDrag = useCallback(() => {
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current);
@@ -248,8 +234,6 @@ export default function Materials() {
     setDraggedMaterialId(null);
     lastDragOverRef.current = null;
 
-    // FLIP transition の残留スタイルをクリーンアップ
-    // transition が完了するまで少し待ってからスタイルを除去
     requestAnimationFrame(() => {
       setTimeout(() => {
         document.querySelectorAll<HTMLElement>('[data-material-id]').forEach(el => {
@@ -260,39 +244,19 @@ export default function Materials() {
     });
   }, []);
 
-  // ドラッグ終了検知: 3 重フォールバック
-  //
-  // 【問題】カードを別カテゴリへ移動させると、React が元の DOM 要素をアンマウントし
-  //  新しい親に再マウントする。ブラウザの dragend イベントは元のソース要素に発火するが、
-  //  その要素は既に DOM ツリーから外れているため document にバブルアップしない。
-  //
-  // 【対策】3 段階のフォールバックでドラッグ終了を確実に検知:
-  //  ① document dragend — 同カテゴリ内の並べ替え（DOM 要素が生き残るケース）
-  //  ② document drop    — 異カテゴリへの移動（drop ターゲットから document にバブル）
-  //  ③ dragover 途絶検知 — ESC キーやウィンドウ外ドロップなどの全エッジケース
   useEffect(() => {
     if (!draggedMaterialId) return;
 
     const cleanup = () => cleanupDrag();
-
-    // ① dragend: 同カテゴリ内で元 DOM が生きている場合に発火
     document.addEventListener('dragend', cleanup);
-
-    // ② drop: カテゴリコンテナは onDragOver で preventDefault しているので
-    //    drop イベントが発火し、document までバブルする
     document.addEventListener('drop', cleanup);
 
-    // ③ dragover 途絶検知:
-    //    ドラッグ中は dragover が連続的に発火する（通常 50〜100ms 間隔）。
-    //    ドロップ/キャンセルすると途絶するので、一定時間来なければドラッグ終了と判定。
     let lastActivityTime = Date.now();
     const trackActivity = () => { lastActivityTime = Date.now(); };
     document.addEventListener('dragover', trackActivity);
 
     const intervalId = setInterval(() => {
-      if (Date.now() - lastActivityTime > 500) {
-        cleanup();
-      }
+      if (Date.now() - lastActivityTime > 500) cleanup();
     }, 200);
 
     return () => {
@@ -309,9 +273,6 @@ export default function Materials() {
     setTimeout(() => setDraggedMaterialId(id), 0);
   }, []);
 
-  // ------------------------------------------
-  // 挿入位置計算＆ state 更新（FLIP 付き）
-  // ------------------------------------------
   const computeAndApplyReorder = useCallback((
     clientX: number,
     clientY: number,
@@ -322,17 +283,12 @@ export default function Materials() {
     const container = categoryContainerRefs.current[overCategoryName];
     if (!container) return;
 
-    // コンテナ内カード（ドラッグ中の自身を除外して位置計算）
     const allCards = Array.from(container.querySelectorAll<HTMLElement>('[data-material-id]'));
     const cards = allCards.filter(el => el.dataset.materialId !== draggedMaterialId);
 
-    // ------------------------------------------
-    // 2D flex-wrap グリッドでの挿入インデックス計算
-    // ------------------------------------------
-    let insertIndex = cards.length; // デフォルト: 末尾
+    let insertIndex = cards.length;
 
     if (cards.length > 0) {
-      // ① カードを行ごとにグループ化
       const ROW_THRESHOLD = 10;
       const rows: { cards: HTMLElement[]; minTop: number; maxBottom: number }[] = [];
 
@@ -347,14 +303,11 @@ export default function Materials() {
         }
       }
 
-      // ② カーソルの Y 座標で対象行を特定
       let targetRow: { cards: HTMLElement[] } | null = null;
       let rowStartIndex = 0;
 
       for (let r = 0; r < rows.length; r++) {
         const row = rows[r];
-
-        // カーソルがこの行の下端以内、または最終行ならこの行が対象
         if (clientY < row.maxBottom || r === rows.length - 1) {
           targetRow = row;
           rowStartIndex = 0;
@@ -363,30 +316,24 @@ export default function Materials() {
         }
       }
 
-      // ③ 行内の X 座標で挿入位置を特定
       if (targetRow) {
         let foundInRow = false;
         for (let c = 0; c < targetRow.cards.length; c++) {
           const rect = targetRow.cards[c].getBoundingClientRect();
-          const cardMidX = rect.left + rect.width / 2;
-          if (clientX < cardMidX) {
+          if (clientX < rect.left + rect.width / 2) {
             insertIndex = rowStartIndex + c;
             foundInRow = true;
             break;
           }
         }
-        if (!foundInRow) {
-          insertIndex = rowStartIndex + targetRow.cards.length;
-        }
+        if (!foundInRow) insertIndex = rowStartIndex + targetRow.cards.length;
       }
     }
 
-    // 同じ位置への重複更新を防止（jitter 対策）
     const last = lastDragOverRef.current;
     if (last?.categoryName === overCategoryName && last?.insertIndex === insertIndex) return;
     lastDragOverRef.current = { categoryName: overCategoryName, insertIndex };
 
-    // FLIP: 位置スナップショット → state 更新
     snapshotPositions();
 
     setMaterials(prev => {
@@ -396,9 +343,7 @@ export default function Materials() {
       const newMaterials = [...prev];
       const draggedItem = { ...newMaterials[draggedIdx] };
 
-      // 別カテゴリへの移動: カテゴリ情報を更新
       if (draggedItem.categoryName !== overCategoryName) {
-        // allCategories から正確な情報を取得（空カテゴリでも対応可能）
         const catInfo = allCategories.find(c => c.name === overCategoryName);
         if (catInfo) {
           draggedItem.categoryId = catInfo.id;
@@ -406,7 +351,6 @@ export default function Materials() {
           draggedItem.colorCode = catInfo.colorCode;
           draggedItem.categorySortOrder = catInfo.sortOrder;
         } else {
-          // フォールバック: 同カテゴリの既存アイテムからコピー
           const sampleItem = newMaterials.find(
             m => m.categoryName === overCategoryName && m.id !== draggedMaterialId
           );
@@ -419,38 +363,25 @@ export default function Materials() {
         }
       }
 
-      // 元の位置から削除
       newMaterials.splice(draggedIdx, 1);
-
-      // 対象カテゴリ内の現在のアイテム一覧（削除後）
       const catItems = newMaterials.filter(m => m.categoryName === overCategoryName);
 
       if (catItems.length === 0 || insertIndex >= catItems.length) {
-        // カテゴリ末尾に追加
         let lastCatGlobalIdx = -1;
         for (let i = newMaterials.length - 1; i >= 0; i--) {
-          if (newMaterials[i].categoryName === overCategoryName) {
-            lastCatGlobalIdx = i;
-            break;
-          }
+          if (newMaterials[i].categoryName === overCategoryName) { lastCatGlobalIdx = i; break; }
         }
 
         if (lastCatGlobalIdx === -1) {
-          // このカテゴリにアイテムが 0 個:
-          // categorySortOrder に基づいてグローバル配列内の適切な位置に挿入
           let insertGlobalIdx = newMaterials.length;
           for (let i = 0; i < newMaterials.length; i++) {
-            if (newMaterials[i].categorySortOrder > draggedItem.categorySortOrder) {
-              insertGlobalIdx = i;
-              break;
-            }
+            if (newMaterials[i].categorySortOrder > draggedItem.categorySortOrder) { insertGlobalIdx = i; break; }
           }
           newMaterials.splice(insertGlobalIdx, 0, draggedItem);
         } else {
           newMaterials.splice(lastCatGlobalIdx + 1, 0, draggedItem);
         }
       } else {
-        // 指定インデックスのアイテムの直前に挿入
         const targetItem = catItems[insertIndex];
         const targetGlobalIdx = newMaterials.findIndex(m => m.id === targetItem.id);
         newMaterials.splice(targetGlobalIdx, 0, draggedItem);
@@ -460,9 +391,6 @@ export default function Materials() {
     });
   }, [draggedMaterialId, snapshotPositions, allCategories]);
 
-  // ------------------------------------------
-  // コンテナ全体の onDragOver → rAF で 1 フレーム 1 回に制限
-  // ------------------------------------------
   const handleContainerDragOver = useCallback((
     e: React.DragEvent<HTMLDivElement>,
     overCategoryName: string
@@ -480,16 +408,12 @@ export default function Materials() {
     });
   }, [draggedMaterialId, computeAndApplyReorder]);
 
-  // ------------------------------------------
-  // ドラッグ終了（React の onDragEnd から呼ばれるが、
-  // 要素がアンマウントされた場合は document listener が代わりに発火）
-  // ------------------------------------------
   const handleDragEnd = useCallback(() => {
     cleanupDrag();
   }, [cleanupDrag]);
 
   // ==========================================
-  // 完了ボタン: sort_order と category_id を一括保存
+  // 完了ボタン
   // ==========================================
   const sortedCategoryEntries = buildSortedEntries(
     materials,
@@ -497,7 +421,6 @@ export default function Materials() {
   );
 
   const handleReorderModeEnd = async () => {
-    // 安全策: ドラッグ状態が残っていたらクリア
     if (draggedMaterialId) cleanupDrag();
 
     setIsSaving(true);
@@ -540,8 +463,9 @@ export default function Materials() {
     showSnackbar("教材を削除しました", "success");
   };
 
+  // ★ 変更: alert → ダイアログを開く
   const handleEdit = (id: string) => {
-    showSnackbar("編集機能は準備中です！", "info");
+    setEditMaterialId(id);
   };
 
   // ==========================================
@@ -568,7 +492,7 @@ export default function Materials() {
             onClick={handleReorderModeEnd}
             disabled={isSaving}
             disableElevation
-            sx={{ borderRadius: '8px', fontWeight: 'bold', px: 4, backgroundColor: '#1A73E8' }}
+            sx={{ borderRadius: '8px', fontWeight: 'bold', px: 4 }}
           >
             {isSaving ? '保存中...' : '完了'}
           </Button>
@@ -630,7 +554,6 @@ export default function Materials() {
               const groupColor = catInfo?.colorCode ?? items[0]?.colorCode ?? '#1A73E8';
               const isEmpty = items.length === 0;
 
-              // 通常モードでは空カテゴリを非表示
               if (isEmpty && !isReorderMode) return null;
 
               return (
@@ -642,7 +565,6 @@ export default function Materials() {
                     {categoryName}
                   </Typography>
 
-                  {/* カードコンテナ */}
                   <Box
                     ref={(el: HTMLDivElement | null) => { categoryContainerRefs.current[categoryName] = el; }}
                     onDragOver={(e) => isReorderMode && handleContainerDragOver(e, categoryName)}
@@ -679,7 +601,6 @@ export default function Materials() {
                             opacity: isDragging ? 0.4 : 1,
                             willChange: isReorderMode && !isDragging ? 'transform' : undefined,
                             '&:active': { cursor: isReorderMode ? 'grabbing' : 'default' },
-                            // ドラッグ中のカードの現在位置を青い点線で囲む（ドロップ先プレビュー）
                             ...(isDragging && {
                               borderRadius: '12px',
                               outline: '2px dashed #1A73E8',
@@ -710,6 +631,16 @@ export default function Materials() {
         open={isCategoryDialogOpen}
         onClose={() => setIsCategoryDialogOpen(false)}
         onUpdated={() => fetchMaterials()}
+      />
+
+      {/* ★ 追加: 編集ダイアログ */}
+      <MaterialEditDialog
+        materialId={editMaterialId}
+        onClose={() => setEditMaterialId(null)}
+        onUpdated={() => {
+          fetchMaterials();
+          showSnackbar("教材を更新しました", "success");
+        }}
       />
 
       <Snackbar

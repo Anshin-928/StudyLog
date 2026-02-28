@@ -1,11 +1,12 @@
 // src/components/AddMaterial.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Box, Typography, TextField, Button, List, ListItemButton, 
+import {
+  Box, Typography, TextField, Button, List, ListItemButton,
   ListItemAvatar, ListItemText, CircularProgress, IconButton, Divider, Tabs, Tab,
-  Snackbar, Alert
+  Snackbar, Alert, Autocomplete,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
@@ -14,58 +15,135 @@ import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import { supabase } from '../lib/supabase';
 
 const TEMPLATES = [
-  // 本のテンプレート
-  { id: 'book_blue', url: '/images/templates/book_blue.png', label: '青色の本' },
-  { id: 'book_gray', url: '/images/templates/book_gray.png', label: '灰色の本' },
-  { id: 'book_green', url: '/images/templates/book_green.png', label: '緑色の本' },
-  { id: 'book_lightblue', url: '/images/templates/book_lightblue.png', label: '水色の本' },
-  { id: 'book_lightgreen', url: '/images/templates/book_lightgreen.png', label: '黄緑色の本' },
-  { id: 'book_purple', url: '/images/templates/book_purple.png', label: '紫色の本' },
-  { id: 'book_red', url: '/images/templates/book_red.png', label: '赤色の本' },
-  { id: 'book_yellow', url: '/images/templates/book_yellow.png', label: '黄色の本' },
-
-  // プリントのテンプレート
-  { id: 'paper_blue', url: '/images/templates/paper_blue.png', label: '青色のプリント' },
-  { id: 'paper_gray', url: '/images/templates/paper_gray.png', label: '灰色のプリント' },
-  { id: 'paper_green', url: '/images/templates/paper_green.png', label: '緑色のプリント' },
-  { id: 'paper_lightblue', url: '/images/templates/paper_lightblue.png', label: '水色のプリント' },
-  { id: 'paper_lightgreen', url: '/images/templates/paper_lightgreen.png', label: '黄緑色のプリント' },
-  { id: 'paper_purple', url: '/images/templates/paper_purple.png', label: '紫色のプリント' },
-  { id: 'paper_red', url: '/images/templates/paper_red.png', label: '赤色のプリント' },
-  { id: 'paper_yellow', url: '/images/templates/paper_yellow.png', label: '黄色のプリント' },
-
-  // 音声教材のテンプレート
-  { id: 'audio', url: '/images/templates/audio.png', label: '音声教材' },
+  { id: 'book_blue',        url: '/images/templates/book_blue.png',         label: '青色の本' },
+  { id: 'book_gray',        url: '/images/templates/book_gray.png',         label: '灰色の本' },
+  { id: 'book_green',       url: '/images/templates/book_green.png',        label: '緑色の本' },
+  { id: 'book_lightblue',   url: '/images/templates/book_lightblue.png',    label: '水色の本' },
+  { id: 'book_lightgreen',  url: '/images/templates/book_lightgreen.png',   label: '黄緑色の本' },
+  { id: 'book_purple',      url: '/images/templates/book_purple.png',       label: '紫色の本' },
+  { id: 'book_red',         url: '/images/templates/book_red.png',          label: '赤色の本' },
+  { id: 'book_yellow',      url: '/images/templates/book_yellow.png',       label: '黄色の本' },
+  { id: 'paper_blue',       url: '/images/templates/paper_blue.png',        label: '青色のプリント' },
+  { id: 'paper_gray',       url: '/images/templates/paper_gray.png',        label: '灰色のプリント' },
+  { id: 'paper_green',      url: '/images/templates/paper_green.png',       label: '緑色のプリント' },
+  { id: 'paper_lightblue',  url: '/images/templates/paper_lightblue.png',   label: '水色のプリント' },
+  { id: 'paper_lightgreen', url: '/images/templates/paper_lightgreen.png',  label: '黄緑色のプリント' },
+  { id: 'paper_purple',     url: '/images/templates/paper_purple.png',      label: '紫色のプリント' },
+  { id: 'paper_red',        url: '/images/templates/paper_red.png',         label: '赤色のプリント' },
+  { id: 'paper_yellow',     url: '/images/templates/paper_yellow.png',      label: '黄色のプリント' },
+  { id: 'audio',            url: '/images/templates/audio.png',             label: '音声教材' },
 ];
+
+// カテゴリ選択 Autocomplete で使う option 型
+interface CategoryOption {
+  id: string;
+  name: string;
+  isNew?: boolean;
+}
+
+const NEW_CATEGORY_PREFIX = '__new__';
 
 export default function AddMaterial() {
   const navigate = useNavigate();
 
   const [tabIndex, setTabIndex] = useState(0);
 
+  // ==========================================
+  // カテゴリ一覧（マウント時に取得）
+  // ==========================================
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, name')
+        .order('sort_order', { ascending: true });
+      if (data) {
+        setCategoryOptions(data.map((c: any) => ({ id: c.id, name: c.name })));
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // ==========================================
+  // 検索タブ用 State
+  // ==========================================
   const RAKUTEN_APP_ID = "dc241411-9570-4d4b-9f14-6cb97250ca0e";
   const RAKUTEN_ACCESS_KEY = "pk_9AWuHPDhzA1a7XmQ2zayuGdsHfDWF3stLcahdm5DIz8";
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const [originalTitle, setOriginalTitle] = useState("");
-  const [originalCategory, setOriginalCategory] = useState("");
+  // 検索タブ: カテゴリ選択ダイアログ
+  const [pendingBook, setPendingBook] = useState<any | null>(null); // null のとき閉じる
+  const [searchCategory, setSearchCategory] = useState<CategoryOption | null>(null);
+  const [searchCategoryInput, setSearchCategoryInput] = useState('');
+
+  // ==========================================
+  // オリジナルタブ用 State
+  // ==========================================
+  const [originalTitle, setOriginalTitle] = useState('');
+  const [originalCategory, setOriginalCategory] = useState<CategoryOption | null>(null);
+  const [originalCategoryInput, setOriginalCategoryInput] = useState('');
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('/images/templates/book_blue.png');
+
   const [isAdding, setIsAdding] = useState(false);
 
+  // Snackbar
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' }>({
     open: false, message: '', severity: 'error'
   });
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' = 'error') => {
     setSnackbar({ open: true, message, severity });
   };
-  const handleSnackbarClose = () => {
-    setSnackbar(s => ({ ...s, open: false }));
+  const handleSnackbarClose = () => setSnackbar(s => ({ ...s, open: false }));
+
+  // ==========================================
+  // ユーティリティ: カテゴリ名 → id（なければ INSERT）
+  // ==========================================
+  const resolveCategory = async (name: string): Promise<string> => {
+    const { data: existing } = await supabase
+      .from('categories').select('id').eq('name', name).single();
+    if (existing) return existing.id;
+
+    const insertData: any = { name };
+    if (name === 'カテゴリなし') insertData.color_code = '#9E9E9E';
+
+    const { data: created, error } = await supabase
+      .from('categories').insert([insertData]).select().single();
+    if (error) throw error;
+    return created.id;
   };
 
+  // ==========================================
+  // Autocomplete の options 生成
+  // 入力文字が既存と完全一致しない場合のみ「新規作成」を末尾に追加
+  // ==========================================
+  const buildOptions = (input: string, base: CategoryOption[]): CategoryOption[] => {
+    const trimmed = input.trim();
+    const exactMatch = base.some(c => c.name === trimmed);
+    if (trimmed && !exactMatch) {
+      return [...base, { id: `${NEW_CATEGORY_PREFIX}${trimmed}`, name: trimmed, isNew: true }];
+    }
+    return base;
+  };
+
+  const originalAutocompleteOptions = useMemo(
+    () => buildOptions(originalCategoryInput, categoryOptions),
+    [originalCategoryInput, categoryOptions]
+  );
+
+  const searchAutocompleteOptions = useMemo(
+    () => buildOptions(searchCategoryInput, categoryOptions),
+    [searchCategoryInput, categoryOptions]
+  );
+
+  // ==========================================
+  // 検索タブ
+  // ==========================================
   const searchBooks = async () => {
     if (!searchQuery) return;
     setIsSearching(true);
@@ -80,43 +158,39 @@ export default function AddMaterial() {
     }
   };
 
-  const handleAddFromSearch = async (book: any) => {
-    const inputCategory = window.prompt(`「${book.title}」をどのカテゴリに追加しますか？\n（空白のままOKを押すと「カテゴリなし」になります）`, "");
-    if (inputCategory === null) return;
+  // 「追加」ボタン → カテゴリ選択ダイアログを開く
+  const handleAddFromSearchClick = (e: React.MouseEvent, book: any) => {
+    e.stopPropagation();
+    setSearchCategory(null);
+    setSearchCategoryInput('');
+    setPendingBook(book);
+  };
 
-    const finalCategory = inputCategory.trim() === "" ? "カテゴリなし" : inputCategory.trim();
+  // ダイアログの「追加する」→ DB 保存
+  const handleConfirmSearchAdd = async () => {
+    if (!pendingBook) return;
 
-    let imageUrl = book.largeImageUrl || book.mediumImageUrl;
-    if (imageUrl && imageUrl.includes('?')) {
-      imageUrl = imageUrl.split('?')[0];
-    }
+    const categoryName = searchCategory?.isNew
+      ? searchCategory.name
+      : (searchCategory?.name ?? 'カテゴリなし');
+
+    let imageUrl = pendingBook.largeImageUrl || pendingBook.mediumImageUrl;
+    if (imageUrl?.includes('?')) imageUrl = imageUrl.split('?')[0];
 
     setIsAdding(true);
     try {
-      let { data: existingCategory } = await supabase
-        .from('categories').select('id').eq('name', finalCategory).single();
+      const categoryId = await resolveCategory(categoryName);
 
-      let categoryId;
-      if (!existingCategory) {
-        const insertData: any = { name: finalCategory };
-        if (finalCategory === "カテゴリなし") insertData.color_code = "#9E9E9E";
+      const { error } = await supabase.from('materials').insert([{
+        category_id: categoryId,
+        title: pendingBook.title,
+        image_url: imageUrl || '/images/templates/book_gray.png',
+      }]);
+      if (error) throw error;
 
-        const { data: newCategory, error: categoryError } = await supabase
-          .from('categories').insert([insertData]).select().single();
-        if (categoryError) throw categoryError;
-        categoryId = newCategory.id;
-      } else {
-        categoryId = existingCategory.id;
-      }
-
-      const { error: materialError } = await supabase
-        .from('materials')
-        .insert([{ category_id: categoryId, title: book.title, image_url: imageUrl || '/images/templates/book_gray.png' }]);
-      if (materialError) throw materialError;
-
+      setPendingBook(null);
       showSnackbar("教材を追加しました", "success");
       setTimeout(() => navigate('/materials'), 1500);
-
     } catch (error) {
       console.error("DB登録エラー:", error);
       showSnackbar("登録に失敗しました。時間をおいて再度お試しください。");
@@ -125,8 +199,11 @@ export default function AddMaterial() {
     }
   };
 
+  // ==========================================
+  // オリジナルタブ
+  // ==========================================
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       const file = e.target.files[0];
       setOriginalImage(file);
       setPreviewUrl(URL.createObjectURL(file));
@@ -139,7 +216,9 @@ export default function AddMaterial() {
       return;
     }
 
-    const finalCategory = originalCategory.trim() === "" ? "カテゴリなし" : originalCategory.trim();
+    const categoryName = originalCategory?.isNew
+      ? originalCategory.name
+      : (originalCategory?.name ?? 'カテゴリなし');
 
     setIsAdding(true);
     try {
@@ -159,31 +238,16 @@ export default function AddMaterial() {
         finalImageUrl = publicUrlData.publicUrl;
       }
 
-      let { data: existingCategory } = await supabase.from('categories').select('id').eq('name', finalCategory).single();
-      let categoryId;
+      const categoryId = await resolveCategory(categoryName);
 
-      if (!existingCategory) {
-        const insertData: any = { name: finalCategory };
-        if (finalCategory === "カテゴリなし") insertData.color_code = "#9E9E9E";
-
-        const { data: newCategory, error: categoryError } = await supabase
-          .from('categories').insert([insertData]).select().single();
-        if (categoryError) throw categoryError;
-        categoryId = newCategory.id;
-      } else {
-        categoryId = existingCategory.id;
-      }
-
-      const { error: materialError } = await supabase.from('materials').insert([{
+      const { error } = await supabase.from('materials').insert([{
         category_id: categoryId,
-        title: originalTitle,
-        image_url: finalImageUrl
+        title: originalTitle.trim(),
+        image_url: finalImageUrl,
       }]);
-      if (materialError) throw materialError;
+      if (error) throw error;
 
-      // 成功時はそのまま遷移
       navigate('/materials');
-
     } catch (error) {
       console.error("オリジナル教材の登録エラー:", error);
       showSnackbar("登録に失敗しました。時間をおいて再度お試しください。");
@@ -192,10 +256,29 @@ export default function AddMaterial() {
     }
   };
 
+  // ==========================================
+  // Autocomplete の renderOption（共通）
+  // ==========================================
+  const renderCategoryOption = (props: React.HTMLAttributes<HTMLLIElement>, option: CategoryOption) => (
+    <li {...props} key={option.id}>
+      {option.isNew ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>＋</Typography>
+          <Typography variant="body2">「{option.name}」を新しいカテゴリとして作成</Typography>
+        </Box>
+      ) : (
+        <Typography variant="body2">{option.name}</Typography>
+      )}
+    </li>
+  );
+
+  // ==========================================
+  // レンダリング
+  // ==========================================
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
 
-      {/* ヘッダー部分 */}
+      {/* ヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <IconButton onClick={() => navigate('/materials')} sx={{ mr: 2, backgroundColor: '#f5f5f5' }}>
           <ArrowBackIcon />
@@ -205,15 +288,15 @@ export default function AddMaterial() {
         </Typography>
       </Box>
 
-      {/* タブ切り替えメニュー */}
+      {/* タブ */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
-        <Tabs value={tabIndex} onChange={(e, newValue) => setTabIndex(newValue)} centered>
+        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} centered>
           <Tab icon={<SearchIcon />} iconPosition="start" label="市販の教材を検索" sx={{ fontWeight: 'bold' }} />
           <Tab icon={<LibraryAddOutlinedIcon />} iconPosition="start" label="オリジナル教材を登録" sx={{ fontWeight: 'bold' }} />
         </Tabs>
       </Box>
 
-      {/* タブ0（検索画面） */}
+      {/* ========== タブ0: 検索 ========== */}
       {tabIndex === 0 && (
         <>
           <Box sx={{ display: 'flex', gap: 1, mb: 4 }}>
@@ -226,7 +309,8 @@ export default function AddMaterial() {
               sx={{ backgroundColor: '#fff', borderRadius: '8px' }}
               disabled={isAdding}
             />
-            <Button variant="contained" onClick={searchBooks} disableElevation disabled={isAdding} sx={{ borderRadius: '8px', px: 4, fontWeight: 'bold' }}>
+            <Button variant="contained" onClick={searchBooks} disableElevation disabled={isAdding}
+              sx={{ borderRadius: '8px', px: 4, fontWeight: 'bold' }}>
               検索
             </Button>
           </Box>
@@ -250,11 +334,13 @@ export default function AddMaterial() {
                   const book = item.Item;
                   return (
                     <React.Fragment key={index}>
-                      <ListItemButton onClick={() => handleAddFromSearch(book)} sx={{ borderRadius: '12px', mb: 1, py: 2, transition: '0.2s', '&:hover': { backgroundColor: '#f8fafd' } }}>
+                      <ListItemButton
+                        onClick={(e) => handleAddFromSearchClick(e, book)}
+                        sx={{ borderRadius: '12px', mb: 1, py: 2, transition: '0.2s', '&:hover': { backgroundColor: '#f8fafd' } }}
+                      >
                         <ListItemAvatar sx={{ mr: 3 }}>
                           <img
-                            src={book.mediumImageUrl}
-                            alt="表紙"
+                            src={book.mediumImageUrl} alt="表紙"
                             style={{ height: '88px', width: 'auto', objectFit: 'contain', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f5f5f5' }}
                           />
                         </ListItemAvatar>
@@ -276,27 +362,101 @@ export default function AddMaterial() {
               </Typography>
             )}
           </Box>
+
+          {/* カテゴリ選択ダイアログ（検索タブ専用） */}
+          <Dialog
+            open={pendingBook !== null}
+            onClose={() => !isAdding && setPendingBook(null)}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}
+          >
+            <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>カテゴリを選択</DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              {pendingBook && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 1.5, backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                  <img
+                    src={pendingBook.mediumImageUrl} alt="表紙"
+                    style={{ height: '64px', width: 'auto', objectFit: 'contain', borderRadius: '4px', border: '1px solid #ddd' }}
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.4 }}>
+                    {pendingBook.title}
+                  </Typography>
+                </Box>
+              )}
+              <Autocomplete
+                options={searchAutocompleteOptions}
+                getOptionLabel={(o) => o.name}
+                value={searchCategory}
+                inputValue={searchCategoryInput}
+                onInputChange={(_, v) => setSearchCategoryInput(v)}
+                onChange={(_, v) => setSearchCategory(v)}
+                disabled={isAdding}
+                renderOption={renderCategoryOption}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="カテゴリ"
+                    placeholder="カテゴリを選択または新規入力"
+                    helperText="空欄のまま追加すると「カテゴリなし」になります"
+                  />
+                )}
+                noOptionsText="カテゴリが見つかりません"
+              />
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 0 }}>
+              <Button onClick={() => setPendingBook(null)} disabled={isAdding} sx={{ color: '#666', fontWeight: 'bold' }}>
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleConfirmSearchAdd}
+                variant="contained"
+                disabled={isAdding}
+                disableElevation
+                sx={{ borderRadius: '8px', fontWeight: 'bold', px: 3 }}
+              >
+                {isAdding ? '追加中...' : 'この教材を追加'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </>
       )}
 
-      {/* タブ1（オリジナル登録画面） */}
+      {/* ========== タブ1: オリジナル登録 ========== */}
       {tabIndex === 1 && (
         <Box sx={{ flexGrow: 1, overflow: 'auto', backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #eee', p: 4 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>オリジナル教材の詳細を入力</Typography>
 
+          {/* 教材名 */}
           <TextField
             fullWidth label="教材名 (必須)"
             value={originalTitle} onChange={(e) => setOriginalTitle(e.target.value)}
             sx={{ mb: 3 }} disabled={isAdding}
           />
 
-          <TextField
-            fullWidth label="カテゴリ名" placeholder="空欄の場合は「カテゴリなし」に分類されます"
-            value={originalCategory} onChange={(e) => setOriginalCategory(e.target.value)}
-            sx={{ mb: 4 }} disabled={isAdding}
+          {/* カテゴリ選択（Autocomplete） */}
+          <Autocomplete
+            options={originalAutocompleteOptions}
+            getOptionLabel={(o) => o.name}
+            value={originalCategory}
+            inputValue={originalCategoryInput}
+            onInputChange={(_, v) => setOriginalCategoryInput(v)}
+            onChange={(_, v) => setOriginalCategory(v)}
+            disabled={isAdding}
+            renderOption={renderCategoryOption}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="カテゴリ"
+                placeholder="カテゴリを選択または新規入力"
+                helperText="空欄のまま登録すると「カテゴリなし」になります"
+              />
+            )}
+            noOptionsText="カテゴリが見つかりません"
+            sx={{ mb: 4 }}
           />
 
-          {/* テンプレート選択エリア */}
+          {/* テンプレート選択 */}
           <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: '#666' }}>表紙画像を選択</Typography>
           <Box sx={{ display: 'flex', gap: 1, mb: 4, flexWrap: 'wrap', p: 2, backgroundColor: '#f9f9f9', borderRadius: '12px' }}>
             {TEMPLATES.map((tmpl) => (
@@ -316,7 +476,7 @@ export default function AddMaterial() {
             ))}
           </Box>
 
-          {/* 画像アップロードエリア */}
+          {/* 画像アップロード */}
           <input type="file" accept="image/*" id="image-upload-input" style={{ display: 'none' }} onChange={handleImageChange} disabled={isAdding} />
           <label htmlFor="image-upload-input">
             <Box sx={{
@@ -341,13 +501,16 @@ export default function AddMaterial() {
             </Box>
           </label>
 
-          <Button variant="contained" size="large" fullWidth disableElevation onClick={handleAddOriginal} disabled={isAdding} sx={{ borderRadius: '8px', fontWeight: 'bold', py: 1.5 }}>
-            この教材を登録する
+          <Button
+            variant="contained" size="large" fullWidth disableElevation
+            onClick={handleAddOriginal} disabled={isAdding}
+            sx={{ borderRadius: '8px', fontWeight: 'bold', py: 1.5 }}
+          >
+            {isAdding ? '登録中...' : 'この教材を登録する'}
           </Button>
         </Box>
       )}
 
-      {/* エラー・警告トースト */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
