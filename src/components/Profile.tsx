@@ -9,6 +9,7 @@ import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import { supabase } from '../lib/supabase';
+import { compressImage } from '../lib/compressImage';
 
 interface ProfileData {
   id: string;
@@ -28,8 +29,11 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 未保存の画像ファイルとプレビューURL
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [previewAvatarUrl, setPreviewAvatarUrl] = useState<string | null>(null);
 
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
@@ -65,62 +69,58 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
     fetchProfile();
   }, []);
 
-  // アバター画像アップロード
+  // 画像選択時はstateに保持するだけ（アップロードはまだしない）
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setIsUploading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      // キャッシュバスター付きURLをローカル表示用に使う
-      const avatarUrlWithCache = `${urlData.publicUrl}?t=${Date.now()}`;
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: urlData.publicUrl })
-        .eq('id', user.id);
-      if (updateError) throw updateError;
-
-      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrlWithCache } : null);
-      onProfileSaved?.();
-      showSnackbar('プロフィール画像を更新しました');
-    } catch (e) {
-      console.error(e);
-      showSnackbar('画像のアップロードに失敗しました', 'error');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    // 圧縮だけここで済ませておく
+    const compressed = await compressImage(file);
+    setPendingAvatarFile(compressed);
+    setPreviewAvatarUrl(URL.createObjectURL(compressed));
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // 表示名・自己紹介を保存
+  // 「保存する」で画像・表示名・自己紹介をまとめて保存
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      let newAvatarUrl: string | undefined;
+
+      // 画像が選択されていればアップロード
+      if (pendingAvatarFile) {
+        const fileExt = pendingAvatarFile.name.split('.').pop();
+        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, pendingAvatarFile);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        newAvatarUrl = urlData.publicUrl;
+      }
+
+      const updates: any = {
+        display_name: displayName.trim() || null,
+        bio: bio.trim() || null,
+      };
+      if (newAvatarUrl) updates.avatar_url = newAvatarUrl;
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          display_name: displayName.trim() || null,
-          bio: bio.trim() || null,
-        })
+        .update(updates)
         .eq('id', user.id);
       if (error) throw error;
 
-      setProfile(prev => prev ? { ...prev, display_name: displayName, bio } : null);
+      setProfile(prev => prev ? {
+        ...prev,
+        display_name: displayName,
+        bio,
+        ...(newAvatarUrl ? { avatar_url: newAvatarUrl } : {}),
+      } : null);
+      setPendingAvatarFile(null);
+      setPreviewAvatarUrl(null);
       onProfileSaved?.();
       showSnackbar('プロフィールを保存しました');
     } catch (e) {
@@ -135,11 +135,13 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
     await supabase.auth.signOut();
   };
 
-  // 変更があるかどうか（保存ボタンの活性制御）
-  const isDirty = profile
+  // 画像・表示名・自己紹介のいずれかが変わっていれば保存可能
+  const isDirty = pendingAvatarFile !== null || (profile
     ? displayName !== (profile.display_name || '') || bio !== (profile.bio || '')
-    : false;
+    : false);
 
+  // 表示するアバター：未保存のプレビュー > 保存済みURL > イニシャル
+  const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
   const avatarLetter = (displayName || email || '?')[0].toUpperCase();
 
   return (
@@ -176,38 +178,46 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
           <Box sx={{ backgroundColor: '#f8faff', border: '1px solid #e8eef8', borderRadius: '16px', p: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
 
-              {/* アバター（クリックでアップロード） */}
-              <Box sx={{ position: 'relative', flexShrink: 0 }}>
-                <Avatar
-                  src={profile?.avatar_url || undefined}
-                  sx={{ width: 96, height: 96, fontSize: '36px', backgroundColor: '#1A73E8', cursor: 'pointer' }}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {!profile?.avatar_url && avatarLetter}
-                </Avatar>
-                {/* ホバーオーバーレイ */}
-                <Box
-                  onClick={() => fileInputRef.current?.click()}
-                  sx={{
-                    position: 'absolute', inset: 0, borderRadius: '50%',
-                    backgroundColor: 'rgba(0,0,0,0.38)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: 0, transition: 'opacity 0.2s', cursor: 'pointer',
-                    '&:hover': { opacity: 1 },
-                  }}
-                >
-                  {isUploading
-                    ? <CircularProgress size={22} sx={{ color: '#fff' }} />
-                    : <PhotoCameraRoundedIcon sx={{ color: '#fff', fontSize: '26px' }} />
-                  }
+              {/* アバター */}
+              <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                {/* 96x96に固定してオーバーレイが真円になるようにする */}
+                <Box sx={{ position: 'relative', width: 96, height: 96 }}>
+                  <Avatar
+                    src={avatarSrc}
+                    sx={{ width: 96, height: 96, fontSize: '36px', backgroundColor: '#1A73E8' }}
+                  >
+                    {!avatarSrc && avatarLetter}
+                  </Avatar>
+                  {/* ホバーオーバーレイ */}
+                  <Box
+                    onClick={() => !isSaving && fileInputRef.current?.click()}
+                    sx={{
+                      position: 'absolute', inset: 0, borderRadius: '50%',
+                      backgroundColor: 'rgba(0,0,0,0.38)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0, transition: 'opacity 0.2s',
+                      cursor: isSaving ? 'default' : 'pointer',
+                      '&:hover': { opacity: 1 },
+                    }}
+                  >
+                    <PhotoCameraRoundedIcon sx={{ color: '#fff', fontSize: '26px' }} />
+                  </Box>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleAvatarChange}
+                  />
                 </Box>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={handleAvatarChange}
-                />
+                <Typography variant="caption" sx={{ color: '#999', textAlign: 'center', lineHeight: 1.4 }}>
+                  クリックで変更
+                </Typography>
+                {pendingAvatarFile && (
+                  <Typography variant="caption" sx={{ color: '#1A73E8', fontWeight: 'bold' }}>
+                    未保存
+                  </Typography>
+                )}
               </Box>
 
               {/* 表示名・自己紹介 */}
