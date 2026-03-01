@@ -622,6 +622,7 @@ function ManualInputTab({
   presetHours, presetMinutes,
   saveFnRef,
   onTotalMinutesChange,
+  onDirtyChange,
 }: {
   selectedMaterial: Material | null | 'none';
   onOpenMaterialDialog: () => void;
@@ -631,6 +632,7 @@ function ManualInputTab({
   presetMinutes: string;
   saveFnRef: React.MutableRefObject<(() => void) | null>;
   onTotalMinutesChange: (n: number) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const [recordDatetime, setRecordDatetime] = useState(nowDatetimeLocal);
   const [hours, setHours] = useState('');
@@ -688,6 +690,15 @@ function ManualInputTab({
   useEffect(() => {
     onTotalMinutesChange(totalMinutes);
   }, [totalMinutes, onTotalMinutesChange]);
+
+  // 時間・学習量・メモ・画像のいずれかが入力されたら親に通知
+  useEffect(() => {
+    const dirty = totalMinutes > 0
+      || (pagesData.total !== '' && parseInt(pagesData.total) > 0)
+      || memo.length > 0
+      || image !== null;
+    onDirtyChange(dirty);
+  }, [totalMinutes, pagesData, memo, image, onDirtyChange]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -998,6 +1009,11 @@ export default function Record() {
   const swUseFnRef = useRef<(() => void) | null>(null);
   const swPauseFnRef = useRef<(() => void) | null>(null);
 
+  const [manualIsDirty, setManualIsDirty] = useState(false);
+  const handleManualDirtyChange = useCallback((dirty: boolean) => {
+    setManualIsDirty(dirty);
+  }, []);
+
   // Snackbar
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
@@ -1030,8 +1046,8 @@ export default function Record() {
     setSwIsRunning(isRunning);
   }, []);
 
-  // ストップウォッチ計測中(or一時停止中)は離脱ブロック
-  const shouldBlock = swElapsed > 0;
+  // 手動入力に何か入力中 or ストップウォッチに経過時間あり → 離脱ブロック
+  const shouldBlock = manualIsDirty || swElapsed > 0;
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       shouldBlock && currentLocation.pathname !== nextLocation.pathname
@@ -1182,6 +1198,7 @@ export default function Record() {
             presetMinutes={presetMinutes}
             saveFnRef={manualSaveFnRef}
             onTotalMinutesChange={handleTotalMinutesChange}
+            onDirtyChange={handleManualDirtyChange}
           />
         </Box>
         <Box sx={{ display: tabIndex === 1 ? 'block' : 'none' }}>
@@ -1206,12 +1223,18 @@ export default function Record() {
         onSelect={setSelectedMaterial}
       />
 
-      {/* 離脱確認ダイアログ */}
+      {/* 離脱確認ダイアログ（状況に応じてメッセージを出し分け） */}
       <NavigationBlockerDialog
         open={blocker.state === 'blocked'}
         onProceed={() => blocker.proceed?.()}
         onCancel={() => blocker.reset?.()}
-        message={'ストップウォッチの計測データが失われます。\nこのページを離れますか？'}
+        message={
+          swElapsed > 0 && manualIsDirty
+            ? '入力中のデータとストップウォッチの計測データが失われます。\nこのページを離れますか？'
+            : swElapsed > 0
+              ? 'ストップウォッチの計測データが失われます。\nこのページを離れますか？'
+              : '入力内容が保存されていません。\nこのページを離れると、入力内容が破棄されます。'
+        }
       />
 
       {/* Snackbar */}
