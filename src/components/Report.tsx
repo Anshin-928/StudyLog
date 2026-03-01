@@ -480,6 +480,9 @@ export default function Report() {
   const fetchAllLogs = useCallback(async () => {
     setIsLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const { data, error } = await supabase
         .from('study_logs')
         .select(`
@@ -493,6 +496,7 @@ export default function Report() {
             categories ( name, color_code )
           )
         `)
+        .eq('user_id', user.id)
         .order('study_datetime', { ascending: true });
 
       if (error) throw error;

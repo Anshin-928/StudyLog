@@ -127,6 +127,9 @@ export default function Materials() {
   const fetchMaterials = async () => {
     setIsLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const { data, error } = await supabase
         .from('materials')
         .select(`
@@ -141,13 +144,15 @@ export default function Materials() {
             sort_order
           )
         `)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
       const { data: catData, error: catError } = await supabase
         .from('categories')
         .select('id, name, color_code, sort_order')
+        .eq('user_id', user.id)
         .order('sort_order', { ascending: true });
 
       if (catError) throw catError;

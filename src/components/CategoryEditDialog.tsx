@@ -59,7 +59,10 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase.from('categories').select('*').eq('user_id', user.id).order('sort_order', { ascending: true });
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {

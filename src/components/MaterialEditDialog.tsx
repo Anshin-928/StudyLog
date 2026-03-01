@@ -62,7 +62,10 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
   const fetchData = async (id: string) => {
     setIsLoading(true);
     try {
-      // 教材データと全カテゴリを並列取得
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // 教材データと自分のカテゴリを並列取得
       const [materialRes, categoriesRes] = await Promise.all([
         supabase
           .from('materials')
@@ -72,6 +75,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
         supabase
           .from('categories')
           .select('id, name')
+          .eq('user_id', user.id)
           .order('sort_order', { ascending: true }),
       ]);
 

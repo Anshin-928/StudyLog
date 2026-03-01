@@ -57,9 +57,12 @@ export default function AddMaterial() {
 
   useEffect(() => {
     const fetchCategories = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data } = await supabase
         .from('categories')
         .select('id, name')
+        .eq('user_id', user.id)
         .order('sort_order', { ascending: true });
       if (data) {
         setCategoryOptions(data.map((c: any) => ({ id: c.id, name: c.name })));
