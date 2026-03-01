@@ -7,9 +7,9 @@ import {
 } from '@mui/material';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
-import WbSunnyRoundedIcon from '@mui/icons-material/WbSunnyRounded';
 import DateRangeRoundedIcon from '@mui/icons-material/DateRangeRounded';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import InsightsIcon from '@mui/icons-material/Insights';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell,
@@ -612,25 +612,25 @@ export default function Report() {
           {/* ========== サマリーカード（固定3枚） ========== */}
           <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
             <SummaryCard
-              icon={<WbSunnyRoundedIcon />}
+              icon={<AccessTimeRoundedIcon />}
               label="今日の学習時間"
-              value={todayMinutes > 0 ? formatDuration(todayMinutes) : '0分'}
+              value={formatDuration(todayMinutes)}
               sub={todayMinutes > 0 ? '今日も頑張りました！' : 'まだ記録がありません'}
-              color="#FF6B00"
+              color="#ff6f00"
             />
             <SummaryCard
               icon={<DateRangeRoundedIcon />}
               label={`${currentMonth}月の学習時間`}
-              value={thisMonthMinutes > 0 ? formatDuration(thisMonthMinutes) : '0分'}
-              sub={thisMonthMinutes > 0 ? `${Math.round(thisMonthMinutes / 60 * 10) / 10}時間` : undefined}
+              value={formatDuration(thisMonthMinutes)}
+              sub={thisMonthMinutes >= 60 && thisMonthMinutes % 60 !== 0 ? `${Math.round(thisMonthMinutes / 60 * 10) / 10}時間` : undefined}
               color="#1A73E8"
             />
             <SummaryCard
-              icon={<AccessTimeRoundedIcon />}
+              icon={<InsightsIcon />}
               label="総学習時間"
-              value={grandTotalMinutes > 0 ? formatDuration(grandTotalMinutes) : '0分'}
-              sub={grandTotalMinutes > 0 ? `${Math.round(grandTotalMinutes / 60 * 10) / 10}時間` : 'これから積み上げていきましょう'}
-              color="#34A853"
+              value={formatDuration(grandTotalMinutes)}
+              sub={grandTotalMinutes >= 60 && grandTotalMinutes % 60 !== 0 ? `${Math.round(grandTotalMinutes / 60 * 10) / 10}時間` : grandTotalMinutes === 0 ? 'これから積み上げていこう！' : undefined}
+              color="#2E7D32"
             />
           </Box>
 
