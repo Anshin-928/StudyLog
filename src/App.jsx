@@ -1,9 +1,9 @@
 // src/App.jsx
 
 import { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import studyLogLogo from './assets/studyLogLogo.svg';
-import { Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip } from '@mui/material';
+import { Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
 
@@ -17,6 +17,7 @@ import Materials from './components/Materials';
 import Settings from './components/Settings';
 import AddMaterial from './components/AddMaterial';
 import StreakDialog from './components/StreakDialog';
+import Profile from './components/Profile';
 
 // ==========================================
 // ストリーク計算（App レベルで軽量に実行）
@@ -36,8 +37,7 @@ function calcStreakFromDates(isoDates) {
 
   let streak = 0;
   const cursor = new Date();
-  
-  // 今日まだ記録がない場合は昨日から数える
+
   if (!dates.has(today)) cursor.setDate(cursor.getDate() - 1);
 
   while (true) {
@@ -54,10 +54,13 @@ function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   // undefined = 確認中, null = 未ログイン, object = ログイン済み
   const [session, setSession] = useState(undefined);
-  
+
   // ストリーク用のState
   const [streak, setStreak] = useState(0);
   const [isStreakOpen, setIsStreakOpen] = useState(false);
+
+  // ヘッダーアバター用のState
+  const [profileData, setProfileData] = useState({ display_name: '', avatar_url: null });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -71,7 +74,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // ストリーク取得関数（ログイン後・記録保存後に呼び出す）
+  // ストリーク取得（ログイン後・記録保存後に呼び出す）
   const fetchStreak = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -79,19 +82,41 @@ function App() {
       .from('study_logs')
       .select('study_datetime')
       .eq('user_id', user.id);
-    
+
     if (data) {
       setStreak(calcStreakFromDates(data.map(d => d.study_datetime)));
     }
   }, []);
 
-  // ログイン済みの場合、自分のログを取得してストリークを計算する
+  // プロフィール取得（ログイン後・プロフィール保存後に呼び出す）
+  const fetchProfile = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('display_name, avatar_url')
+      .eq('id', user.id)
+      .single();
+
+    if (data) {
+      setProfileData({
+        display_name: data.display_name || '',
+        avatar_url: data.avatar_url || null,
+      });
+    }
+  }, []);
+
+  // ログイン時にストリーク＆プロフィールをまとめて取得
   useEffect(() => {
     if (!session) return;
     fetchStreak();
-  }, [session, fetchStreak]);
+    fetchProfile();
+  }, [session, fetchStreak, fetchProfile]);
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+
+  // アバターのフォールバック文字
+  const avatarLetter = (profileData.display_name || session?.user?.email || '?')[0]?.toUpperCase();
 
   // セッション確認中
   if (session === undefined) {
@@ -141,9 +166,9 @@ function App() {
                 </Typography>
               </Box>
             </Box>
-            
+
             <Box sx={{ flexGrow: 1 }} />
-            
+
             {/* ストリーク（連続記録） */}
             <Chip
               icon={<LocalFireDepartmentRoundedIcon sx={{ color: streak > 0 ? '#FF6B00' : '#bbb' }} />}
@@ -156,9 +181,27 @@ function App() {
                 border: streak > 0 ? '1px solid #FFE0C2' : '1px solid #e0e0e0',
                 cursor: 'pointer', transition: '0.2s',
                 '&:hover': { backgroundColor: streak > 0 ? '#FFE0C2' : '#e0e0e0' },
-                '& .MuiChip-icon': { color: streak > 0 ? '#FF6B00' : '#bbb' }
+                '& .MuiChip-icon': { color: streak > 0 ? '#FF6B00' : '#bbb' },
+                mr: 1,
               }}
             />
+
+            {/* プロフィールアバター → /profile へ遷移 */}
+            <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
+              <Avatar
+                src={profileData.avatar_url || undefined}
+                sx={{
+                  width: 36, height: 36,
+                  fontSize: '15px', fontWeight: 'bold',
+                  backgroundColor: '#1A73E8',
+                  border: '2px solid #D3E3FD',
+                  transition: 'border-color 0.2s',
+                  '&:hover': { borderColor: '#1A73E8' },
+                }}
+              >
+                {!profileData.avatar_url && avatarLetter}
+              </Avatar>
+            </IconButton>
           </Toolbar>
         </AppBar>
 
@@ -192,12 +235,14 @@ function App() {
               <Route path="/" element={<Navigate to="/home" replace />} />
               <Route path="/login" element={<Navigate to="/home" replace />} />
               <Route path="/home" element={<Home />} />
-              {/* onRecordSaved を渡して保存後にストリークを再取得 */}
+              {/* 記録保存後にストリークを再取得 */}
               <Route path="/record" element={<Record onRecordSaved={fetchStreak} />} />
               <Route path="/report" element={<Report />} />
               <Route path="/materials" element={<Materials />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/materials/add-new-material" element={<AddMaterial />} />
+              {/* プロフィール保存後にヘッダーアバターを再取得 */}
+              <Route path="/profile" element={<Profile onProfileSaved={fetchProfile} />} />
             </Routes>
           </Box>
         </Box>
