@@ -200,7 +200,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
 
   return (
     <>
-      <Dialog open={open} onClose={!isSaving ? onClose : undefined} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}>
+      <Dialog open={open} onClose={(_, reason) => { if (reason === 'backdropClick') return; if (!isSaving) onClose(); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}>
         <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>カテゴリの編集</DialogTitle>
         <DialogContent sx={{ minHeight: '300px' }}>
           {isLoading ? (

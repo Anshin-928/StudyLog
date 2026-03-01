@@ -614,21 +614,21 @@ export default function Report() {
             <SummaryCard
               icon={<WbSunnyRoundedIcon />}
               label="今日の学習時間"
-              value={todayMinutes > 0 ? formatDuration(todayMinutes) : '---'}
+              value={todayMinutes > 0 ? formatDuration(todayMinutes) : '0分'}
               sub={todayMinutes > 0 ? '今日も頑張りました！' : 'まだ記録がありません'}
               color="#FF6B00"
             />
             <SummaryCard
               icon={<DateRangeRoundedIcon />}
               label={`${currentMonth}月の学習時間`}
-              value={thisMonthMinutes > 0 ? formatDuration(thisMonthMinutes) : '---'}
+              value={thisMonthMinutes > 0 ? formatDuration(thisMonthMinutes) : '0分'}
               sub={thisMonthMinutes > 0 ? `${Math.round(thisMonthMinutes / 60 * 10) / 10}時間` : undefined}
               color="#1A73E8"
             />
             <SummaryCard
               icon={<AccessTimeRoundedIcon />}
               label="総学習時間"
-              value={grandTotalMinutes > 0 ? formatDuration(grandTotalMinutes) : '---'}
+              value={grandTotalMinutes > 0 ? formatDuration(grandTotalMinutes) : '0分'}
               sub={grandTotalMinutes > 0 ? `${Math.round(grandTotalMinutes / 60 * 10) / 10}時間` : 'これから積み上げていきましょう'}
               color="#34A853"
             />

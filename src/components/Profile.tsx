@@ -8,7 +8,9 @@ import {
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import { useBlocker } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import NavigationBlockerDialog from './NavigationBlockerDialog';
 import { compressImage } from '../lib/compressImage';
 
 interface ProfileData {
@@ -139,6 +141,12 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   const isDirty = pendingAvatarFile !== null || (profile
     ? displayName !== (profile.display_name || '') || bio !== (profile.bio || '')
     : false);
+
+  // 未保存の変更があるとき離脱ブロック
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
 
   // 表示するアバター：未保存のプレビュー > 保存済みURL > イニシャル
   const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
@@ -281,6 +289,13 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
           </Box>
         </Box>
       )}
+
+      {/* 離脱確認ダイアログ */}
+      <NavigationBlockerDialog
+        open={blocker.state === 'blocked'}
+        onProceed={() => blocker.proceed?.()}
+        onCancel={() => blocker.reset?.()}
+      />
 
       <Snackbar
         open={snackbar.open}

@@ -240,7 +240,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
     <>
       <Dialog
         open={open}
-        onClose={handleClose}
+        onClose={(_, reason) => { if (reason === 'backdropClick') return; handleClose(); }}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { borderRadius: '16px', p: 1, maxHeight: '90vh' } }}
@@ -309,7 +309,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                 <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: '#666' }}>
                   表紙テンプレートを選択
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', p: 2, backgroundColor: '#f9f9f9', borderRadius: '12px' }}>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', p: 2, backgroundColor: '#f9f9f9' }}>
                   {TEMPLATES.map((tmpl) => (
                     <Box
                       key={tmpl.id}
@@ -321,7 +321,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                       }}
                       sx={{
                         width: 48, height: 64,
-                        cursor: 'pointer', borderRadius: '4px', overflow: 'hidden',
+                        cursor: 'pointer', overflow: 'hidden',
                         border: selectedTemplateUrl === tmpl.url && !uploadedImage && !previewUrl
                           ? '3px solid #1A73E8' : '1px solid transparent',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -349,7 +349,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                   <Box sx={{
                     border: (uploadedImage || (previewUrl && !isTemplateUrl(previewUrl)))
                       ? '3px solid #1A73E8' : '2px dashed #ddd',
-                    borderRadius: '12px', p: 3, textAlign: 'center',
+                    p: 3, textAlign: 'center',
                     backgroundColor: uploadedImage ? '#f0f4f9' : '#fafafa',
                     color: '#999', cursor: isSaving ? 'default' : 'pointer', transition: '0.2s',
                     '&:hover': !isSaving ? { borderColor: '#1A73E8', color: '#1A73E8', backgroundColor: '#f0f4f9' } : {},
@@ -359,7 +359,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                         <img
                           src={previewUrl}
                           alt="Preview"
-                          style={{ maxHeight: '140px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                          style={{ maxHeight: '140px', maxWidth: '100%', objectFit: 'contain', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                         />
                         <Typography variant="caption" sx={{ mt: 1.5, display: 'block' }}>
                           クリックで画像を変更

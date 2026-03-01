@@ -21,7 +21,9 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
+import { useBlocker } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import NavigationBlockerDialog from './NavigationBlockerDialog';
 
 interface Material {
   id: string;
@@ -845,13 +847,14 @@ function ManualInputTab({
 // ==========================================
 function StopwatchTab({
   selectedMaterial, onOpenMaterialDialog, onUseTime,
-  useFnRef,
+  useFnRef, pauseFnRef,
   onStateChange,
 }: {
   selectedMaterial: Material | null | 'none';
   onOpenMaterialDialog: () => void;
   onUseTime: (totalMinutes: number) => void;
   useFnRef: React.MutableRefObject<(() => void) | null>;
+  pauseFnRef: React.MutableRefObject<(() => void) | null>;
   onStateChange: (elapsed: number, isRunning: boolean) => void;
 }) {
   const [isRunning, setIsRunning] = useState(false);
@@ -869,6 +872,7 @@ function StopwatchTab({
 
   useEffect(() => {
     useFnRef.current = () => onUseTime(Math.ceil(elapsed / 60));
+    pauseFnRef.current = () => setIsRunning(false);
   });
 
   useEffect(() => {
@@ -975,7 +979,7 @@ function StopwatchTab({
 // ==========================================
 // メインコンポーネント
 // ==========================================
-export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }) {
+export default function Record() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -992,6 +996,7 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
 
   const manualSaveFnRef = useRef<(() => void) | null>(null);
   const swUseFnRef = useRef<(() => void) | null>(null);
+  const swPauseFnRef = useRef<(() => void) | null>(null);
 
   // Snackbar
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -1024,6 +1029,21 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
     setSwElapsed(elapsed);
     setSwIsRunning(isRunning);
   }, []);
+
+  // ストップウォッチ計測中(or一時停止中)は離脱ブロック
+  const shouldBlock = swElapsed > 0;
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      shouldBlock && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // タブ切り替えハンドラ：ストップウォッチ→手動は自動一時停止
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    if (newValue === 0 && swIsRunning) {
+      swPauseFnRef.current?.();
+    }
+    setTabIndex(newValue);
+  };
 
   const fetchMaterials = async () => {
     setIsLoading(true);
@@ -1107,7 +1127,6 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
         ? '教材なし'
         : `「${(selectedMaterial as Material).name}」`;
       showSnackbar(`${label}の記録を保存しました`, 'success');
-      onRecordSaved?.();
 
       setSelectedMaterial(null);
       setPresetHours('');
@@ -1145,15 +1164,15 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
 
       {/* タブ */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
-        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} variant="fullWidth">
+        <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
           <Tab icon={<ModeEditOutlineOutlinedIcon />} iconPosition="start" label="手動入力" sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0' }} />
           <Tab icon={<TimerOutlinedIcon />} iconPosition="start" label="ストップウォッチ" sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0' }} />
         </Tabs>
       </Box>
 
-      {/* タブコンテンツ */}
+      {/* タブコンテンツ：両タブを常時マウントしてstateを保持、CSSで表示切り替え */}
       <Box sx={{ flexGrow: 1, overflowY: 'auto', pb: 3, px: 1 }}>
-        {tabIndex === 0 && (
+        <Box sx={{ display: tabIndex === 0 ? 'block' : 'none' }}>
           <ManualInputTab
             selectedMaterial={selectedMaterial}
             onOpenMaterialDialog={() => setIsDialogOpen(true)}
@@ -1164,16 +1183,17 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
             saveFnRef={manualSaveFnRef}
             onTotalMinutesChange={handleTotalMinutesChange}
           />
-        )}
-        {tabIndex === 1 && (
+        </Box>
+        <Box sx={{ display: tabIndex === 1 ? 'block' : 'none' }}>
           <StopwatchTab
             selectedMaterial={selectedMaterial}
             onOpenMaterialDialog={() => setIsDialogOpen(true)}
             onUseTime={handleUseStopwatchTime}
             useFnRef={swUseFnRef}
+            pauseFnRef={swPauseFnRef}
             onStateChange={handleSwStateChange}
           />
-        )}
+        </Box>
       </Box>
 
       {/* 教材選択モーダル */}
@@ -1184,6 +1204,14 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
         isLoading={isLoading}
         currentMaterial={selectedMaterial}
         onSelect={setSelectedMaterial}
+      />
+
+      {/* 離脱確認ダイアログ */}
+      <NavigationBlockerDialog
+        open={blocker.state === 'blocked'}
+        onProceed={() => blocker.proceed?.()}
+        onCancel={() => blocker.reset?.()}
+        message={'ストップウォッチの計測データが失われます。\nこのページを離れますか？'}
       />
 
       {/* Snackbar */}

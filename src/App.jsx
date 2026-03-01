@@ -1,7 +1,7 @@
 // src/App.jsx
 
-import { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
+import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link } from 'react-router-dom';
 import studyLogLogo from './assets/studyLogLogo.svg';
 import { Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
@@ -20,7 +20,7 @@ import StreakDialog from './components/StreakDialog';
 import Profile from './components/Profile';
 
 // ==========================================
-// ストリーク計算（App レベルで軽量に実行）
+// ストリーク計算
 // ==========================================
 function calcStreakFromDates(isoDates) {
   const dates = new Set(
@@ -30,16 +30,12 @@ function calcStreakFromDates(isoDates) {
       return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
     })
   );
-
   const now = new Date();
   const offset = now.getTimezoneOffset();
   const today = new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
-
   let streak = 0;
   const cursor = new Date();
-
   if (!dates.has(today)) cursor.setDate(cursor.getDate() - 1);
-
   while (true) {
     const off = cursor.getTimezoneOffset();
     const key = new Date(cursor.getTime() - off * 60000).toISOString().slice(0, 10);
@@ -50,75 +46,73 @@ function calcStreakFromDates(isoDates) {
   return streak;
 }
 
-function App() {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
-  // undefined = 確認中, null = 未ログイン, object = ログイン済み
-  const [session, setSession] = useState(undefined);
+// ==========================================
+// Context：ページへコールバックを渡す
+// ==========================================
+export const AppCallbacksContext = createContext({
+  onRecordSaved: () => {},
+  onProfileSaved: () => {},
+});
 
-  // ストリーク用のState
+// ==========================================
+// ルートラッパー（Context から props を注入）
+// ==========================================
+function RecordPage() {
+  const { onRecordSaved } = useContext(AppCallbacksContext);
+  return <Record onRecordSaved={onRecordSaved} />;
+}
+
+function ProfilePage() {
+  const { onProfileSaved } = useContext(AppCallbacksContext);
+  return <Profile onProfileSaved={onProfileSaved} />;
+}
+
+// ==========================================
+// AppShell：レイアウト + セッション/ストリーク/プロフィール管理
+// ==========================================
+function AppShell() {
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [session, setSession] = useState(undefined);
   const [streak, setStreak] = useState(0);
   const [isStreakOpen, setIsStreakOpen] = useState(false);
-
-  // ヘッダーアバター用のState
   const [profileData, setProfileData] = useState({ display_name: '', avatar_url: null });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
     return () => subscription.unsubscribe();
   }, []);
 
-  // ストリーク取得（ログイン後・記録保存後に呼び出す）
   const fetchStreak = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase
-      .from('study_logs')
-      .select('study_datetime')
-      .eq('user_id', user.id);
-
-    if (data) {
-      setStreak(calcStreakFromDates(data.map(d => d.study_datetime)));
-    }
+      .from('study_logs').select('study_datetime').eq('user_id', user.id);
+    if (data) setStreak(calcStreakFromDates(data.map(d => d.study_datetime)));
   }, []);
 
-  // プロフィール取得（ログイン後・プロフィール保存後に呼び出す）
   const fetchProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase
-      .from('profiles')
-      .select('display_name, avatar_url')
-      .eq('id', user.id)
-      .single();
-
-    if (data) {
-      setProfileData({
-        display_name: data.display_name || '',
-        avatar_url: data.avatar_url || null,
-      });
-    }
+      .from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
+    if (data) setProfileData({ display_name: data.display_name || '', avatar_url: data.avatar_url || null });
   }, []);
 
-  // ログイン時にストリーク＆プロフィールをまとめて取得
   useEffect(() => {
     if (!session) return;
     fetchStreak();
     fetchProfile();
   }, [session, fetchStreak, fetchProfile]);
 
-  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+  const callbacks = useMemo(() => ({
+    onRecordSaved: fetchStreak,
+    onProfileSaved: fetchProfile,
+  }), [fetchStreak, fetchProfile]);
 
-  // アバターのフォールバック文字
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
   const avatarLetter = (profileData.display_name || session?.user?.email || '?')[0]?.toUpperCase();
 
-  // セッション確認中
   if (session === undefined) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#F0F4F9' }}>
@@ -127,33 +121,16 @@ function App() {
     );
   }
 
-  // 未ログイン
   if (session === null) {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
-    );
+    return <Navigate to="/login" replace />;
   }
 
-  // ログイン済み
   return (
-    <BrowserRouter>
+    <AppCallbacksContext.Provider value={callbacks}>
       <Box sx={{ display: 'flex', height: '100vh', backgroundColor: '#F0F4F9' }}>
 
         {/* AppBar */}
-        <AppBar
-          position="fixed"
-          sx={{
-            backgroundColor: '#F0F4F9',
-            color: '#333',
-            boxShadow: 'none',
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-          }}
-        >
+        <AppBar position="fixed" sx={{ backgroundColor: '#F0F4F9', color: '#333', boxShadow: 'none', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
           <Toolbar disableGutters sx={{ display: 'flex', alignItems: 'center', px: '16px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <IconButton onClick={toggleSidebar} edge="start" sx={{ ml: 0, mr: 2 }}>
@@ -169,7 +146,7 @@ function App() {
 
             <Box sx={{ flexGrow: 1 }} />
 
-            {/* ストリーク（連続記録） */}
+            {/* ストリーク */}
             <Chip
               icon={<LocalFireDepartmentRoundedIcon sx={{ color: streak > 0 ? '#FF6B00' : '#bbb' }} />}
               label={`${streak}`}
@@ -186,17 +163,14 @@ function App() {
               }}
             />
 
-            {/* プロフィールアバター → /profile へ遷移 */}
+            {/* プロフィールアバター */}
             <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
               <Avatar
                 src={profileData.avatar_url || undefined}
                 sx={{
-                  width: 36, height: 36,
-                  fontSize: '15px', fontWeight: 'bold',
-                  backgroundColor: '#1A73E8',
-                  border: '2px solid #D3E3FD',
-                  transition: 'border-color 0.2s',
-                  '&:hover': { borderColor: '#1A73E8' },
+                  width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
+                  backgroundColor: '#1A73E8', border: '2px solid #D3E3FD',
+                  transition: 'border-color 0.2s', '&:hover': { borderColor: '#1A73E8' },
                 }}
               >
                 {!profileData.avatar_url && avatarLetter}
@@ -209,49 +183,45 @@ function App() {
         <Sidebar isSidebarOpen={isSidebarOpen} />
 
         {/* メイン */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            pb: 2,
-            pr: 2,
-            transition: 'margin-left 0.2s',
-          }}
-        >
+        <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', pb: 2, pr: 2, transition: 'margin-left 0.2s' }}>
           <Toolbar />
           <Box sx={{
-            backgroundColor: '#FFFFFF',
-            flexGrow: 1,
-            borderRadius: '24px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-            overflow: 'hidden',
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
+            backgroundColor: '#FFFFFF', flexGrow: 1, borderRadius: '24px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden',
+            p: 4, display: 'flex', flexDirection: 'column',
           }}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/login" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<Home />} />
-              {/* 記録保存後にストリークを再取得 */}
-              <Route path="/record" element={<Record onRecordSaved={fetchStreak} />} />
-              <Route path="/report" element={<Report />} />
-              <Route path="/materials" element={<Materials />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/materials/add-new-material" element={<AddMaterial />} />
-              {/* プロフィール保存後にヘッダーアバターを再取得 */}
-              <Route path="/profile" element={<Profile onProfileSaved={fetchProfile} />} />
-            </Routes>
+            <Outlet />
           </Box>
         </Box>
 
-        {/* ストリークダイアログ */}
         <StreakDialog open={isStreakOpen} onClose={() => setIsStreakOpen(false)} />
       </Box>
-    </BrowserRouter>
+    </AppCallbacksContext.Provider>
   );
 }
 
-export default App;
+// ==========================================
+// ルーター定義（createBrowserRouter → useBlocker が使える）
+// ==========================================
+const router = createBrowserRouter([
+  { path: '/login', element: <AuthPage /> },
+  {
+    path: '/',
+    element: <AppShell />,
+    children: [
+      { index: true, element: <Navigate to="/home" replace /> },
+      { path: 'login', element: <Navigate to="/home" replace /> },
+      { path: 'home', element: <Home /> },
+      { path: 'record', element: <RecordPage /> },
+      { path: 'report', element: <Report /> },
+      { path: 'materials', element: <Materials /> },
+      { path: 'settings', element: <Settings /> },
+      { path: 'materials/add-new-material', element: <AddMaterial /> },
+      { path: 'profile', element: <ProfilePage /> },
+    ],
+  },
+]);
+
+export default function App() {
+  return <RouterProvider router={router} />;
+}
