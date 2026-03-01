@@ -71,8 +71,8 @@ export default function AddMaterial() {
   // ==========================================
   // 検索タブ用 State
   // ==========================================
-  const RAKUTEN_APP_ID = import.meta.env.VITE_RAKUTEN_APP_ID;
-  const RAKUTEN_ACCESS_KEY = import.meta.env.VITE_RAKUTEN_ACCESS_KEY;
+  const RAKUTEN_APP_ID = (import.meta as any).env.VITE_RAKUTEN_APP_ID;
+  const RAKUTEN_ACCESS_KEY = (import.meta as any).env.VITE_RAKUTEN_ACCESS_KEY;
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -108,12 +108,12 @@ export default function AddMaterial() {
   // ==========================================
   // ユーティリティ: カテゴリ名 → id（なければ INSERT）
   // ==========================================
-  const resolveCategory = async (name: string): Promise<string> => {
+  const resolveCategory = async (name: string, userId: string): Promise<string> => {
     const { data: existing } = await supabase
-      .from('categories').select('id').eq('name', name).single();
+      .from('categories').select('id').eq('name', name).eq('user_id', userId).single();
     if (existing) return existing.id;
 
-    const insertData: any = { name };
+    const insertData: any = { name, user_id: userId };
     if (name === 'カテゴリなし') insertData.color_code = '#9E9E9E';
 
     const { data: created, error } = await supabase
@@ -184,10 +184,14 @@ export default function AddMaterial() {
 
     setIsAdding(true);
     try {
-      const categoryId = await resolveCategory(categoryName);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const categoryId = await resolveCategory(categoryName, user.id);
 
       const { error } = await supabase.from('materials').insert([{
         category_id: categoryId,
+        user_id: user.id,
         title: pendingBook.title,
         image_url: imageUrl || '/images/templates/book_gray.png',
         unit: searchUnit,
@@ -228,6 +232,9 @@ export default function AddMaterial() {
 
     setIsAdding(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       let finalImageUrl = selectedTemplate;
 
       if (originalImage) {
@@ -244,10 +251,11 @@ export default function AddMaterial() {
         finalImageUrl = publicUrlData.publicUrl;
       }
 
-      const categoryId = await resolveCategory(categoryName);
+      const categoryId = await resolveCategory(categoryName, user.id);
 
       const { error } = await supabase.from('materials').insert([{
         category_id: categoryId,
+        user_id: user.id,
         title: originalTitle.trim(),
         image_url: finalImageUrl,
         unit: originalUnit,

@@ -145,17 +145,30 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
 
     setIsSaving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       // ① カテゴリの解決（既存 or 新規作成 or カテゴリなし）
       let categoryId: string;
+      const categoryName = !selectedCategory
+        ? 'カテゴリなし'
+        : selectedCategory.isNew
+          ? selectedCategory.name
+          : selectedCategory.name;
 
-      if (!selectedCategory) {
-        // カテゴリなしを取得 or 作成
-        categoryId = await resolveCategory('カテゴリなし', '#9E9E9E');
-      } else if (selectedCategory.isNew) {
-        // 新しいカテゴリとして作成
-        categoryId = await resolveCategory(selectedCategory.name);
+      // ユーザー自身のカテゴリから検索
+      const { data: existing } = await supabase
+        .from('categories').select('id').eq('name', categoryName).eq('user_id', user.id).single();
+
+      if (existing) {
+        categoryId = existing.id;
       } else {
-        categoryId = selectedCategory.id;
+        const insertData: any = { name: categoryName, user_id: user.id };
+        if (categoryName === 'カテゴリなし') insertData.color_code = '#9E9E9E';
+        const { data: created, error: catError } = await supabase
+          .from('categories').insert([insertData]).select().single();
+        if (catError) throw catError;
+        categoryId = created.id;
       }
 
       // ② 画像 URL の解決

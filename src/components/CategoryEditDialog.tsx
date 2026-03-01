@@ -152,16 +152,19 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       let nullCategoryId;
-      const { data: nullCat } = await supabase.from('categories').select('id').eq('name', 'カテゴリなし').single();
+      const { data: nullCat } = await supabase.from('categories').select('id').eq('name', 'カテゴリなし').eq('user_id', user.id).single();
       if (nullCat) {
         nullCategoryId = nullCat.id;
       } else {
-        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: '#9E9E9E', sort_order: 0 }]).select().single();
+        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: '#9E9E9E', sort_order: 0, user_id: user.id }]).select().single();
         nullCategoryId = newNullCat?.id;
       }
 
-      const { data: dbCategories } = await supabase.from('categories').select('id');
+      const { data: dbCategories } = await supabase.from('categories').select('id').eq('user_id', user.id);
       const currentIds = categories.filter(c => !c.id.startsWith('new-')).map(c => c.id);
 
       const deletedIds = dbCategories
@@ -176,7 +179,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
 
       await Promise.all(categories.map((cat, i) => {
         if (cat.id.startsWith('new-')) {
-          return supabase.from('categories').insert([{ name: cat.name, color_code: cat.color_code, sort_order: i }]);
+          return supabase.from('categories').insert([{ name: cat.name, color_code: cat.color_code, sort_order: i, user_id: user.id }]);
         } else {
           return supabase.from('categories').update({ name: cat.name, color_code: cat.color_code, sort_order: i }).eq('id', cat.id);
         }

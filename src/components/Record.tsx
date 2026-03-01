@@ -1028,10 +1028,13 @@ export default function Record() {
   const fetchMaterials = async () => {
     setIsLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { data, error } = await supabase
         .from('materials')
         .select('id, title, image_url, unit, categories ( name, color_code, sort_order )')
         .eq('status', 'active')
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
       if (data) {
@@ -1072,6 +1075,9 @@ export default function Record() {
 
     setIsSaving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       let imageUrl: string | null = null;
       if (image) {
         const fileExt = image.name.split('.').pop();
@@ -1087,6 +1093,7 @@ export default function Record() {
         ? (selectedMaterial as Material).id : null;
 
       const { error } = await supabase.from('study_logs').insert([{
+        user_id: user.id,
         material_id: materialId,
         study_datetime: new Date(datetime).toISOString(),
         duration_minutes: totalMinutes > 0 ? totalMinutes : null,
