@@ -1,7 +1,7 @@
-// src/components/Materials.tsx
+// // src/components/Materials.tsx
 
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useBlocker } from 'react-router-dom';
 import {
   Box, Typography, Grid, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon, Tooltip,
   Snackbar, Alert
@@ -17,6 +17,7 @@ import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
 
 import MaterialCard from './MaterialCard';
 import { supabase } from '../lib/supabase';
+import NavigationBlockerDialog from './NavigationBlockerDialog';
 
 // ==========================================
 // 型定義
@@ -83,6 +84,12 @@ export default function Materials() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isReorderMode, setIsReorderMode] = useState(false);
+
+  // 並べ替えモード中は離脱ブロック
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isReorderMode && currentLocation.pathname !== nextLocation.pathname
+  );
   const [draggedMaterialId, setDraggedMaterialId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -674,6 +681,14 @@ export default function Materials() {
           fetchMaterials();
           showSnackbar("教材を更新しました", "success");
         }}
+      />
+
+      {/* 離脱確認ダイアログ */}
+      <NavigationBlockerDialog
+        open={blocker.state === 'blocked'}
+        onProceed={() => blocker.proceed?.()}
+        onCancel={() => blocker.reset?.()}
+        message={'並べ替えの変更が保存されていません。\nこのページを離れると、変更が破棄されます。'}
       />
 
       <Snackbar

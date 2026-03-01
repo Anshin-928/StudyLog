@@ -6,11 +6,12 @@ import {
   Card, CardMedia, CardContent, Chip, Tabs, Tab,
   Dialog, DialogTitle, DialogContent, DialogActions,
   IconButton, Divider, ListItemButton, ListItemText, ListItemIcon,
-  Snackbar, Alert,
+  Snackbar, Alert, Fade,
 } from '@mui/material';
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
@@ -21,7 +22,7 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
-import { useBlocker } from 'react-router-dom';
+import { useBlocker, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
 
@@ -1008,6 +1009,8 @@ export default function Record() {
   const manualSaveFnRef = useRef<(() => void) | null>(null);
   const swUseFnRef = useRef<(() => void) | null>(null);
   const swPauseFnRef = useRef<(() => void) | null>(null);
+  // 保存後の自動遷移中はブロックしないためのフラグ
+  const isSaveNavigatingRef = useRef(false);
 
   const [manualIsDirty, setManualIsDirty] = useState(false);
   const handleManualDirtyChange = useCallback((dirty: boolean) => {
@@ -1015,6 +1018,8 @@ export default function Record() {
   }, []);
 
   // Snackbar
+  const navigate = useNavigate();
+
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
   });
@@ -1022,6 +1027,10 @@ export default function Record() {
     setSnackbar({ open: true, message, severity });
   };
   const handleSnackbarClose = () => setSnackbar((s) => ({ ...s, open: false }));
+
+  // 保存完了ポップアップ用
+  const [savePopupOpen, setSavePopupOpen] = useState(false);
+  const [savePopupLabel, setSavePopupLabel] = useState('');
 
   // ヘッダーボタンの disabled 条件
   const headerButtonDisabled =
@@ -1047,7 +1056,7 @@ export default function Record() {
   }, []);
 
   // 手動入力に何か入力中 or ストップウォッチに経過時間あり → 離脱ブロック
-  const shouldBlock = manualIsDirty || swElapsed > 0;
+  const shouldBlock = !isSaveNavigatingRef.current && (manualIsDirty || swElapsed > 0);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       shouldBlock && currentLocation.pathname !== nextLocation.pathname
@@ -1141,14 +1150,25 @@ export default function Record() {
 
       const label = selectedMaterial === 'none'
         ? '教材なし'
-        : `「${(selectedMaterial as Material).name}」`;
-      showSnackbar(`${label}の記録を保存しました`, 'success');
+        : (selectedMaterial as Material).name;
 
+      // フォームをリセット
       setSelectedMaterial(null);
       setPresetHours('');
       setPresetMinutes('');
+      setManualIsDirty(false);
+
+      // 中央ポップアップを表示して1.5秒後にレポートへ遷移
+      setSavePopupLabel(label);
+      setSavePopupOpen(true);
+      isSaveNavigatingRef.current = true;
+      setTimeout(() => {
+        setSavePopupOpen(false);
+        navigate('/report');
+      }, 1500);
     } catch (error) {
       console.error('保存エラー:', error);
+      isSaveNavigatingRef.current = false; // 保存失敗時はブロック機能を復帰
       showSnackbar('保存に失敗しました。時間をおいて再度お試しください。', 'error');
     } finally {
       setIsSaving(false);
@@ -1222,6 +1242,33 @@ export default function Record() {
         currentMaterial={selectedMaterial}
         onSelect={setSelectedMaterial}
       />
+
+      {/* 保存完了ポップアップ */}
+      <Fade in={savePopupOpen} timeout={300}>
+        <Box sx={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.35)',
+          pointerEvents: 'none',
+        }}>
+          <Box sx={{
+            backgroundColor: '#fff',
+            borderRadius: '24px',
+            px: 5, py: 4,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+            minWidth: '260px',
+          }}>
+            <CheckCircleOutlineIcon sx={{ fontSize: '64px', color: '#34A853' }} />
+            <Typography sx={{ fontWeight: 'bold', fontSize: '20px', color: '#222' }}>
+              記録しました！
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#888', textAlign: 'center' }}>
+              {savePopupLabel}
+            </Typography>
+          </Box>
+        </Box>
+      </Fade>
 
       {/* 離脱確認ダイアログ（状況に応じてメッセージを出し分け） */}
       <NavigationBlockerDialog
