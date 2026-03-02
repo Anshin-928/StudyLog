@@ -7,13 +7,14 @@ import {
 } from '@mui/material';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
-import WbSunnyRoundedIcon from '@mui/icons-material/WbSunnyRounded';
 import DateRangeRoundedIcon from '@mui/icons-material/DateRangeRounded';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import InsightsIcon from '@mui/icons-material/Insights';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell,
 } from 'recharts';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { supabase } from '../lib/supabase';
 
 // ==========================================
@@ -63,6 +64,11 @@ function formatDuration(mins: number): string {
   const m = mins % 60;
   if (h === 0) return `${m}分`;
   return m > 0 ? `${h}時間${m}分` : `${h}時間`;
+}
+
+function formatDurationHoursOnly(mins: number): string {
+  const h = Math.floor(mins / 60); // 端数の分は切り捨てて整数(int)にする
+  return `${h}時間`;
 }
 
 function formatDurationShort(mins: number): string {
@@ -282,42 +288,44 @@ const CustomPieTooltip = ({ active, payload }: any) => {
 // サマリーカード
 // ==========================================
 function SummaryCard({
-  icon, label, value, sub, color = '#1A73E8',
+  icon, label, value, color = '#1A73E8'
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  sub?: string;
   color?: string;
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <Card sx={{
-      flex: 1, minWidth: '160px',
+      flex: 1, minWidth: 0,
       borderRadius: '16px', border: '1px solid #f0f0f0',
       boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
       transition: '0.2s',
       '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.1)', transform: 'translateY(-2px)' },
     }}>
-      <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+      <CardContent sx={{ p: isMobile ? 0.9 : 2.5, '&:last-child': { pb: isMobile ? 1.5 : 2.5 } }}>
         <Box sx={{
-          width: 38, height: 38, borderRadius: '11px',
+          width: isMobile ? 28 : 38, height: isMobile ? 28 : 38,
+          borderRadius: '11px',
           backgroundColor: `${color}18`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color, mb: 1.5,
+          '& svg': { fontSize: isMobile ? '18px' : '24px' }
         }}>
           {icon}
         </Box>
-        <Typography variant="caption" sx={{ color: '#999', fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+        <Typography variant="caption" sx={{ color: '#999', fontWeight: 'bold', display: 'block', mb: 0.5,
+          fontSize: '12px',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+         }}>
           {label}
         </Typography>
-        <Typography sx={{ fontWeight: 'bold', fontSize: '22px', color: '#222', lineHeight: 1.2 }}>
+        <Typography sx={{ fontWeight: 'bold', fontSize: isMobile ? '18px' : '22px', color: '#222', lineHeight: 1.2 }}>
           {value}
         </Typography>
-        {sub && (
-          <Typography variant="caption" sx={{ color: '#bbb', display: 'block', mt: 0.5 }}>
-            {sub}
-          </Typography>
-        )}
       </CardContent>
     </Card>
   );
@@ -354,25 +362,39 @@ function MaterialRanking({
               }}>
                 {i + 1}
               </Typography>
+              
               {item.image ? (
-                <Avatar
-                  src={item.image} variant="rounded"
-                  sx={{ width: 32, height: 32, flexShrink: 0, backgroundColor: '#f5f5f5' }}
+                <Box
+                  component="img"
+                  src={item.image}
+                  sx={{ 
+                    width: 32, height: 44, flexShrink: 0, 
+                    objectFit: 'cover', borderRadius: '4px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)' 
+                  }}
                 />
               ) : (
-                <Avatar variant="rounded" sx={{
-                  width: 32, height: 32, flexShrink: 0,
+                <Box sx={{
+                  width: 32, height: 44, flexShrink: 0, borderRadius: '4px',
                   backgroundColor: `${item.color}18`, color: item.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                  <MenuBookOutlinedIcon sx={{ fontSize: '16px' }} />
-                </Avatar>
+                  <MenuBookOutlinedIcon sx={{ fontSize: '18px' }} />
+                </Box>
               )}
+
               <Typography sx={{
                 fontSize: '13px', fontWeight: 'bold', color: '#333',
-                flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                flexGrow: 1, minWidth: 0, 
+                display: '-webkit-box', 
+                overflow: 'hidden', 
+                WebkitBoxOrient: 'vertical', 
+                WebkitLineClamp: 2,
+                lineHeight: 1.3,
               }}>
                 {item.name}
               </Typography>
+
               <Typography sx={{ fontSize: '13px', fontWeight: 'bold', color: '#555', flexShrink: 0, whiteSpace: 'nowrap' }}>
                 {formatDuration(item.value)}
               </Typography>
@@ -408,12 +430,19 @@ function PieLegend({ pieData, total }: { pieData: PieItem[]; total: number }) {
         return (
           <Box key={item.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }} />
+
             <Typography sx={{
               fontSize: '13px', fontWeight: 'bold', color: '#333',
-              flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              flexGrow: 1, minWidth: 0, 
+              display: '-webkit-box', 
+              overflow: 'hidden', 
+              WebkitBoxOrient: 'vertical', 
+              WebkitLineClamp: 2,
+              lineHeight: 1.3,
             }}>
               {item.name}
             </Typography>
+
             <Typography variant="caption" sx={{ color: '#888', whiteSpace: 'nowrap', flexShrink: 0 }}>
               {formatDuration(item.value)}
             </Typography>
@@ -470,6 +499,8 @@ function PeriodToggle({
 // メインコンポーネント
 // ==========================================
 export default function Report() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState<Period>('7d');
   const [isLoading, setIsLoading] = useState(true);
   const [allLogs, setAllLogs] = useState<LogEntry[]>([]);
@@ -563,13 +594,22 @@ export default function Report() {
     [periodLogs],
   );
 
-  // 棒グラフの最大値
-  const barMax = useMemo(() => {
+  const { barMax, yTicks } = useMemo(() => {
     const max = Math.max(...barData.map(d => {
       return pieData.reduce((sum, p) => sum + ((d[p.key] as number) || 0), 0);
     }), 1);
-    const step = max <= 60 ? 30 : max <= 180 ? 60 : max <= 360 ? 120 : 180;
-    return Math.ceil(max / step) * step;
+    
+    // 最大値に合わせて、キリの良いステップ（刻み幅）を決定
+    const step = max <= 60 ? 15 : max <= 180 ? 30 : max <= 360 ? 60 : 120;
+    const calculatedMax = Math.ceil(max / step) * step;
+
+    // 0 から最大値まで、step刻みで目盛りの配列を作る
+    const ticks = [];
+    for (let i = 0; i <= calculatedMax; i += step) {
+      ticks.push(i);
+    }
+
+    return { barMax: calculatedMax, yTicks: ticks };
   }, [barData, pieData]);
 
   // 円グラフ用：合計を付加
@@ -595,11 +635,11 @@ export default function Report() {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
 
       {/* ヘッダー（期間トグルなし） */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: '32px' } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
           <BarChartOutlinedIcon />
         </Box>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>レポート</Typography>
+        <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>レポート</Typography>
       </Box>
 
       {isLoading ? (
@@ -607,29 +647,32 @@ export default function Report() {
           <CircularProgress />
         </Box>
       ) : (
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.5 }}>
+        <Box sx={{ 
+          flexGrow: 1, 
+          overflowY: 'auto', 
+          overflowX: 'hidden',
+          px: 0,
+          pb: 0 
+        }}>
 
           {/* ========== サマリーカード（固定3枚） ========== */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: isMobile ? 0.5 : 2, mb: isMobile ? 2 : 3 }}>
             <SummaryCard
-              icon={<WbSunnyRoundedIcon />}
+              icon={<AccessTimeRoundedIcon />}
               label="今日の学習時間"
               value={formatDuration(todayMinutes)}
-              sub={todayMinutes > 0 ? '今日も頑張りました！' : 'まだ記録がありません'}
               color="#FF6B00"
             />
             <SummaryCard
               icon={<DateRangeRoundedIcon />}
               label={`${currentMonth}月の学習時間`}
-              value={formatDuration(thisMonthMinutes)}
-              sub={thisMonthMinutes >= 60 && thisMonthMinutes % 60 !== 0 ? `${Math.round(thisMonthMinutes / 60 * 10) / 10}時間` : undefined}
+              value={formatDurationHoursOnly(thisMonthMinutes)}
               color="#1A73E8"
             />
             <SummaryCard
-              icon={<AccessTimeRoundedIcon />}
+              icon={<InsightsIcon />}
               label="総学習時間"
-              value={formatDuration(grandTotalMinutes)}
-              sub={grandTotalMinutes >= 60 && grandTotalMinutes % 60 !== 0 ? `${Math.round(grandTotalMinutes / 60 * 10) / 10}時間` : grandTotalMinutes === 0 ? 'これから積み上げていきましょう' : undefined}
+              value={formatDurationHoursOnly(grandTotalMinutes)}
               color="#34A853"
             />
           </Box>
@@ -637,7 +680,9 @@ export default function Report() {
           {/* ========== 積み上げ棒グラフ（期間トグル付き） ========== */}
           <Box sx={{
             backgroundColor: '#fff', borderRadius: '20px',
-            border: '1px solid #f0f0f0', p: 3, mb: 3,
+            border: '1px solid #f0f0f0', 
+            p: isMobile ? 2 : 3,
+            mb: isMobile ? 2 : 3,
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 1 }}>
@@ -653,7 +698,7 @@ export default function Report() {
                 <Typography variant="body2">この期間の記録はありません</Typography>
               </Box>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
                 <BarChart
                   data={barData}
                   margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
@@ -672,8 +717,9 @@ export default function Report() {
                     tick={{ fontSize: 11, fill: '#aaa' }}
                     axisLine={false}
                     tickLine={false}
-                    width={42}
+                    width={isMobile ? 42 : 60}
                     domain={[0, barMax]}
+                    ticks={yTicks}
                   />
                   <Tooltip
                     content={(props) => <CustomStackedBarTooltip {...props} pieData={pieData} />}
@@ -695,13 +741,15 @@ export default function Report() {
           </Box>
 
           {/* ========== 円グラフ + 教材ランキング（期間トグルに連動） ========== */}
-          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1.5 : 3, mb: 2 }}>
 
             {/* 円グラフ */}
             <Box sx={{
-              flex: '1 1 300px',
+              flex: 1,
+              minWidth: 0,
               backgroundColor: '#fff', borderRadius: '20px',
-              border: '1px solid #f0f0f0', p: 3,
+              border: '1px solid #f0f0f0', 
+              p: isMobile ? 2 : 3,
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
             }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#333', mb: 2 }}>
@@ -718,9 +766,7 @@ export default function Report() {
                 </Box>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                  {/* ★ z-index 修正: 中央テキストを下層に配置し、Tooltipが上に来るようにする */}
                   <Box sx={{ position: 'relative', width: '100%' }}>
-                    {/* 中央の合計テキスト（z-index: 0 = 背面） */}
                     <Box sx={{
                       position: 'absolute', top: '50%', left: '50%',
                       transform: 'translate(-50%, -50%)',
@@ -763,7 +809,8 @@ export default function Report() {
 
             {/* 教材ランキング */}
             <Box sx={{
-              flex: '1 1 300px',
+              flex: 1,
+              minWidth: 0 ,
               backgroundColor: '#fff', borderRadius: '20px',
               border: '1px solid #f0f0f0', p: 3,
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)',

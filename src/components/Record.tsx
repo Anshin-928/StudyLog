@@ -6,7 +6,7 @@ import {
   Card, CardMedia, CardContent, Chip, Tabs, Tab,
   Dialog, DialogTitle, DialogContent, DialogActions,
   IconButton, Divider, ListItemButton, ListItemText, ListItemIcon,
-  Snackbar, Alert, Fade,
+  Snackbar, Alert, Fade, useMediaQuery, useTheme,
 } from '@mui/material';
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
@@ -1003,6 +1003,9 @@ export default function Record() {
   const [presetMinutes, setPresetMinutes] = useState('');
 
   const [manualTotalMinutes, setManualTotalMinutes] = useState(0);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [swElapsed, setSwElapsed] = useState(0);
   const [swIsRunning, setSwIsRunning] = useState(false);
 
@@ -1179,35 +1182,45 @@ export default function Record() {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
 
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, color: '#333' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isMobile ? 2 : 4, color: '#333' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: '32px' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
             <ModeEditOutlineOutlinedIcon />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>記録の入力</Typography>
+          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>記録の入力</Typography>
         </Box>
         <Button
           variant="contained"
-          size="large"
+          size={isMobile ? 'medium' : 'large'}
           disableElevation
           disabled={headerButtonDisabled}
           onClick={handleHeaderAction}
-          sx={{ borderRadius: '5px', fontWeight: 'bold', px: 3, boxShadow: 'none' }}
+          sx={{ borderRadius: '5px', fontWeight: 'bold', px: isMobile ? 2 : 3, boxShadow: 'none' }}
         >
           {tabIndex === 0 ? '記録する' : '完了'}
         </Button>
       </Box>
 
       {/* タブ */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: isMobile ? 2 : 4 }}>
         <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
-          <Tab icon={<ModeEditOutlineOutlinedIcon />} iconPosition="start" label="手動入力" sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0' }} />
-          <Tab icon={<TimerOutlinedIcon />} iconPosition="start" label="ストップウォッチ" sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0' }} />
+          <Tab
+            icon={isMobile ? undefined : <ModeEditOutlineOutlinedIcon />}
+            iconPosition="start"
+            label="手動入力"
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '40px' : '48px' }}
+          />
+          <Tab
+            icon={isMobile ? undefined : <TimerOutlinedIcon />}
+            iconPosition="start"
+            label="ストップウォッチ"
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '40px' : '48px' }}
+          />
         </Tabs>
       </Box>
 
       {/* タブコンテンツ：両タブを常時マウントしてstateを保持、CSSで表示切り替え */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', pb: 3, px: 1 }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', pb: isMobile ? 0 : 3, px: isMobile ? 0 : 1 }}>
         <Box sx={{ display: tabIndex === 0 ? 'block' : 'none' }}>
           <ManualInputTab
             selectedMaterial={selectedMaterial}

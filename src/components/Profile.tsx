@@ -161,18 +161,22 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
       {/* ページヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, color: '#333' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: '32px' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
             <AccountCircleOutlinedIcon />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>マイプロフィール</Typography>
+          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>マイプロフィール</Typography>
         </Box>
         <Button
           variant="contained"
-          size="large"
+          size='large'
           disableElevation
           disabled={!isDirty || isSaving}
           onClick={handleSave}
-          sx={{ borderRadius: '5px', fontWeight: 'bold', px: 3 }}
+          sx={{ 
+            borderRadius: '5px', 
+            fontWeight: 'bold', 
+            px: isMobile ? 2 : 3,
+          }}
         >
           {isSaving ? <CircularProgress size={20} color="inherit" /> : '保存する'}
         </Button>
@@ -187,7 +191,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
 
           {/* プロフィール編集カード */}
           <Box sx={{ backgroundColor: '#f8faff', border: '1px solid #e8eef8', borderRadius: '16px', p: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' }, gap: { xs: 2, sm: 4 } }}>
 
               {/* アバター */}
               <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
@@ -206,7 +210,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                       position: 'absolute', inset: 0, borderRadius: '50%',
                       backgroundColor: 'rgba(0,0,0,0.38)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: 0, transition: 'opacity 0.2s',
+                      opacity: isMobile ? 0.7 : 0, transition: 'opacity 0.2s',
                       cursor: isSaving ? 'default' : 'pointer',
                       '&:hover': { opacity: 1 },
                     }}
@@ -221,7 +225,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     onChange={handleAvatarChange}
                   />
                 </Box>
-                <Typography variant="caption" sx={{ color: '#999', textAlign: 'center', lineHeight: 1.4 }}>
+                <Typography variant="caption" sx={{ color: '#999', textAlign: 'center', lineHeight: 1.4, display: { xs: 'none', sm: 'block' } }}>
                   クリックで変更
                 </Typography>
                 {pendingAvatarFile && (
@@ -232,7 +236,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
               </Box>
 
               {/* 表示名・自己紹介 */}
-              <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2.5, width: { xs: '100%', sm: 'auto' } }}>
                 <TextField
                   label="表示名"
                   value={displayName}

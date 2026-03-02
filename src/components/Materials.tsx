@@ -1,10 +1,10 @@
-// // src/components/Materials.tsx
+// src/components/Materials.tsx
 
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import { useNavigate, useBlocker } from 'react-router-dom';
 import {
   Box, Typography, Grid, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon, Tooltip,
-  Snackbar, Alert
+  Snackbar, Alert, useMediaQuery, useTheme,
 } from '@mui/material';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import AddIcon from '@mui/icons-material/Add';
@@ -83,6 +83,9 @@ export default function Materials() {
   const [isLoading, setIsLoading] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [isReorderMode, setIsReorderMode] = useState(false);
 
   // 並べ替えモード中は離脱ブロック
@@ -499,15 +502,15 @@ export default function Materials() {
   // レンダリング
   // ==========================================
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
 
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: '#333', justifyContent: 'space-between' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 4, color: '#333', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: '32px' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
             <MenuBookOutlinedIcon />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>
             {isReorderMode ? '教材の並べ替え' : '教材管理'}
           </Typography>
         </Box>
@@ -524,7 +527,7 @@ export default function Materials() {
             {isSaving ? '保存中...' : '完了'}
           </Button>
         ) : (
-          <Box sx={{ display: 'flex', alignContent: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignContent: 'center', gap: isMobile ? 0.3 : 2 }}>
             <Tooltip title="カテゴリや教材の整理">
               <IconButton
                 onClick={handleMenuOpen}
@@ -553,9 +556,18 @@ export default function Materials() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              size="large"
+              size={isMobile ? 'small' : 'large'}
               onClick={() => navigate('/materials/add-new-material')}
-              sx={{ borderRadius: '5px', boxShadow: 'none', fontWeight: 'bold', px: 3 }}
+              sx={{ 
+                borderRadius: '5px', 
+                boxShadow: 'none', 
+                fontWeight: 'bold', 
+                px: isMobile ? 1.5 : 3,
+                '& .MuiButton-startIcon': {
+                  marginRight: isMobile ? '4px' : '8px',
+                  marginLeft: isMobile ? '-4px' : '-4px',
+                }
+              }}
             >
               教材を追加
             </Button>
@@ -575,8 +587,8 @@ export default function Materials() {
           <Typography variant="body2">右上のボタンから追加してみましょう！</Typography>
         </Box>
       ) : (
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 1, px: 1.5, pb: 3, pt: 1 }}>
-          <Grid container spacing={4} direction="column">
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', px: isMobile ? 1 : 1, pr: isMobile ? 1 : 1, pb: isMobile ? 0 : 3, pt: 1 }}>
+          <Grid container spacing={isMobile ? 2 : 4} direction="column">
             {sortedCategoryEntries.map(([categoryName, items, catInfo]) => {
               const groupColor = catInfo?.colorCode ?? items[0]?.colorCode ?? '#1A73E8';
               const isEmpty = items.length === 0;
@@ -587,7 +599,7 @@ export default function Materials() {
                 <Grid size={12} key={categoryName} sx={{ mb: 2 }}>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: 'bold', color: '#333', mb: 2, pl: 1, borderLeft: `4px solid ${groupColor}` }}
+                    sx={{ fontWeight: 'bold', color: '#333', mb: 2, pl: 1.5, borderLeft: `4px solid ${groupColor}` }}
                   >
                     {categoryName}
                   </Typography>
@@ -596,15 +608,18 @@ export default function Materials() {
                     ref={(el: HTMLDivElement | null) => { categoryContainerRefs.current[categoryName] = el; }}
                     onDragOver={(e) => isReorderMode && handleContainerDragOver(e, categoryName)}
                     sx={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 2,
+                      display: 'grid',
+                      gridTemplateColumns: isMobile
+                        ? 'repeat(3, 1fr)'
+                        : 'repeat(auto-fill, 195px)',
+                      gap: isMobile ? 1 : 2,
                       ...(isReorderMode && isEmpty && {
                         minHeight: '100px',
                         borderRadius: '12px',
                         border: '2px dashed #ccc',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        display: 'flex',
                       }),
                     }}
                   >

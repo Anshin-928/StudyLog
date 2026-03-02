@@ -86,34 +86,44 @@ const bottomNavItems = [
 function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentIndex = bottomNavItems.findIndex(item => location.pathname.startsWith(item.path));
+  
+  const currentPath = bottomNavItems.find(item => location.pathname.startsWith(item.path))?.path || false;
 
   return (
-    <Paper
-      elevation={0}
+    <Box
       sx={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
         borderTop: '1px solid #e8e8e8',
         backgroundColor: '#fff',
-        // iOS SafeArea 対応
-        pb: 'env(safe-area-inset-bottom)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
+      {/* 子要素のonClickではなく、親のonChangeで一括管理する */}
       <BottomNavigation
-        value={currentIndex === -1 ? false : currentIndex}
-        onChange={(_, newIndex) => navigate(bottomNavItems[newIndex].path)}
+        value={currentPath}
+        onChange={(event, newValue) => {
+          navigate(newValue);
+        }}
         sx={{ backgroundColor: 'transparent', height: 56 }}
       >
         {bottomNavItems.map((item) => (
           <BottomNavigationAction
             key={item.path}
+            value={item.path}
             label={item.label}
             icon={item.icon}
             showLabel
+
+            onTouchStart={(e) => {
+              navigate(item.path);
+            }}
+
             sx={{
               minWidth: 0,
-              fontSize: '10px',
               color: '#aaa',
+              borderRadius: '20px',
+              m: '4px',
+              p: '4px',
               '&.Mui-selected': { color: '#1A73E8' },
               '& .MuiBottomNavigationAction-label': {
                 fontSize: '10px',
@@ -123,7 +133,7 @@ function BottomNav() {
           />
         ))}
       </BottomNavigation>
-    </Paper>
+    </Box>
   );
 }
 
