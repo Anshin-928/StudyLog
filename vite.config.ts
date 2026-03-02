@@ -13,6 +13,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    allowedHosts: true,
+
     proxy: {
       // '/api/rakuten' という宛先に来たリクエストを、楽天のサーバーに横流しする
       '/api/rakuten': {

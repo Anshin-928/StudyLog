@@ -8,6 +8,7 @@ import {
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import studyLogLogo from '../assets/studyLogLogo.svg';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function AuthPage() {
@@ -19,6 +20,7 @@ export default function AuthPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const navigate = useNavigate();
   const isLogin = tabIndex === 0;
 
   const handleTabChange = (_, newValue) => {
@@ -47,13 +49,12 @@ export default function AuthPage() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // ログイン成功 → App.jsx の onAuthStateChange が検知して自動リダイレクト
+        navigate('/home', { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         setSuccessMessage('アカウントを作成しました！ログインしています...');
-        // Confirm email をオフにしているので、サインアップ直後にセッションが張られ
-        // onAuthStateChange が検知して自動リダイレクトされます
+        navigate('/home', { replace: true });
       }
     } catch (error) {
       // Supabase のエラーメッセージを日本語に変換

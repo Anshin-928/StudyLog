@@ -1,11 +1,19 @@
 // src/App.jsx
 
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
-import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import studyLogLogo from './assets/studyLogLogo.svg';
-import { Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar } from '@mui/material';
+import {
+  Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar,
+  BottomNavigation, BottomNavigationAction, Paper, useMediaQuery, useTheme,
+} from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
+import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 
 import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
@@ -47,16 +55,13 @@ function calcStreakFromDates(isoDates) {
 }
 
 // ==========================================
-// Context：ページへコールバックを渡す
+// Context
 // ==========================================
 export const AppCallbacksContext = createContext({
   onRecordSaved: () => {},
   onProfileSaved: () => {},
 });
 
-// ==========================================
-// ルートラッパー（Context から props を注入）
-// ==========================================
 function RecordPage() {
   const { onRecordSaved } = useContext(AppCallbacksContext);
   return <Record onRecordSaved={onRecordSaved} />;
@@ -68,7 +73,62 @@ function ProfilePage() {
 }
 
 // ==========================================
-// AppShell：レイアウト + セッション/ストリーク/プロフィール管理
+// ボトムナビゲーション（スマホ専用）
+// ==========================================
+const bottomNavItems = [
+  { label: 'ホーム',   path: '/home',      icon: <HomeOutlinedIcon /> },
+  { label: '記録する', path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
+  { label: 'レポート', path: '/report',    icon: <BarChartOutlinedIcon /> },
+  { label: '教材',     path: '/materials', icon: <MenuBookOutlinedIcon /> },
+  { label: 'プロフィール', path: '/profile', icon: <AccountCircleOutlinedIcon /> },
+];
+
+function BottomNav() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentIndex = bottomNavItems.findIndex(item => location.pathname.startsWith(item.path));
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
+        borderTop: '1px solid #e8e8e8',
+        backgroundColor: '#fff',
+        // iOS SafeArea 対応
+        pb: 'env(safe-area-inset-bottom)',
+      }}
+    >
+      <BottomNavigation
+        value={currentIndex === -1 ? false : currentIndex}
+        onChange={(_, newIndex) => navigate(bottomNavItems[newIndex].path)}
+        sx={{ backgroundColor: 'transparent', height: 56 }}
+      >
+        {bottomNavItems.map((item) => (
+          <BottomNavigationAction
+            key={item.path}
+            label={item.label}
+            icon={item.icon}
+            showLabel
+            sx={{
+              minWidth: 0,
+              fontSize: '10px',
+              color: '#aaa',
+              '&.Mui-selected': { color: '#1A73E8' },
+              '& .MuiBottomNavigationAction-label': {
+                fontSize: '10px',
+                '&.Mui-selected': { fontSize: '10px' },
+              },
+            }}
+          />
+        ))}
+      </BottomNavigation>
+    </Paper>
+  );
+}
+
+// ==========================================
+// AppShell
 // ==========================================
 function AppShell() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -76,6 +136,9 @@ function AppShell() {
   const [streak, setStreak] = useState(0);
   const [isStreakOpen, setIsStreakOpen] = useState(false);
   const [profileData, setProfileData] = useState({ display_name: '', avatar_url: null });
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -115,36 +178,47 @@ function AppShell() {
 
   if (session === undefined) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#F0F4F9' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: '#F0F4F9' }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (session === null) {
-    return <Navigate to="/login" replace />;
-  }
+  if (session === null) return <Navigate to="/login" replace />;
 
   return (
     <AppCallbacksContext.Provider value={callbacks}>
-      <Box sx={{ display: 'flex', height: '100vh', backgroundColor: '#F0F4F9' }}>
+      <Box sx={{ display: 'flex', height: '100dvh', backgroundColor: isMobile ? '#fff' : '#F0F4F9' }}>
 
         {/* AppBar */}
-        <AppBar position="fixed" sx={{ backgroundColor: '#F0F4F9', color: '#333', boxShadow: 'none', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-          <Toolbar disableGutters sx={{ display: 'flex', alignItems: 'center', px: '16px' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <IconButton onClick={toggleSidebar} edge="start" sx={{ ml: 0, mr: 2 }}>
-                <MenuRoundedIcon />
-              </IconButton>
-              <Box sx={{ display: 'flex', alignItems: 'center', width: '230px' }}>
-                <img src={studyLogLogo} alt="StudyLog" style={{ height: '32px', marginRight: '12px' }} />
-                <Typography variant="h6" sx={{ fontWeight: '900', fontSize: '24px', letterSpacing: '-0.5px' }}>
+        <AppBar
+          position="fixed"
+          elevation={0}
+          sx={{
+            backgroundColor: isMobile ? '#fff' : '#F0F4F9',
+            color: '#333',
+            boxShadow: isMobile ? '0 1px 0 #e8e8e8' : 'none',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
+        >
+          <Toolbar disableGutters sx={{ display: 'flex', alignItems: 'center', px: isMobile ? '12px' : '16px', minHeight: isMobile ? '52px !important' : '64px !important' }}>
+
+            {/* ロゴ＋タイトル */}
+            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: isMobile ? 1 : 0 }}>
+              {!isMobile && (
+                <IconButton onClick={toggleSidebar} edge="start" sx={{ ml: 0, mr: 2 }}>
+                  <MenuRoundedIcon />
+                </IconButton>
+              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? 'auto' : '230px' }}>
+                <img src={studyLogLogo} alt="StudyLog" style={{ height: isMobile ? '24px' : '32px', marginRight: '8px' }} />
+                <Typography variant="h6" sx={{ fontWeight: '900', fontSize: isMobile ? '18px' : '24px', letterSpacing: '-0.5px' }}>
                   StudyLog
                 </Typography>
               </Box>
             </Box>
 
-            <Box sx={{ flexGrow: 1 }} />
+            {!isMobile && <Box sx={{ flexGrow: 1 }} />}
 
             {/* ストリーク */}
             <Chip
@@ -152,7 +226,9 @@ function AppShell() {
               label={`${streak}`}
               onClick={() => setIsStreakOpen(true)}
               sx={{
-                fontWeight: 'bold', fontSize: '16px', px: 0.5, py: 2,
+                fontWeight: 'bold',
+                fontSize: isMobile ? '13px' : '16px',
+                px: 0.5, py: isMobile ? 1.5 : 2,
                 backgroundColor: streak > 0 ? '#FFF4EC' : '#f5f5f5',
                 color: streak > 0 ? '#FF6B00' : '#999',
                 border: streak > 0 ? '1px solid #FFE0C2' : '1px solid #e0e0e0',
@@ -163,36 +239,64 @@ function AppShell() {
               }}
             />
 
-            {/* プロフィールアバター */}
-            <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
-              <Avatar
-                src={profileData.avatar_url || undefined}
-                sx={{
-                  width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
-                  backgroundColor: '#1A73E8', border: '2px solid #D3E3FD',
-                  transition: 'border-color 0.2s', '&:hover': { borderColor: '#1A73E8' },
-                }}
-              >
-                {!profileData.avatar_url && avatarLetter}
-              </Avatar>
-            </IconButton>
+            {/* アバター（PCのみ） */}
+            {!isMobile && (
+              <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
+                <Avatar
+                  src={profileData.avatar_url || undefined}
+                  sx={{
+                    width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
+                    backgroundColor: '#1A73E8', border: '2px solid #D3E3FD',
+                    transition: 'border-color 0.2s', '&:hover': { borderColor: '#1A73E8' },
+                  }}
+                >
+                  {!profileData.avatar_url && avatarLetter}
+                </Avatar>
+              </IconButton>
+            )}
           </Toolbar>
         </AppBar>
 
-        {/* サイドバー */}
-        <Sidebar isSidebarOpen={isSidebarOpen} />
+        {/* サイドバー（PC のみ描画・Sidebar 内部でも isMobile チェックあり） */}
+        {!isMobile && <Sidebar isSidebarOpen={isSidebarOpen} />}
 
-        {/* メイン */}
-        <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', pb: 2, pr: 2, transition: 'margin-left 0.2s' }}>
-          <Toolbar />
+        {/* メインコンテンツ */}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            pb: isMobile ? 0 : 2,
+            pr: isMobile ? 0 : 2,
+            transition: 'margin-left 0.2s',
+            minWidth: 0,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {/* AppBar の高さ分のスペーサー */}
+          <Toolbar sx={{ minHeight: isMobile ? '52px !important' : '64px !important' }} />
+
           <Box sx={{
-            backgroundColor: '#FFFFFF', flexGrow: 1, borderRadius: '24px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden',
-            p: 4, display: 'flex', flexDirection: 'column',
+            backgroundColor: '#FFFFFF',
+            flexGrow: 1,
+            borderRadius: isMobile ? 0 : '24px',
+            boxShadow: isMobile ? 'none' : '0 4px 12px rgba(0,0,0,0.05)',
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            p: isMobile ? 2 : 4,
+            display: 'flex',
+            flexDirection: 'column',
+            pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 4,
+            position: 'relative'
           }}>
             <Outlet />
           </Box>
         </Box>
+
+        {/* ボトムナビ（スマホのみ） */}
+        {isMobile && <BottomNav />}
 
         <StreakDialog open={isStreakOpen} onClose={() => setIsStreakOpen(false)} />
       </Box>
@@ -201,7 +305,7 @@ function AppShell() {
 }
 
 // ==========================================
-// ルーター定義（createBrowserRouter → useBlocker が使える）
+// ルーター定義
 // ==========================================
 const router = createBrowserRouter([
   { path: '/login', element: <AuthPage /> },

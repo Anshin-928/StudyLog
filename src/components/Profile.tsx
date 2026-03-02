@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Avatar, TextField, Button,
   CircularProgress, Snackbar, Alert, Divider,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
@@ -25,6 +26,8 @@ interface ProfileProps {
 }
 
 export default function Profile({ onProfileSaved }: ProfileProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -153,7 +156,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   const avatarLetter = (displayName || email || '?')[0].toUpperCase();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '680px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '680px', margin: '0 auto', width: '100%' }}>
 
       {/* ページヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, color: '#333' }}>
@@ -180,7 +183,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
           <CircularProgress />
         </Box>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
 
           {/* プロフィール編集カード */}
           <Box sx={{ backgroundColor: '#f8faff', border: '1px solid #e8eef8', borderRadius: '16px', p: 4 }}>

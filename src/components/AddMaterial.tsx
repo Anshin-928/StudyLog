@@ -302,7 +302,7 @@ export default function AddMaterial() {
   // レンダリング
   // ==========================================
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
 
       {/* ヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: '#333' }}>
