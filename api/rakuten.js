@@ -5,7 +5,12 @@ export default async function handler(req, res) {
   const url = `https://openapi.rakuten.co.jp/services/api/BooksBook/Search/20170404?${params}`;
 
   try {
-    const response = await fetch(url); // サーバーから叩く → Referer/Originなし
+    const response = await fetch(url, {
+      headers: {
+        'Referer': 'https://studylog-seven.vercel.app',
+        'Origin': 'https://studylog-seven.vercel.app',
+      }
+    });
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
