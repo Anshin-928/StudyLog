@@ -166,11 +166,11 @@ export default function AddMaterial() {
     if (!searchQuery) return;
     setIsSearching(true);
     try {
-      // 🌟変更箇所：localhostの場合はViteのプロキシを使い、本番環境では直接楽天APIを叩く
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const baseUrl = isLocal ? '/api/rakuten' : 'https://openapi.rakuten.co.jp';
-
-      const res = await fetch(`/api/rakuten/services/api/BooksBook/Search/20170404?format=json&title=${encodeURIComponent(searchQuery)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=20&sort=sales&outOfStockFlag=1`);
+      // const res = await fetch(`/api/rakuten/services/api/BooksBook/Search/20170404?format=json&title=${encodeURIComponent(searchQuery)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=20&sort=sales&outOfStockFlag=1`);
+      // パス形式 → クエリパラメータ形式に変える
+      const res = await fetch(
+        `/api/rakuten?format=json&title=${encodeURIComponent(searchQuery)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=20&sort=sales&outOfStockFlag=1`
+      );
       const data = await res.json();
       setSearchResults(data.Items || []);
     } catch (error) {
