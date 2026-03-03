@@ -53,10 +53,6 @@ export default function AddMaterial() {
   const navigate = useNavigate();
 
   const [tabIndex, setTabIndex] = useState(0);
-
-  // ==========================================
-  // カテゴリ一覧（マウント時に取得）
-  // ==========================================
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
   useEffect(() => {
@@ -75,24 +71,19 @@ export default function AddMaterial() {
     fetchCategories();
   }, []);
 
-  // ==========================================
-  // 検索タブ用 State
-  // ==========================================
   const RAKUTEN_APP_ID = (import.meta as any).env.VITE_RAKUTEN_APP_ID;
   const RAKUTEN_ACCESS_KEY = (import.meta as any).env.VITE_RAKUTEN_ACCESS_KEY;
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // 検索タブ: カテゴリ選択ダイアログ
-  const [pendingBook, setPendingBook] = useState<any | null>(null); // null のとき閉じる
+  // 検索タブ
+  const [pendingBook, setPendingBook] = useState<any | null>(null);
   const [searchCategory, setSearchCategory] = useState<CategoryOption | null>(null);
   const [searchCategoryInput, setSearchCategoryInput] = useState('');
   const [searchUnit, setSearchUnit] = useState<MaterialUnit>(DEFAULT_UNIT);
 
-  // ==========================================
-  // オリジナルタブ用 State
-  // ==========================================
+  // オリジナルタブ用
   const [originalTitle, setOriginalTitle] = useState('');
   const [originalCategory, setOriginalCategory] = useState<CategoryOption | null>(null);
   const [originalCategoryInput, setOriginalCategoryInput] = useState('');
@@ -103,7 +94,7 @@ export default function AddMaterial() {
 
   const [isAdding, setIsAdding] = useState(false);
 
-  // 入力ありのとき離脱ブロック（オリジナルタブ: タイトルor画像あり）
+  // 入力ありのとき離脱ブロック
   const isDirty = originalTitle.trim() !== '' || originalImage !== null || pendingBook !== null;
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -166,8 +157,6 @@ export default function AddMaterial() {
     if (!searchQuery) return;
     setIsSearching(true);
     try {
-      // const res = await fetch(`/api/rakuten/services/api/BooksBook/Search/20170404?format=json&title=${encodeURIComponent(searchQuery)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=20&sort=sales&outOfStockFlag=1`);
-      // パス形式 → クエリパラメータ形式に変える
       const res = await fetch(
         `/api/rakuten?format=json&title=${encodeURIComponent(searchQuery)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=20&sort=sales&outOfStockFlag=1`
       );
@@ -180,7 +169,6 @@ export default function AddMaterial() {
     }
   };
 
-  // 「追加」ボタン → カテゴリ選択ダイアログを開く
   const handleAddFromSearchClick = (e: React.MouseEvent, book: any) => {
     e.stopPropagation();
     setSearchCategory(null);
@@ -189,7 +177,7 @@ export default function AddMaterial() {
     setPendingBook(book);
   };
 
-  // ダイアログの「追加する」→ DB 保存
+  // ダイアログの「追加する」: DB 保存
   const handleConfirmSearchAdd = async () => {
     if (!pendingBook) return;
 
@@ -227,9 +215,7 @@ export default function AddMaterial() {
     }
   };
 
-  // ==========================================
   // オリジナルタブ
-  // ==========================================
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       const file = e.target.files[0];
@@ -289,9 +275,7 @@ export default function AddMaterial() {
     }
   };
 
-  // ==========================================
   // Autocomplete の renderOption（共通）
-  // ==========================================
   const renderCategoryOption = (props: React.HTMLAttributes<HTMLLIElement>, option: CategoryOption) => (
     <li {...props} key={option.id}>
       {option.isNew ? (
@@ -305,36 +289,34 @@ export default function AddMaterial() {
     </li>
   );
 
-  // ==========================================
   // レンダリング
-  // ==========================================
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
 
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: '#333' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1.5, sm: 4 }, color: '#333' }}>
         <IconButton onClick={() => navigate('/materials')} sx={{ mr: 2, backgroundColor: '#f5f5f5' }}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           新しい教材を登録
         </Typography>
       </Box>
 
       {/* タブ */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, color: '#333' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: { xs: 1.5, sm: 4 }, color: '#333' }}>
         <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} variant="fullWidth">
           <Tab
             icon={isMobile ? undefined : <SearchIcon />}
             iconPosition="start"
             label={isMobile ? '市販教材を検索' : '市販の教材を検索'}
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '40px' : '48px' }}
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '48px' : '56px' }}
           />
           <Tab
             icon={isMobile ? undefined : <LibraryAddOutlinedIcon />}
             iconPosition="start"
-            label={isMobile ? 'オリジナル登録' : 'オリジナル教材を登録'}
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '40px' : '48px' }}
+            label={isMobile ? 'オリジナル教材登録' : 'オリジナル教材を登録'}
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '48px' : '56px' }}
           />
         </Tabs>
       </Box>
@@ -342,10 +324,10 @@ export default function AddMaterial() {
       {/* ========== タブ0: 検索 ========== */}
       {tabIndex === 0 && (
         <>
-          <Box sx={{ display: 'flex', gap: 1, mb: 4 }}>
+          <Box sx={{ display: 'flex', gap:  { xs: 1.5, sm: 1 }, mb: { xs: 1.5, sm: 4 } }}>
             <TextField
               fullWidth variant="outlined"
-              placeholder="書籍検索（タイトル・著者・出版社）"
+              placeholder={isMobile ? "書籍検索（タイトル・著者等）" : "書籍検索（タイトル・著者・出版社）"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') searchBooks(); }}
@@ -353,7 +335,7 @@ export default function AddMaterial() {
               disabled={isAdding}
             />
             <Button variant="contained" onClick={searchBooks} disableElevation disabled={isAdding}
-              sx={{ borderRadius: '8px', px: 4, fontWeight: 'bold' }}>
+              sx={{ borderRadius: '8px', px: 4, fontWeight: 'bold', whiteSpace: 'nowrap', py: { xs: 1.5, sm: 'auto' } }}>
               検索
             </Button>
           </Box>
@@ -361,8 +343,10 @@ export default function AddMaterial() {
           <Box sx={{ flexGrow: 1, overflowY: 'auto', backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #eee', p: 2, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
             {!isSearching && searchResults.length === 0 && !searchQuery && (
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10, color: '#aaa' }}>
-                <SearchIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>キーワードを入力して教材を検索してください</Typography>
+                <SearchIcon sx={{ fontSize:  { xs: 54, sm: 64 }, mb: 2, opacity: 0.5 }} />
+                <Typography variant="body1" sx={{ fontWeight: 'bold', textAlign: 'center', whiteSpace: 'pre-wrap' }}>
+                  {isMobile ?  'キーワードを入力して\n教材を検索してください':'キーワードを入力して教材を検索してください'}
+                </Typography>
               </Box>
             )}
             {(isSearching || isAdding) && (
@@ -372,24 +356,32 @@ export default function AddMaterial() {
               </Box>
             )}
             {!isSearching && !isAdding && searchResults.length > 0 && (
-              <List>
+              <List sx={{ pt: 0 }}>
                 {searchResults.map((item, index) => {
                   const book = item.Item;
                   return (
                     <React.Fragment key={index}>
                       <ListItemButton
                         onClick={(e) => handleAddFromSearchClick(e, book)}
-                        sx={{ borderRadius: '12px', mb: 1, py: 2, transition: '0.2s', '&:hover': { backgroundColor: '#f8fafd' } }}
+                        sx={{ borderRadius: '12px', mb: 1, py: { xs: 1, sm: 2 }, px: { xs: 0, sm: 2 }, transition: '0.2s', '&:hover': { backgroundColor: '#f8fafd' } }}
                       >
-                        <ListItemAvatar sx={{ mr: 3 }}>
+                        <ListItemAvatar sx={{ mr: { xs: 2, sm: 3 } }}>
                           <img
                             src={book.mediumImageUrl} alt="表紙"
-                            style={{ height: '88px', width: 'auto', objectFit: 'contain', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f5f5f5' }}
+                            style={{ height: isMobile ? '72px' : '88px', width: 'auto', objectFit: 'contain', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f5f5f5' }}
                           />
                         </ListItemAvatar>
                         <ListItemText
-                          primary={<Typography sx={{ fontWeight: 'bold', fontSize: '16px', mb: 0.5 }}>{book.title}</Typography>}
-                          secondary={<Typography variant="body2" color="text.secondary">{book.author} / {book.publisherName}</Typography>}
+                          primary={
+                            <Typography sx={{ fontWeight: 'bold', fontSize: { xs: '14px', sm: '16px' }, mb: 0.5,  display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {book.title}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography variant="caption" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {book.author} / {book.publisherName}
+                            </Typography>
+                          }
                         />
                         <Button size="small" variant="outlined" sx={{ borderRadius: '20px', minWidth: '80px', fontWeight: 'bold' }}>追加</Button>
                       </ListItemButton>
@@ -400,8 +392,8 @@ export default function AddMaterial() {
               </List>
             )}
             {!isSearching && searchResults.length === 0 && searchQuery && (
-              <Typography align="center" color="text.secondary" sx={{ py: 8 }}>
-                見つかりませんでした。別のキーワードで試してみてください。
+              <Typography align="center" color="text.secondary" sx={{ py: 8, whiteSpace: 'pre-wrap', fontSize: { xs: '14px', sm: '18px' }} }>
+                {isMobile ? '見つかりませんでした\n別のキーワードで試してみてください。':'見つかりませんでした。別のキーワードで試してみてください。'}
               </Typography>
             )}
           </Box>
@@ -412,7 +404,7 @@ export default function AddMaterial() {
             onClose={(_, reason) => { if (reason === 'backdropClick') return; if (!isAdding) setPendingBook(null); }}
             maxWidth="xs"
             fullWidth
-            PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}
+            PaperProps={{ sx: { borderRadius: '16px', p: { xs: 0.5, sm: 1 }, m: { xs: 2, sm: 3 }}}}
           >
             <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>カテゴリを選択</DialogTitle>
             <DialogContent sx={{ pt: 2 }}>
@@ -422,7 +414,7 @@ export default function AddMaterial() {
                     src={pendingBook.mediumImageUrl} alt="表紙"
                     style={{ height: '64px', width: 'auto', objectFit: 'contain', borderRadius: '4px', border: '1px solid #ddd' }}
                   />
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.4 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'  }}>
                     {pendingBook.title}
                   </Typography>
                 </Box>
@@ -440,8 +432,8 @@ export default function AddMaterial() {
                   <TextField
                     {...params}
                     label="カテゴリ"
-                    placeholder="カテゴリを選択または新規入力"
-                    helperText="空欄のまま追加すると「カテゴリなし」になります"
+                    placeholder="選択または新規入力"
+                    helperText="空欄の場合は「カテゴリなし」になります"
                   />
                 )}
                 noOptionsText="カテゴリが見つかりません"
@@ -450,7 +442,7 @@ export default function AddMaterial() {
                 <UnitSelector value={searchUnit} onChange={setSearchUnit} disabled={isAdding} />
               </Box>
             </DialogContent>
-            <DialogActions sx={{ p: 3, pt: 0 }}>
+            <DialogActions sx={{ p: { xs: 2, sm: 3 }, pt: 0 }}>
               <Button onClick={() => setPendingBook(null)} disabled={isAdding} sx={{ color: '#666', fontWeight: 'bold' }}>
                 キャンセル
               </Button>
@@ -459,9 +451,9 @@ export default function AddMaterial() {
                 variant="contained"
                 disabled={isAdding}
                 disableElevation
-                sx={{ borderRadius: '8px', fontWeight: 'bold', px: 3 }}
+                sx={{ borderRadius: '8px', fontWeight: 'bold', px: { xs: 2, sm: 3 }}}
               >
-                {isAdding ? '追加中...' : 'この教材を追加'}
+                {isAdding ? '追加中...' : '追加する'}
               </Button>
             </DialogActions>
           </Dialog>
@@ -470,8 +462,8 @@ export default function AddMaterial() {
 
       {/* ========== タブ1: オリジナル登録 ========== */}
       {tabIndex === 1 && (
-        <Box sx={{ flexGrow: 1, overflow: 'auto', backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #eee', p: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>オリジナル教材の詳細を入力</Typography>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #eee', p: { xs: 2, sm: 4 } }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>オリジナル教材の詳細を入力</Typography>
 
           {/* 教材名 */}
           <TextField
@@ -494,8 +486,8 @@ export default function AddMaterial() {
               <TextField
                 {...params}
                 label="カテゴリ"
-                placeholder="カテゴリを選択または新規入力"
-                helperText="空欄のまま登録すると「カテゴリなし」になります"
+                placeholder="選択または新規入力"
+                helperText="空欄の場合は「カテゴリなし」になります"
               />
             )}
             noOptionsText="カテゴリが見つかりません"
@@ -515,8 +507,8 @@ export default function AddMaterial() {
                 key={tmpl.id}
                 onClick={() => { setSelectedTemplate(tmpl.url); setOriginalImage(null); setPreviewUrl(null); }}
                 sx={{
-                  width: 48, height: 64,
-                  cursor: 'pointer', borderRadius: '4px', overflow: 'hidden',
+                  width: { xs: 48, sm: 48 }, height: { xs: 64, sm: 64 },
+                  cursor: 'pointer', borderRadius: { xs: '4px', sm: '4px' }, overflow: 'hidden',
                   border: selectedTemplate === tmpl.url && !originalImage ? '3px solid #1A73E8' : '1px solid transparent',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   transition: '0.2s', '&:hover': { opacity: 0.8, transform: 'translateY(-2px)' }
@@ -532,7 +524,7 @@ export default function AddMaterial() {
           <label htmlFor="image-upload-input">
             <Box sx={{
               border: originalImage ? '3px solid #1A73E8' : '2px dashed #ddd',
-              borderRadius: '12px', p: 4, textAlign: 'center', mb: 4,
+              borderRadius: '12px', p: 2, textAlign: 'center', mb: 4,
               backgroundColor: originalImage ? '#f0f4f9' : '#fafafa',
               color: '#999', cursor: 'pointer', transition: '0.2s',
               '&:hover': { borderColor: '#1A73E8', color: '#1A73E8', backgroundColor: '#f0f4f9' }
@@ -544,8 +536,8 @@ export default function AddMaterial() {
                 </Box>
               ) : (
                 <>
-                  <LibraryAddOutlinedIcon sx={{ fontSize: 40, mb: 1 }} />
-                  <Typography>クリックして表紙画像をアップロード</Typography>
+                  <LibraryAddOutlinedIcon sx={{ fontSize: { xs: 32, sm: 40 }, mb: 1 }} />
+                  <Typography sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>{isMobile ? "表紙画像をアップロード":"クリックして表紙画像をアップロード"}</Typography>
                   <Typography variant="caption">（※画像なしでも登録できます）</Typography>
                 </>
               )}

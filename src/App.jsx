@@ -221,8 +221,8 @@ function AppShell() {
                 </IconButton>
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? 'auto' : '230px' }}>
-                <img src={studyLogLogo} alt="StudyLog" style={{ height: isMobile ? '24px' : '32px', marginRight: '8px' }} />
-                <Typography variant="h6" sx={{ fontWeight: '900', fontSize: isMobile ? '18px' : '24px', letterSpacing: '-0.5px' }}>
+                <img src={studyLogLogo} alt="StudyLog" style={{ height: isMobile ? '30px' : '32px', marginRight: '8px' }} />
+                <Typography variant="h6" sx={{ fontWeight: '900', fontSize: isMobile ? '20px' : '24px', letterSpacing: '-0.5px' }}>
                   StudyLog
                 </Typography>
               </Box>
