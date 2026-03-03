@@ -298,7 +298,7 @@ function AppShell() {
             p: isMobile ? 2 : 4,
             display: 'flex',
             flexDirection: 'column',
-            pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 4,
+            pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 4,
             position: 'relative'
           }}>
             <Outlet />

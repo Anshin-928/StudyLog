@@ -102,42 +102,53 @@ function SelectableMaterialCard({
   isSelected: boolean;
   onSelect: (m: Material) => void;
 }) {
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <Card
       onClick={() => onSelect(material)}
       sx={{
-        height: '200px', width: '140px',
+        // height: '200px', width: '140px',
+        height: { xs: '165px', sm: '200px' },
+        width: '100%', 
         display: 'flex', flexDirection: 'column',
         borderRadius: '12px', cursor: 'pointer',
         transition: 'all 0.18s', position: 'relative',
         border: isSelected ? '2.5px solid #1A73E8' : '0.5px solid rgba(0,0,0,0.13)',
         boxShadow: isSelected ? '0 0 0 3px rgba(26,115,232,0.15)' : '0 1px 4px rgba(0,0,0,0.06)',
         '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 14px rgba(0,0,0,0.13)' },
+        backgroundColor: '#fff',
       }}
     >
       {isSelected && (
         <CheckCircleIcon sx={{
           position: 'absolute', top: 6, right: 6,
-          color: '#1A73E8', fontSize: '20px',
+          color: '#1A73E8', fontSize: isMobile ? '16px' : '20px',
           backgroundColor: '#fff', borderRadius: '50%', zIndex: 1,
         }} />
       )}
-      <Box sx={{ height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 1.5 }}>
+      <Box sx={{ height: { xs: '100px', sm: '130px' }, display: 'flex', alignItems: 'center', justifyContent: 'center', p: isMobile ? 1 : 1.5  }}>
         <CardMedia
           component="img"
-          sx={{ height: '100%', maxHeight: '110px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+          sx={{ height: '100%', maxHeight: { xs: '80px', sm: '110px' }, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
           image={material.image} alt={material.name}
         />
       </Box>
       <CardContent sx={{
-        p: 1.5, flexGrow: 1,
+        p: isMobile ? '4px 6px !important' :1.5, flexGrow: 1,
         backgroundColor: isSelected ? '#f0f4fd' : '#fff',
         borderRadius: '0 0 12px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start'
       }}>
+
         <Typography variant="caption" sx={{
-          fontWeight: 'bold', fontSize: '11px', lineHeight: 1.3,
+          fontWeight: 'bold', fontSize: { xs: '10px', sm: '11px' }, lineHeight: 1.2,
           display: '-webkit-box', overflow: 'hidden',
-          WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical', WebkitLineClamp: 3,
           color: isSelected ? '#1A73E8' : '#333',
         }}>
           {material.name}
@@ -168,14 +179,14 @@ function MaterialSelectDialog({
   const isNoneSelected = currentMaterial === 'none';
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', height: '80vh', display: 'flex', flexDirection: 'column' } }}
+    <Dialog open={open} onClose={onClose} fullWidth
+      PaperProps={{ sx: { borderRadius: '20px', height: '80vh', display: 'flex', flexDirection: 'column', m: { xs: 0.5, sm: 2 }, width: { xs: 'calc(100% - 32px)', sm: '100%' }, maxWidth: { xs: 'none', sm: 'md' }} }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, fontWeight: 'bold' }}>
         教材を選択
         <IconButton onClick={onClose}><CloseIcon /></IconButton>
       </DialogTitle>
-      <DialogContent sx={{ flexGrow: 1, overflowY: 'auto', px: 3, pt: 1 }}>
+      <DialogContent sx={{ flexGrow: 1, overflowY: 'auto', px: { xs: 2, sm: 3 }, pt: 1 }}>
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
         ) : (
@@ -204,7 +215,12 @@ function MaterialSelectDialog({
                 }}>
                   {categoryName}
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                
+                <Box sx={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(auto-fill, minmax(140px, 1fr))' }, 
+                  gap: { xs: 1, sm: 2 } 
+                }}>
                   {items.map((item) => (
                     <SelectableMaterialCard
                       key={item.id} material={item}
@@ -242,12 +258,10 @@ function DateDialog({
 
   const today = daysAgo(0);
   const yesterday = daysAgo(1);
-  const twoDaysAgo = daysAgo(2);
 
   const quickDates = [
     { label: '今日', value: today },
     { label: '昨日', value: yesterday },
-    { label: '一昨日', value: twoDaysAgo },
   ];
 
   const handleConfirm = () => {
@@ -263,7 +277,7 @@ function DateDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: {xs: 2, sm: 'auto'} } }}
     >
       <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>日付・時刻を選択</DialogTitle>
       <DialogContent>
@@ -374,7 +388,7 @@ function DurationDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' }  } }}
     >
       <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>学習時間を入力</DialogTitle>
       <DialogContent>
@@ -477,7 +491,7 @@ function PagesDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' } } }}
     >
       <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>学習量を入力</DialogTitle>
       <DialogContent>
@@ -723,15 +737,15 @@ function ManualInputTab({
         borderRadius: '16px',
         border: selectedMaterial ? '2px solid #1A73E8' : '1px solid #e8e8e8',
         backgroundColor: selectedMaterial ? '#f0f4fd' : '#fafafa',
-        mb: 1.5, px: 3, py: 3, minHeight: '120px', transition: '0.15s',
+        mb: 1.5, px:  { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, minHeight: { xs: '100px', sm: '120px' }, transition: '0.15s',
         '&:hover': { backgroundColor: selectedMaterial ? '#e8f0fe' : '#f0f0f0', borderColor: '#1A73E8' },
       }}>
-        <ListItemIcon sx={{ minWidth: 80, mr: 2, color: selectedMaterial ? '#1A73E8' : '#aaa', justifyContent: 'center' }}>
+        <ListItemIcon sx={{ minWidth: { xs: 60, sm: 80 }, mr: 2, color: selectedMaterial ? '#1A73E8' : '#aaa', justifyContent: 'center' }}>
           {selectedMaterial && selectedMaterial !== 'none' ? (
             <img src={(selectedMaterial as Material).image} alt=""
               style={{ height: '80px', maxWidth: '80px', objectFit: 'contain' }} />
           ) : (
-            <MenuBookOutlinedIcon sx={{ fontSize: '48px' }} />
+            <MenuBookOutlinedIcon sx={{ fontSize: { xs: '36px', sm: '48px' } }} />
           )}
         </ListItemIcon>
         <ListItemText
@@ -1179,7 +1193,10 @@ export default function Record() {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ 
+      display: 'flex', flexDirection: 'column', minHeight: 0, 
+      maxWidth: '1000px', margin: '0 auto', width: '100%' 
+    }}>
 
       {/* ヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isMobile ? 2 : 4, color: '#333' }}>
@@ -1202,19 +1219,19 @@ export default function Record() {
       </Box>
 
       {/* タブ */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: isMobile ? 2 : 4 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: isMobile ? 0 : 4 }}>
         <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
           <Tab
-            icon={isMobile ? undefined : <ModeEditOutlineOutlinedIcon />}
+            icon={<ModeEditOutlineOutlinedIcon />}
             iconPosition="start"
             label="手動入力"
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '40px' : '48px' }}
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap', }}
           />
           <Tab
-            icon={isMobile ? undefined : <TimerOutlinedIcon />}
+            icon={<TimerOutlinedIcon />}
             iconPosition="start"
             label="ストップウォッチ"
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: isMobile ? '40px' : '48px' }}
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap', }}
           />
         </Tabs>
       </Box>
@@ -1267,10 +1284,10 @@ export default function Record() {
           <Box sx={{
             backgroundColor: '#fff',
             borderRadius: '24px',
-            px: 5, py: 4,
+            px: { xs: 4, sm: 5 }, py: 4,
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-            minWidth: '260px',
+            minWidth: { xs: '200px', sm: '260px' },
           }}>
             <CheckCircleOutlineIcon sx={{ fontSize: '64px', color: '#34A853' }} />
             <Typography sx={{ fontWeight: 'bold', fontSize: '20px', color: '#222' }}>
