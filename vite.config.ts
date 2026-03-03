@@ -16,15 +16,13 @@ export default defineConfig({
     allowedHosts: true,
 
     proxy: {
-      // '/api/rakuten' という宛先に来たリクエストを、楽天のサーバーに横流しする
       '/api/rakuten': {
-        target: 'https://openapi.rakuten.co.jp', // 新APIのドメイン
+        target: 'https://openapi.rakuten.co.jp',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/rakuten/, ''),
+        rewrite: (path) => path.replace(/^\/api\/rakuten/, '/services/api/BooksBook/Search/20170404'),
         headers: {
-          // 🌟 ここが最大のポイント！登録したテキトーなURLを差出人として偽装する！
-          'Referer': 'https://app.studylog.jp', // ※VercelのURLを登録したなら、そのURLにする
-          'Origin': 'https://app.studylog.jp'
+          'Referer': 'https://studylog-seven.vercel.app',
+          'Origin': 'https://studylog-seven.vercel.app',
         }
       }
     }
