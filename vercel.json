@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/rakuten/:match*",
+      "destination": "https://openapi.rakuten.co.jp/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
