@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import studyLogLogo from './assets/studyLogLogo.svg';
+import studyLogLogoDark from './assets/studyLogLogo_dark.svg';
 import {
   Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar,
-  BottomNavigation, BottomNavigationAction, Paper, useMediaQuery, useTheme,
+  BottomNavigation, BottomNavigationAction, useMediaQuery, useTheme,
+  createTheme, ThemeProvider, CssBaseline,
 } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
@@ -27,9 +29,15 @@ import AddMaterial from './components/AddMaterial';
 import StreakDialog from './components/StreakDialog';
 import Profile from './components/Profile';
 
-// ==========================================
+const THEME_KEY = 'studylog-theme-mode';
+
+// カラーモード Context
+export const ColorModeContext = createContext({
+  mode: 'light',
+  toggleColorMode: () => {},
+});
+
 // ストリーク計算
-// ==========================================
 function calcStreakFromDates(isoDates) {
   const dates = new Set(
     isoDates.map(iso => {
@@ -54,9 +62,7 @@ function calcStreakFromDates(isoDates) {
   return streak;
 }
 
-// ==========================================
-// Context
-// ==========================================
+// App Callbacks Context
 export const AppCallbacksContext = createContext({
   onRecordSaved: () => {},
   onProfileSaved: () => {},
@@ -72,38 +78,34 @@ function ProfilePage() {
   return <Profile onProfileSaved={onProfileSaved} />;
 }
 
-// ==========================================
 // ボトムナビゲーション（スマホ専用）
-// ==========================================
 const bottomNavItems = [
-  { label: 'ホーム',   path: '/home',      icon: <HomeOutlinedIcon /> },
-  { label: '記録する', path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
-  { label: 'レポート', path: '/report',    icon: <BarChartOutlinedIcon /> },
-  { label: '教材',     path: '/materials', icon: <MenuBookOutlinedIcon /> },
-  { label: 'プロフィール', path: '/profile', icon: <AccountCircleOutlinedIcon /> },
+  { label: 'ホーム',       path: '/home',      icon: <HomeOutlinedIcon /> },
+  { label: '記録する',     path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
+  { label: 'レポート',     path: '/report',    icon: <BarChartOutlinedIcon /> },
+  { label: '教材',         path: '/materials', icon: <MenuBookOutlinedIcon /> },
+  { label: 'プロフィール', path: '/profile',   icon: <AccountCircleOutlinedIcon /> },
 ];
 
 function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const theme = useTheme();
+
   const currentPath = bottomNavItems.find(item => location.pathname.startsWith(item.path))?.path || false;
 
   return (
     <Box
       sx={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
-        borderTop: '1px solid #e8e8e8',
-        backgroundColor: '#fff',
+        borderTop: `1px solid ${theme.palette.divider}`,
+        backgroundColor: theme.palette.background.paper,
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {/* 子要素のonClickではなく、親のonChangeで一括管理する */}
       <BottomNavigation
         value={currentPath}
-        onChange={(event, newValue) => {
-          navigate(newValue);
-        }}
+        onChange={(_event, newValue) => navigate(newValue)}
         sx={{ backgroundColor: 'transparent', height: 56 }}
       >
         {bottomNavItems.map((item) => (
@@ -113,18 +115,14 @@ function BottomNav() {
             label={item.label}
             icon={item.icon}
             showLabel
-
-            onTouchStart={(e) => {
-              navigate(item.path);
-            }}
-
+            onTouchStart={() => navigate(item.path)}
             sx={{
               minWidth: 0,
-              color: '#aaa',
+              color: theme.palette.text.disabled,
               borderRadius: '20px',
               m: '4px',
               p: '4px',
-              '&.Mui-selected': { color: '#1A73E8' },
+              '&.Mui-selected': { color: theme.palette.primary.main },
               '& .MuiBottomNavigationAction-label': {
                 fontSize: '10px',
                 '&.Mui-selected': { fontSize: '10px' },
@@ -137,9 +135,7 @@ function BottomNav() {
   );
 }
 
-// ==========================================
 // AppShell
-// ==========================================
 function AppShell() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [session, setSession] = useState(undefined);
@@ -188,7 +184,7 @@ function AppShell() {
 
   if (session === undefined) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: '#F0F4F9' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: theme.palette.background.default }}>
         <CircularProgress />
       </Box>
     );
@@ -198,17 +194,17 @@ function AppShell() {
 
   return (
     <AppCallbacksContext.Provider value={callbacks}>
-      <Box sx={{ display: 'flex', height: '100dvh', backgroundColor: isMobile ? '#fff' : '#F0F4F9' }}>
+      <Box sx={{ display: 'flex', height: '100dvh', backgroundColor: theme.palette.background.default }}>
 
         {/* AppBar */}
         <AppBar
           position="fixed"
           elevation={0}
           sx={{
-            backgroundColor: isMobile ? '#fff' : '#F0F4F9',
-            color: '#333',
-            boxShadow: isMobile ? '0 1px 0 #e8e8e8' : 'none',
-            zIndex: (theme) => theme.zIndex.drawer + 1,
+            backgroundColor: isMobile ? theme.palette.background.paper : theme.palette.background.default,
+            color: theme.palette.text.primary,
+            boxShadow: isMobile ? `0 1px 0 ${theme.palette.divider}` : 'none',
+            zIndex: (t) => t.zIndex.drawer + 1,
           }}
         >
           <Toolbar disableGutters sx={{ display: 'flex', alignItems: 'center', px: isMobile ? '12px' : '16px', minHeight: isMobile ? '52px !important' : '64px !important' }}>
@@ -216,12 +212,16 @@ function AppShell() {
             {/* ロゴ＋タイトル */}
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: isMobile ? 1 : 0 }}>
               {!isMobile && (
-                <IconButton onClick={toggleSidebar} edge="start" sx={{ ml: 0, mr: 2 }}>
+                <IconButton onClick={toggleSidebar} edge="start" sx={{ ml: 0, mr: 2, color: theme.palette.text.primary }}>
                   <MenuRoundedIcon />
                 </IconButton>
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? 'auto' : '230px' }}>
-                <img src={studyLogLogo} alt="StudyLog" style={{ height: isMobile ? '30px' : '32px', marginRight: '8px' }} />
+                <img 
+                  src={theme.palette.mode === 'dark' ? studyLogLogoDark : studyLogLogo}
+                  alt="StudyLog" 
+                  style={{ height: isMobile ? '30px' : '32px', marginRight: '8px' }} 
+                />
                 <Typography variant="h6" sx={{ fontWeight: '900', fontSize: isMobile ? '20px' : '24px', letterSpacing: '-0.5px' }}>
                   StudyLog
                 </Typography>
@@ -232,19 +232,24 @@ function AppShell() {
 
             {/* ストリーク */}
             <Chip
-              icon={<LocalFireDepartmentRoundedIcon sx={{ color: streak > 0 ? '#FF6B00' : '#bbb' }} />}
+              icon={<LocalFireDepartmentRoundedIcon />}
               label={`${streak}`}
               onClick={() => setIsStreakOpen(true)}
               sx={{
                 fontWeight: 'bold',
                 fontSize: isMobile ? '13px' : '16px',
                 px: 0.5, py: isMobile ? 1.5 : 2,
-                backgroundColor: streak > 0 ? '#FFF4EC' : '#f5f5f5',
-                color: streak > 0 ? '#FF6B00' : '#999',
-                border: streak > 0 ? '1px solid #FFE0C2' : '1px solid #e0e0e0',
+                backgroundColor: streak > 0 ? theme.palette.streak.lighter : theme.palette.action.hover,
+                color: streak > 0 ? theme.palette.streak.main : theme.palette.text.disabled,
+                border: streak > 0 ? `1px solid ${theme.palette.streak.border}` : `1px solid ${theme.palette.divider}`,
                 cursor: 'pointer', transition: '0.2s',
-                '&:hover': { backgroundColor: streak > 0 ? '#FFE0C2' : '#e0e0e0' },
-                '& .MuiChip-icon': { color: streak > 0 ? '#FF6B00' : '#bbb' },
+                '&:hover': {
+                  backgroundColor: streak > 0 ? theme.palette.streak.lighter : theme.palette.action.selected,
+                  opacity: 0.8
+                },
+                '& .MuiChip-icon': { 
+                   color: streak > 0 ? `${theme.palette.streak.main} !important` : theme.palette.text.disabled 
+                },
                 mr: 1,
               }}
             />
@@ -256,8 +261,9 @@ function AppShell() {
                   src={profileData.avatar_url || undefined}
                   sx={{
                     width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
-                    backgroundColor: '#1A73E8', border: '2px solid #D3E3FD',
-                    transition: 'border-color 0.2s', '&:hover': { borderColor: '#1A73E8' },
+                    backgroundColor: theme.palette.primary.main,
+                    border: `2px solid ${theme.palette.primary.lighter}`,
+                    transition: 'border-color 0.2s', '&:hover': { borderColor: theme.palette.primary.main },
                   }}
                 >
                   {!profileData.avatar_url && avatarLetter}
@@ -267,7 +273,7 @@ function AppShell() {
           </Toolbar>
         </AppBar>
 
-        {/* サイドバー（PC のみ描画・Sidebar 内部でも isMobile チェックあり） */}
+        {/* サイドバー（PC のみ） */}
         {!isMobile && <Sidebar isSidebarOpen={isSidebarOpen} />}
 
         {/* メインコンテンツ */}
@@ -285,21 +291,20 @@ function AppShell() {
             overflow: 'hidden',
           }}
         >
-          {/* AppBar の高さ分のスペーサー */}
           <Toolbar sx={{ minHeight: isMobile ? '52px !important' : '64px !important' }} />
 
           <Box sx={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: theme.palette.background.paper,
             flexGrow: 1,
             borderRadius: isMobile ? 0 : '24px',
-            boxShadow: isMobile ? 'none' : '0 4px 12px rgba(0,0,0,0.05)',
+            boxShadow: isMobile ? 'none' : (theme.palette.mode === 'dark' ? 'none' : theme.customShadows.sm),
             overflowX: 'hidden',
             overflowY: 'auto',
             p: isMobile ? 2 : 4,
             display: 'flex',
             flexDirection: 'column',
             pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 4,
-            position: 'relative'
+            position: 'relative',
           }}>
             <Outlet />
           </Box>
@@ -314,9 +319,7 @@ function AppShell() {
   );
 }
 
-// ==========================================
 // ルーター定義
-// ==========================================
 const router = createBrowserRouter([
   { path: '/login', element: <AuthPage /> },
   {
@@ -336,6 +339,88 @@ const router = createBrowserRouter([
   },
 ]);
 
+// App ルート（テーマ管理）
 export default function App() {
-  return <RouterProvider router={router} />;
+  const [mode, setMode] = useState(() => {
+    return localStorage.getItem(THEME_KEY) || 'light';
+  });
+
+  const colorMode = useMemo(() => ({
+    mode,
+    toggleColorMode: () => {
+      setMode(prev => {
+        const next = prev === 'light' ? 'dark' : 'light';
+        localStorage.setItem(THEME_KEY, next);
+        return next;
+      });
+    },
+  }), [mode]);
+
+  const theme = useMemo(() => createTheme({
+    palette: {
+      mode,
+      primary: { 
+        main: '#4285F4',
+        lighter: mode === 'dark' ? 'rgba(66, 133, 244, 0.15)' : 'rgba(66, 133, 244, 0.08)',
+      },
+      chart: [
+        '#1A73E8', '#34A853', '#EA4335', '#FBBC05', '#8E24AA', 
+        '#00ACC1', '#FF6D00', '#546E7A', '#D81B60', '#00897B'
+      ],
+      error: { 
+        main: mode === 'dark' ? '#ff5252' : '#d32f2f',
+        dark: mode === 'dark' ? '#ff867f' : '#b71c1c',
+        lighter: mode === 'dark' ? 'rgba(255, 82, 82, 0.15)' : 'rgba(211, 47, 47, 0.05)',
+        contrastText: '#FFFFFF'
+      },
+      success: {
+        main: mode === 'dark' ? '#81c995' : '#34A853',
+        lighter: mode === 'dark' ? 'rgba(129, 201, 149, 0.15)' : 'rgba(52, 168, 83, 0.1)',
+      },
+      warning: {
+        main: mode === 'dark' ? '#fdd663' : '#FBBC04',
+        lighter: mode === 'dark' ? 'rgba(253, 214, 99, 0.15)' : 'rgba(251, 188, 4, 0.1)',
+      },
+      streak: {
+        main: '#FF6B00',
+        lighter: mode === 'dark' ? 'rgba(255, 107, 0, 0.15)' : '#FFF4EC',
+        border: mode === 'dark' ? 'rgba(255, 107, 0, 0.3)' : '#FFE0C2',
+      },
+      background: { 
+        default: mode === 'dark' ? '#202124' : '#F0F4F9',
+        paper: mode === 'dark' ? '#303134' : '#FFFFFF',
+        subtle: mode === 'dark' ? '#3c4043' : '#f9f9f9',
+        overlay: mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)',
+      },
+      text: { 
+        primary: mode === 'dark' ? '#e8eaed' : '#333333',
+        secondary: mode === 'dark' ? '#9aa0a6' : '#666666',
+        disabled: mode === 'dark' ? '#5f6368' : '#aaaaaa',
+      },
+      divider: mode === 'dark' ? '#3c4043' : '#E8E8E8',
+    },
+    customShadows: {
+      sm: mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)'  : '0 2px 4px rgba(0,0,0,0.1)',
+      md: mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.15)',
+      lg: mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.6)' : '0 8px 24px rgba(0,0,0,0.2)',
+    },
+    components: {
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+          }
+        }
+      }
+    }
+  }), [mode]);
+
+  return (
+    <ColorModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </ColorModeContext.Provider>
+  );
 }

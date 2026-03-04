@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Avatar, TextField, Button,
   CircularProgress, Snackbar, Alert, Divider,
-  useMediaQuery, useTheme,
+  useMediaQuery, useTheme, alpha
 } from '@mui/material';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
@@ -149,16 +149,22 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
   const avatarLetter = (displayName || email || '?')[0].toUpperCase();
 
+  // ログアウトボタン用のテーマカラー設定
+  const isDark = theme.palette.mode === 'dark';
+  const dangerColor = theme.palette.error.main;
+  const dangerBorder = alpha(dangerColor, isDark ? 0.3 : 0.25);
+  const dangerHoverBg = alpha(dangerColor, isDark ? 0.2 : 0.08);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
 
       {/* ページヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, color: '#333' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
             <AccountCircleOutlinedIcon />
           </Box>
-          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>マイプロフィール</Typography>
+          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>マイプロフィール</Typography>
         </Box>
         <Button
           variant="contained"
@@ -180,7 +186,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
 
           {/* プロフィール編集カード */}
-          <Box sx={{ backgroundColor: '#f8faff', border: '1px solid #e8eef8', borderRadius: '16px', p: 4 }}>
+          <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' }, gap: { xs: 2, sm: 4 } }}>
 
               {/* アバター */}
@@ -188,7 +194,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                 <Box sx={{ position: 'relative', width: 96, height: 96 }}>
                   <Avatar
                     src={avatarSrc}
-                    sx={{ width: 96, height: 96, fontSize: '36px', backgroundColor: '#1A73E8' }}
+                    sx={{ width: 96, height: 96, fontSize: '36px', backgroundColor: 'primary.main', color: (t) => t.palette.common.white }}
                   >
                     {!avatarSrc && avatarLetter}
                   </Avatar>
@@ -196,14 +202,14 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     onClick={() => !isSaving && fileInputRef.current?.click()}
                     sx={{
                       position: 'absolute', inset: 0, borderRadius: '50%',
-                      backgroundColor: 'rgba(0,0,0,0.38)',
+                      backgroundColor: 'background.overlay',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       opacity: isMobile ? 0.7 : 0, transition: 'opacity 0.2s',
                       cursor: isSaving ? 'default' : 'pointer',
                       '&:hover': { opacity: 1 },
                     }}
                   >
-                    <PhotoCameraRoundedIcon sx={{ color: '#fff', fontSize: '26px' }} />
+                    <PhotoCameraRoundedIcon sx={{ color: (t) => t.palette.common.white, fontSize: '26px' }} />
                   </Box>
                   <input
                     ref={fileInputRef}
@@ -213,11 +219,11 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     onChange={handleAvatarChange}
                   />
                 </Box>
-                <Typography variant="caption" sx={{ color: '#999', textAlign: 'center', lineHeight: 1.4, display: { xs: 'none', sm: 'block' } }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', lineHeight: 1.4, display: { xs: 'none', sm: 'block' } }}>
                   クリックで変更
                 </Typography>
                 {pendingAvatarFile && (
-                  <Typography variant="caption" sx={{ color: '#1A73E8', fontWeight: 'bold' }}>
+                  <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                     未保存
                   </Typography>
                 )}
@@ -232,7 +238,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   fullWidth
                   inputProps={{ maxLength: 50 }}
                   helperText={`${displayName.length} / 50`}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#fff' } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.default' } }}
                 />
                 <TextField
                   label="自己紹介"
@@ -243,25 +249,25 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   rows={3}
                   inputProps={{ maxLength: 200 }}
                   helperText={`${bio.length} / 200`}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#fff' } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.default' } }}
                 />
               </Box>
             </Box>
           </Box>
 
           {/* アカウント情報カード */}
-          <Box sx={{ backgroundColor: '#f8faff', border: '1px solid #e8eef8', borderRadius: '16px', p: 4 }}>
-            <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: '#333', mb: 1.5 }}>
+          <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
+            <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary', mb: 1.5 }}>
               アカウント情報
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-              <Typography sx={{ color: '#888', fontSize: '14px' }}>メールアドレス</Typography>
-              <Typography sx={{ color: '#333', fontSize: '14px', fontWeight: 'bold' }}>{email}</Typography>
+              <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>メールアドレス</Typography>
+              <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 'bold' }}>{email}</Typography>
             </Box>
             <Divider />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-              <Typography sx={{ color: '#888', fontSize: '14px' }}>ユーザーID</Typography>
-              <Typography sx={{ color: '#bbb', fontSize: '12px', fontFamily: 'monospace' }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>ユーザーID</Typography>
+              <Typography sx={{ color: 'text.disabled', fontSize: '12px', fontFamily: 'monospace' }}>
                 {profile?.id}
               </Typography>
             </Box>
@@ -274,9 +280,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
               startIcon={<LogoutRoundedIcon />}
               onClick={handleLogout}
               sx={{
-                color: '#d32f2f', borderColor: '#ffcdd2', borderRadius: '12px',
+                color: dangerColor, borderColor: dangerBorder, borderRadius: '12px',
                 fontWeight: 'bold', px: 3,
-                '&:hover': { backgroundColor: '#fff5f5', borderColor: '#d32f2f' },
+                '&:hover': { backgroundColor: dangerHoverBg, borderColor: dangerColor },
               }}
             >
               ログアウト
@@ -290,8 +296,8 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
                 <Divider sx={{ flexGrow: 1 }} />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 0.5 }}>
-                  <SettingsOutlinedIcon sx={{ fontSize: '18px', color: '#aaa' }} />
-                  <Typography sx={{ fontSize: '13px', color: '#aaa', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  <SettingsOutlinedIcon sx={{ fontSize: '18px', color: 'text.secondary' }} />
+                  <Typography sx={{ fontSize: '13px', color: 'text.secondary', fontWeight: 600, whiteSpace: 'nowrap' }}>
                     設定
                   </Typography>
                 </Box>

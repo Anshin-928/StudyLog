@@ -6,7 +6,7 @@ import {
   Card, CardMedia, CardContent, Chip, Tabs, Tab,
   Dialog, DialogTitle, DialogContent, DialogActions,
   IconButton, Divider, ListItemButton, ListItemText, ListItemIcon,
-  Snackbar, Alert, Fade, useMediaQuery, useTheme,
+  Snackbar, Alert, Fade, useMediaQuery, useTheme
 } from '@mui/material';
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
@@ -102,7 +102,6 @@ function SelectableMaterialCard({
   isSelected: boolean;
   onSelect: (m: Material) => void;
 }) {
-
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -110,23 +109,23 @@ function SelectableMaterialCard({
     <Card
       onClick={() => onSelect(material)}
       sx={{
-        // height: '200px', width: '140px',
         height: { xs: '165px', sm: '200px' },
         width: '100%', 
         display: 'flex', flexDirection: 'column',
         borderRadius: '12px', cursor: 'pointer',
         transition: 'all 0.18s', position: 'relative',
-        border: isSelected ? '2.5px solid #1A73E8' : '0.5px solid rgba(0,0,0,0.13)',
-        boxShadow: isSelected ? '0 0 0 3px rgba(26,115,232,0.15)' : '0 1px 4px rgba(0,0,0,0.06)',
-        '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 14px rgba(0,0,0,0.13)' },
-        backgroundColor: '#fff',
+        border: isSelected ? '2.5px solid' : '0.5px solid',
+        borderColor: isSelected ? 'primary.main' : 'divider',
+        boxShadow: isSelected ? theme.customShadows.sm : 'none',
+        '&:hover': { transform: 'translateY(-2px)', boxShadow: theme.customShadows.md },
+        backgroundColor: 'background.paper',
       }}
     >
       {isSelected && (
         <CheckCircleIcon sx={{
           position: 'absolute', top: 6, right: 6,
-          color: '#1A73E8', fontSize: isMobile ? '16px' : '20px',
-          backgroundColor: '#fff', borderRadius: '50%', zIndex: 1,
+          color: 'primary.main', fontSize: isMobile ? '16px' : '20px',
+          backgroundColor: 'background.paper', borderRadius: '50%', zIndex: 1,
         }} />
       )}
       <Box sx={{ height: { xs: '100px', sm: '130px' }, display: 'flex', alignItems: 'center', justifyContent: 'center', p: isMobile ? 1 : 1.5  }}>
@@ -137,19 +136,18 @@ function SelectableMaterialCard({
         />
       </Box>
       <CardContent sx={{
-        p: isMobile ? '4px 6px !important' :1.5, flexGrow: 1,
-        backgroundColor: isSelected ? '#f0f4fd' : '#fff',
+        p: isMobile ? '4px 6px !important' : 1.5, flexGrow: 1,
+        backgroundColor: isSelected ? 'primary.lighter' : 'background.paper',
         borderRadius: '0 0 12px 12px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start'
       }}>
-
         <Typography variant="caption" sx={{
           fontWeight: 'bold', fontSize: { xs: '10px', sm: '11px' }, lineHeight: 1.2,
           display: '-webkit-box', overflow: 'hidden',
           WebkitBoxOrient: 'vertical', WebkitLineClamp: 3,
-          color: isSelected ? '#1A73E8' : '#333',
+          color: isSelected ? 'primary.main' : 'text.primary',
         }}>
           {material.name}
         </Typography>
@@ -168,6 +166,7 @@ function MaterialSelectDialog({
   isLoading: boolean; currentMaterial: Material | null | 'none';
   onSelect: (m: Material | 'none') => void;
 }) {
+  const theme = useTheme();
   const groupedMaterials = materials.reduce((acc: Record<string, Material[]>, m) => {
     if (!acc[m.categoryName]) acc[m.categoryName] = [];
     acc[m.categoryName].push(m);
@@ -180,11 +179,11 @@ function MaterialSelectDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', height: '80vh', display: 'flex', flexDirection: 'column', m: { xs: 0.5, sm: 2 }, width: { xs: 'calc(100% - 32px)', sm: '100%' }, maxWidth: { xs: 'none', sm: 'md' }} }}
+      PaperProps={{ sx: { borderRadius: '20px', height: '80vh', display: 'flex', flexDirection: 'column', m: { xs: 0.5, sm: 2 }, width: { xs: 'calc(100% - 32px)', sm: '100%' }, maxWidth: { xs: 'none', sm: 'md' }, backgroundImage: 'none' } }}
     >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, fontWeight: 'bold' }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, fontWeight: 'bold', color: 'text.primary' }}>
         教材を選択
-        <IconButton onClick={onClose}><CloseIcon /></IconButton>
+        <IconButton onClick={onClose} sx={{ color: 'text.secondary' }}><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent sx={{ flexGrow: 1, overflowY: 'auto', px: { xs: 2, sm: 3 }, pt: 1 }}>
         {isLoading ? (
@@ -192,26 +191,27 @@ function MaterialSelectDialog({
         ) : (
           <>
             <Box onClick={() => { onSelect('none'); onClose(); }} sx={{
-              mb: 3, p: 2, border: isNoneSelected ? '2px solid #1A73E8' : '1.5px dashed #ccc',
+              mb: 3, p: 2, border: isNoneSelected ? '2px solid' : '1.5px dashed',
+              borderColor: isNoneSelected ? 'primary.main' : 'divider',
               borderRadius: '12px', cursor: 'pointer',
-              backgroundColor: isNoneSelected ? '#f0f4fd' : '#fafafa',
+              backgroundColor: isNoneSelected ? 'primary.lighter' : 'background.subtle',
               display: 'flex', alignItems: 'center', gap: 1.5, transition: '0.15s',
-              '&:hover': { borderColor: '#1A73E8', backgroundColor: '#f0f4fd' },
+              '&:hover': { borderColor: 'primary.main', backgroundColor: 'primary.lighter' },
             }}>
-              {isNoneSelected && <CheckCircleIcon sx={{ color: '#1A73E8', fontSize: '20px' }} />}
+              {isNoneSelected && <CheckCircleIcon sx={{ color: 'primary.main', fontSize: '20px' }} />}
               <Box>
-                <Typography sx={{ fontWeight: 'bold', color: isNoneSelected ? '#1A73E8' : '#555', fontSize: '14px' }}>
+                <Typography sx={{ fontWeight: 'bold', color: isNoneSelected ? 'primary.main' : 'text.secondary', fontSize: '14px' }}>
                   教材を選択しない
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#999' }}>「教材なし」として記録します</Typography>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>「教材なし」として記録します</Typography>
               </Box>
             </Box>
             <Divider sx={{ mb: 3 }} />
             {sortedCategoryEntries.map(([categoryName, items]) => (
               <Box key={categoryName} sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" sx={{
-                  fontWeight: 'bold', color: '#333', mb: 1.5, pl: 1,
-                  borderLeft: `4px solid ${items[0]?.colorCode || '#1A73E8'}`,
+                  fontWeight: 'bold', color: 'text.primary', mb: 1.5, pl: 1,
+                  borderLeft: `4px solid ${items[0]?.colorCode || theme.palette.primary.main}`,
                 }}>
                   {categoryName}
                 </Typography>
@@ -239,13 +239,14 @@ function MaterialSelectDialog({
 }
 
 // ==========================================
-// 日付・時刻選択ダイアログ（改善版）
+// 日付・時刻選択ダイアログ
 // ==========================================
 function DateDialog({
   open, onClose, value, onChange,
 }: {
   open: boolean; onClose: () => void; value: string; onChange: (v: string) => void;
 }) {
+  const theme = useTheme();
   const [localDate, setLocalDate] = useState('');
   const [localTime, setLocalTime] = useState('');
 
@@ -277,11 +278,10 @@ function DateDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: {xs: 2, sm: 'auto'} } }}
+      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: {xs: 2, sm: 'auto'}, backgroundImage: 'none' } }}
     >
-      <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>日付・時刻を選択</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>日付・時刻を選択</DialogTitle>
       <DialogContent>
-        {/* クイック日付ボタン */}
         <Box sx={{ display: 'flex', gap: 1, mb: 2.5, mt: 1 }}>
           {quickDates.map((qd) => {
             const isActive = localDate === qd.value;
@@ -297,7 +297,7 @@ function DateDialog({
                   py: 0.8,
                   ...(isActive
                     ? {}
-                    : { borderColor: '#e0e0e0', color: '#555', '&:hover': { borderColor: '#1A73E8', backgroundColor: '#f0f4fd' } }),
+                    : { borderColor: 'divider', color: 'text.secondary', '&:hover': { borderColor: 'primary.main', backgroundColor: 'primary.lighter' } }),
                 }}
               >
                 {qd.label}
@@ -306,8 +306,7 @@ function DateDialog({
           })}
         </Box>
 
-        {/* 日付入力 */}
-        <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#888', mb: 0.5, display: 'block' }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 0.5, display: 'block' }}>
           日付
         </Typography>
         <TextField
@@ -316,18 +315,17 @@ function DateDialog({
           onChange={(e) => setLocalDate(e.target.value)}
           fullWidth size="small"
           slotProps={{
-            htmlInput: { style: { fontSize: '16px', fontWeight: 'bold' } },
+            htmlInput: { style: { fontSize: '16px', fontWeight: 'bold', color: theme.palette.text.primary } },
           }}
-          sx={{ mb: 0.5, '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+          sx={{ mb: 0.5, '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle' } }}
         />
         {localDate && (
-          <Typography variant="caption" sx={{ color: '#1A73E8', fontWeight: 'bold', display: 'block', mb: 2, pl: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold', display: 'block', mb: 2, pl: 0.5 }}>
             {formatDateLabel(localDate)}
           </Typography>
         )}
 
-        {/* 時刻入力 */}
-        <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#888', mb: 0.5, display: 'block' }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 0.5, display: 'block' }}>
           時刻
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -337,30 +335,29 @@ function DateDialog({
             onChange={(e) => setLocalTime(e.target.value)}
             fullWidth size="small"
             slotProps={{
-              htmlInput: { step: 60, style: { fontSize: '16px', fontWeight: 'bold' } },
+              htmlInput: { step: 60, style: { fontSize: '16px', fontWeight: 'bold', color: theme.palette.text.primary } },
             }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle' } }}
           />
           <Button
             size="small" variant="outlined"
             onClick={handleNow}
-            sx={{ borderRadius: '10px', fontWeight: 'bold', fontSize: '12px', py: 0.8, px: 1.5, minWidth: 0, whiteSpace: 'nowrap' }}
+            sx={{ borderRadius: '10px', fontWeight: 'bold', fontSize: '12px', py: 0.8, px: 1.5, minWidth: 0, whiteSpace: 'nowrap', color: 'text.primary', borderColor: 'divider' }}
           >
             現在
           </Button>
         </Box>
 
-        {/* プレビュー */}
         {localDate && localTime && (
-          <Box sx={{ mt: 2.5, p: 1.5, backgroundColor: '#e8f0fe', borderRadius: '10px', textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '14px', fontWeight: 'bold', color: '#1A73E8' }}>
+          <Box sx={{ mt: 2.5, p: 1.5, backgroundColor: 'primary.lighter', borderRadius: '10px', textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '14px', fontWeight: 'bold', color: 'primary.main' }}>
               {formatDatetime(combineDatetime(localDate, localTime))}
             </Typography>
           </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ color: '#666', fontWeight: 'bold' }}>キャンセル</Button>
+        <Button onClick={onClose} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>キャンセル</Button>
         <Button onClick={handleConfirm} variant="contained" disableElevation
           sx={{ borderRadius: '8px', fontWeight: 'bold', px: 3 }}>
           決定
@@ -380,6 +377,7 @@ function DurationDialog({
   hours: string; minutes: string;
   onConfirm: (h: string, m: string) => void;
 }) {
+  const theme = useTheme();
   const [localH, setLocalH] = useState(hours);
   const [localM, setLocalM] = useState(minutes);
   useEffect(() => { if (open) { setLocalH(hours); setLocalM(minutes); } }, [open, hours, minutes]);
@@ -388,9 +386,9 @@ function DurationDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' }  } }}
+      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' }, backgroundImage: 'none'  } }}
     >
-      <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>学習時間を入力</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>学習時間を入力</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
           <TextField
@@ -398,31 +396,31 @@ function DurationDialog({
             onChange={(e) => setLocalH(e.target.value)}
             size="small" label="時間"
             slotProps={{
-              htmlInput: { min: 0, max: 24, style: { textAlign: 'center', fontSize: '22px', fontWeight: 'bold' } },
+              htmlInput: { min: 0, max: 24, style: { textAlign: 'center', fontSize: '22px', fontWeight: 'bold', color: theme.palette.text.primary } },
             }}
-            sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+            sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle' } }}
           />
-          <Typography sx={{ fontWeight: 'bold', color: '#aaa', fontSize: '20px', flexShrink: 0 }}>:</Typography>
+          <Typography sx={{ fontWeight: 'bold', color: 'text.disabled', fontSize: '20px', flexShrink: 0 }}>:</Typography>
           <TextField
             type="number" value={localM}
             onChange={(e) => setLocalM(e.target.value)}
             size="small" label="分"
             slotProps={{
-              htmlInput: { min: 0, max: 59, style: { textAlign: 'center', fontSize: '22px', fontWeight: 'bold' } },
+              htmlInput: { min: 0, max: 59, style: { textAlign: 'center', fontSize: '22px', fontWeight: 'bold', color: theme.palette.text.primary } },
             }}
-            sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+            sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle' } }}
           />
         </Box>
         {total > 0 && (
-          <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#e8f0fe', borderRadius: '10px', textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '14px', fontWeight: 'bold', color: '#1A73E8' }}>
+          <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'primary.lighter', borderRadius: '10px', textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '14px', fontWeight: 'bold', color: 'primary.main' }}>
               合計 {formatDuration(total)}
             </Typography>
           </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ color: '#666', fontWeight: 'bold' }}>キャンセル</Button>
+        <Button onClick={onClose} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>キャンセル</Button>
         <Button onClick={() => { onConfirm(localH, localM); onClose(); }} variant="contained" disableElevation
           sx={{ borderRadius: '8px', fontWeight: 'bold', px: 3 }}>
           決定
@@ -433,7 +431,7 @@ function DurationDialog({
 }
 
 // ==========================================
-// 学習量入力ダイアログ（合計 / 範囲 タブ付き）
+// 学習量入力ダイアログ
 // ==========================================
 interface PagesData {
   mode: 'total' | 'range';
@@ -449,6 +447,7 @@ function PagesDialog({
   value: PagesData; unit: string;
   onConfirm: (v: PagesData) => void;
 }) {
+  const theme = useTheme();
   const [tabIndex, setTabIndex] = useState(0);
   const [localTotal, setLocalTotal] = useState(value.total);
   const [localStart, setLocalStart] = useState(value.rangeStart);
@@ -491,15 +490,15 @@ function PagesDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' } } }}
+      PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' }, backgroundImage: 'none' } }}
     >
-      <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>学習量を入力</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>学習量を入力</DialogTitle>
       <DialogContent>
         <Tabs
           value={tabIndex}
           onChange={(_, v) => setTabIndex(v)}
           variant="fullWidth"
-          sx={{ mb: 2, minHeight: '36px', '& .MuiTab-root': { minHeight: '36px', py: 0.5 } }}
+          sx={{ mb: 2, minHeight: '36px', '& .MuiTab-root': { minHeight: '36px', py: 0.5, color: 'text.secondary' } }}
         >
           <Tab label="合計" sx={{ fontWeight: 'bold', fontSize: '13px' }} />
           <Tab label="範囲" sx={{ fontWeight: 'bold', fontSize: '13px' }} />
@@ -512,11 +511,11 @@ function PagesDialog({
               onChange={(e) => setLocalTotal(e.target.value)}
               size="small" fullWidth
               slotProps={{
-                htmlInput: { min: 0, style: { textAlign: 'center', fontSize: '22px', fontWeight: 'bold' } },
+                htmlInput: { min: 0, style: { textAlign: 'center', fontSize: '22px', fontWeight: 'bold', color: theme.palette.text.primary } },
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle' } }}
             />
-            <Typography sx={{ fontWeight: 'bold', color: '#666', flexShrink: 0 }}>{unit}</Typography>
+            <Typography sx={{ fontWeight: 'bold', color: 'text.secondary', flexShrink: 0 }}>{unit}</Typography>
           </Box>
         )}
 
@@ -524,7 +523,7 @@ function PagesDialog({
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#888', mb: 0.5, display: 'block' }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 0.5, display: 'block' }}>
                   開始
                 </Typography>
                 <TextField
@@ -533,14 +532,14 @@ function PagesDialog({
                   size="small" fullWidth
                   placeholder="例: 1"
                   slotProps={{
-                    htmlInput: { min: 0, style: { textAlign: 'center', fontSize: '20px', fontWeight: 'bold' } },
+                    htmlInput: { min: 0, style: { textAlign: 'center', fontSize: '20px', fontWeight: 'bold', color: theme.palette.text.primary } },
                   }}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle' } }}
                 />
               </Box>
-              <Typography sx={{ fontWeight: 'bold', color: '#aaa', fontSize: '20px', mt: 2.5, flexShrink: 0 }}>〜</Typography>
+              <Typography sx={{ fontWeight: 'bold', color: 'text.disabled', fontSize: '20px', mt: 2.5, flexShrink: 0 }}>〜</Typography>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#888', mb: 0.5, display: 'block' }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 0.5, display: 'block' }}>
                   終了
                 </Typography>
                 <TextField
@@ -549,22 +548,22 @@ function PagesDialog({
                   size="small" fullWidth
                   placeholder="例: 10"
                   slotProps={{
-                    htmlInput: { min: 0, style: { textAlign: 'center', fontSize: '20px', fontWeight: 'bold' } },
+                    htmlInput: { min: 0, style: { textAlign: 'center', fontSize: '20px', fontWeight: 'bold', color: theme.palette.text.primary } },
                   }}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle' } }}
                 />
               </Box>
             </Box>
 
             {rangeHasInput && !rangeValid && localStart !== '' && localEnd !== '' && (
-              <Typography variant="caption" sx={{ color: '#d32f2f', mt: 1, display: 'block' }}>
+              <Typography variant="caption" sx={{ color: 'error.main', mt: 1, display: 'block' }}>
                 終了は開始以上の数値を入力してください
               </Typography>
             )}
 
             {rangeValid && rangeAmount > 0 && (
-              <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#e8f0fe', borderRadius: '10px', textAlign: 'center' }}>
-                <Typography sx={{ fontSize: '14px', fontWeight: 'bold', color: '#1A73E8' }}>
+              <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'primary.lighter', borderRadius: '10px', textAlign: 'center' }}>
+                <Typography sx={{ fontSize: '14px', fontWeight: 'bold', color: 'primary.main' }}>
                   {localStart} 〜 {localEnd}（合計: {rangeAmount} {unit}）
                 </Typography>
               </Box>
@@ -573,7 +572,7 @@ function PagesDialog({
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ color: '#666', fontWeight: 'bold' }}>キャンセル</Button>
+        <Button onClick={onClose} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>キャンセル</Button>
         <Button
           onClick={handleConfirm}
           variant="contained" disableElevation
@@ -606,25 +605,26 @@ function CompactCell({
       sx={{
         display: 'flex', alignItems: 'center',
         borderRadius: '12px',
-        border: highlight ? '2px solid #1A73E8' : '1px solid #e8e8e8',
-        backgroundColor: highlight ? '#f0f4fd' : '#fafafa',
+        border: highlight ? '2px solid' : '1px solid',
+        borderColor: highlight ? 'primary.main' : 'divider',
+        backgroundColor: highlight ? 'primary.lighter' : 'background.subtle',
         mb: 1.5, px: 2,
         height: '48px',
         transition: '0.15s', cursor: 'pointer',
-        '&:hover': { backgroundColor: highlight ? '#e8f0fe' : '#f0f0f0', borderColor: '#1A73E8' },
+        '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
       }}
       onClick={onClick}
     >
-      <Box sx={{ color: highlight ? '#1A73E8' : '#aaa', display: 'flex', mr: 1.5, flexShrink: 0 }}>
+      <Box sx={{ color: highlight ? 'primary.main' : 'text.disabled', display: 'flex', mr: 1.5, flexShrink: 0 }}>
         {icon}
       </Box>
       <Typography sx={{
         flexGrow: 1, fontWeight: 'bold', fontSize: '14px',
-        color: hasValue ? (highlight ? '#1A73E8' : '#333') : '#bbb',
+        color: hasValue ? (highlight ? 'primary.main' : 'text.primary') : 'text.disabled',
       }}>
         {value || placeholder}
       </Typography>
-      {rightSlot ?? <KeyboardArrowRightIcon sx={{ color: highlight ? '#1A73E8' : '#bbb', fontSize: '20px', flexShrink: 0 }} />}
+      {rightSlot ?? <KeyboardArrowRightIcon sx={{ color: highlight ? 'primary.main' : 'text.disabled', fontSize: '20px', flexShrink: 0 }} />}
     </Box>
   );
 }
@@ -649,6 +649,7 @@ function ManualInputTab({
   onTotalMinutesChange: (n: number) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const theme = useTheme();
   const [recordDatetime, setRecordDatetime] = useState(nowDatetimeLocal);
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
@@ -706,7 +707,6 @@ function ManualInputTab({
     onTotalMinutesChange(totalMinutes);
   }, [totalMinutes, onTotalMinutesChange]);
 
-  // 時間・学習量・メモ・画像のいずれかが入力されたら親に通知
   useEffect(() => {
     const dirty = totalMinutes > 0
       || (pagesData.total !== '' && parseInt(pagesData.total) > 0)
@@ -732,15 +732,15 @@ function ManualInputTab({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', pt: 2 }}>
 
-      {/* ========== 教材 ========== */}
       <ListItemButton onClick={onOpenMaterialDialog} sx={{
         borderRadius: '16px',
-        border: selectedMaterial ? '2px solid #1A73E8' : '1px solid #e8e8e8',
-        backgroundColor: selectedMaterial ? '#f0f4fd' : '#fafafa',
+        border: selectedMaterial ? '2px solid' : '1px solid',
+        borderColor: selectedMaterial ? 'primary.main' : 'divider',
+        backgroundColor: selectedMaterial ? 'primary.lighter' : 'background.subtle',
         mb: 1.5, px:  { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, minHeight: { xs: '100px', sm: '120px' }, transition: '0.15s',
-        '&:hover': { backgroundColor: selectedMaterial ? '#e8f0fe' : '#f0f0f0', borderColor: '#1A73E8' },
+        '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
       }}>
-        <ListItemIcon sx={{ minWidth: { xs: 60, sm: 80 }, mr: 2, color: selectedMaterial ? '#1A73E8' : '#aaa', justifyContent: 'center' }}>
+        <ListItemIcon sx={{ minWidth: { xs: 60, sm: 80 }, mr: 2, color: selectedMaterial ? 'primary.main' : 'text.disabled', justifyContent: 'center' }}>
           {selectedMaterial && selectedMaterial !== 'none' ? (
             <img src={(selectedMaterial as Material).image} alt=""
               style={{ height: '80px', maxWidth: '80px', objectFit: 'contain' }} />
@@ -753,29 +753,28 @@ function ManualInputTab({
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {selectedMaterial && selectedMaterial !== 'none' && (
                 <Chip label={(selectedMaterial as Material).categoryName} size="small" sx={{
-                  backgroundColor: (selectedMaterial as Material).colorCode, color: '#fff',
+                  backgroundColor: (selectedMaterial as Material).colorCode, color: 'error.contrastText',
                   fontSize: '11px', height: '22px', fontWeight: 'bold', alignSelf: 'flex-start',
                 }} />
               )}
               <Typography sx={{
                 fontWeight: 'bold', fontSize: '18px',
-                color: selectedMaterial ? '#1A73E8' : '#bbb',
+                color: selectedMaterial ? 'primary.main' : 'text.disabled',
                 lineHeight: 1.3,
               }}>
                 {materialLabel() ?? '教材を選択'}
               </Typography>
               {!selectedMaterial && (
-                <Typography variant="caption" sx={{ color: '#bbb' }}>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                   記録するには教材を選択してください
                 </Typography>
               )}
             </Box>
           }
         />
-        <KeyboardArrowRightIcon sx={{ color: selectedMaterial ? '#1A73E8' : '#bbb', fontSize: '28px' }} />
+        <KeyboardArrowRightIcon sx={{ color: selectedMaterial ? 'primary.main' : 'text.disabled', fontSize: '28px' }} />
       </ListItemButton>
 
-      {/* ========== 日付 ========== */}
       <CompactCell
         icon={<CalendarTodayOutlinedIcon fontSize="small" />}
         value={formatDatetime(recordDatetime)}
@@ -783,7 +782,6 @@ function ManualInputTab({
         onClick={() => setIsDateDialogOpen(true)}
       />
 
-      {/* ========== 勉強時間 ========== */}
       <CompactCell
         icon={<AccessTimeIcon fontSize="small" />}
         value={totalMinutes > 0 ? formatDuration(totalMinutes) : undefined}
@@ -792,7 +790,6 @@ function ManualInputTab({
         highlight={totalMinutes > 0}
       />
 
-      {/* ========== 学習量（教材が選択されている場合のみ） ========== */}
       {hasMaterialSelected && (
         <CompactCell
           icon={<MenuBookRoundedIcon fontSize="small" />}
@@ -805,17 +802,15 @@ function ManualInputTab({
 
       <Divider sx={{ my: 1 }} />
 
-      {/* ========== メモ ========== */}
       <Box sx={{ mt: 1, mb: 1.5 }}>
         <TextField
           placeholder="要点・ひとことメモ" value={memo}
           onChange={(e) => setMemo(e.target.value)}
           fullWidth multiline rows={3} disabled={isSaving}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' } }}
+          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle', color: 'text.primary' } }}
         />
       </Box>
 
-      {/* ========== 画像 ========== */}
       <input
         type="file" accept="image/*" ref={fileInputRef}
         style={{ display: 'none' }} onChange={handleImageChange}
@@ -825,21 +820,22 @@ function ManualInputTab({
           onClick={() => fileInputRef.current?.click()}
           sx={{
             display: 'flex', alignItems: 'center', gap: 2,
-            borderRadius: '12px', border: '2px solid #1A73E8',
-            backgroundColor: '#f0f4fd', mb: 1.5, px: 2, py: 1.5,
+            borderRadius: '12px', border: '2px solid',
+            borderColor: 'primary.main',
+            backgroundColor: 'primary.lighter', mb: 1.5, px: 2, py: 1.5,
             cursor: 'pointer', transition: '0.15s',
-            '&:hover': { backgroundColor: '#e8f0fe' },
+            '&:hover': { backgroundColor: 'action.hover' },
           }}
         >
           <img src={previewUrl} alt="preview"
             style={{ height: '48px', width: '48px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
           <Typography sx={{
-            fontWeight: 'bold', fontSize: '13px', color: '#1A73E8', flexGrow: 1,
+            fontWeight: 'bold', fontSize: '13px', color: 'primary.main', flexGrow: 1,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {image.name}
           </Typography>
-          <KeyboardArrowRightIcon sx={{ color: '#1A73E8', fontSize: '20px' }} />
+          <KeyboardArrowRightIcon sx={{ color: 'primary.main', fontSize: '20px' }} />
         </Box>
       ) : (
         <CompactCell
@@ -849,7 +845,6 @@ function ManualInputTab({
         />
       )}
 
-      {/* ダイアログ群 */}
       <DateDialog
         open={isDateDialogOpen} onClose={() => setIsDateDialogOpen(false)}
         value={recordDatetime} onChange={setRecordDatetime}
@@ -883,6 +878,7 @@ function StopwatchTab({
   pauseFnRef: React.MutableRefObject<(() => void) | null>;
   onStateChange: (elapsed: number, isRunning: boolean) => void;
 }) {
+  const theme = useTheme();
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -925,15 +921,15 @@ function StopwatchTab({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%', pt: 2 }}>
 
-      {/* ========== 教材 ========== */}
       <ListItemButton onClick={onOpenMaterialDialog} sx={{
         borderRadius: '16px',
-        border: selectedMaterial ? '2px solid #1A73E8' : '1px solid #e8e8e8',
-        backgroundColor: selectedMaterial ? '#f0f4fd' : '#fafafa',
+        border: selectedMaterial ? '2px solid' : '1px solid',
+        borderColor: selectedMaterial ? 'primary.main' : 'divider',
+        backgroundColor: selectedMaterial ? 'primary.lighter' : 'background.subtle',
         mb: 1.5, px: 3, py: 3, minHeight: '120px', transition: '0.15s',
-        '&:hover': { backgroundColor: selectedMaterial ? '#e8f0fe' : '#f0f0f0', borderColor: '#1A73E8' },
+        '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
       }}>
-        <ListItemIcon sx={{ minWidth: 80, mr: 2, color: selectedMaterial ? '#1A73E8' : '#aaa', justifyContent: 'center' }}>
+        <ListItemIcon sx={{ minWidth: 80, mr: 2, color: selectedMaterial ? 'primary.main' : 'text.disabled', justifyContent: 'center' }}>
           {selectedMaterial && selectedMaterial !== 'none' ? (
             <img src={(selectedMaterial as Material).image} alt=""
               style={{ height: '80px', maxWidth: '80px', objectFit: 'contain' }} />
@@ -946,38 +942,37 @@ function StopwatchTab({
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {selectedMaterial && selectedMaterial !== 'none' && (
                 <Chip label={(selectedMaterial as Material).categoryName} size="small" sx={{
-                  backgroundColor: (selectedMaterial as Material).colorCode, color: '#fff',
+                  backgroundColor: (selectedMaterial as Material).colorCode, color: 'error.contrastText',
                   fontSize: '11px', height: '22px', fontWeight: 'bold', alignSelf: 'flex-start',
                 }} />
               )}
               <Typography sx={{
                 fontWeight: 'bold', fontSize: '18px',
-                color: selectedMaterial ? '#1A73E8' : '#bbb',
+                color: selectedMaterial ? 'primary.main' : 'text.disabled',
                 lineHeight: 1.3,
               }}>
                 {materialLabel() ?? '教材を選択'}
               </Typography>
               {!selectedMaterial && (
-                <Typography variant="caption" sx={{ color: '#bbb' }}>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                   記録するには教材を選択してください
                 </Typography>
               )}
             </Box>
           }
         />
-        <KeyboardArrowRightIcon sx={{ color: selectedMaterial ? '#1A73E8' : '#bbb', fontSize: '28px' }} />
+        <KeyboardArrowRightIcon sx={{ color: selectedMaterial ? 'primary.main' : 'text.disabled', fontSize: '28px' }} />
       </ListItemButton>
 
-      {/* ストップウォッチ本体 */}
       <Box sx={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        py: 5, px: 3, backgroundColor: '#f9f9f9', borderRadius: '20px',
-        border: '1px solid #eee', gap: 4,
+        py: 5, px: 3, backgroundColor: 'background.subtle', borderRadius: '20px',
+        border: '1px solid', borderColor: 'divider', gap: 4,
       }}>
         <Typography sx={{
           fontSize: 'clamp(56px, 10vw, 88px)', fontWeight: '300',
           letterSpacing: '-2px', lineHeight: 1,
-          color: isRunning ? '#1A73E8' : elapsed > 0 ? '#333' : '#bbb',
+          color: isRunning ? 'primary.main' : elapsed > 0 ? 'text.primary' : 'text.disabled',
           fontFamily: '"Roboto Mono", monospace',
           transition: 'color 0.3s',
         }}>
@@ -985,13 +980,13 @@ function StopwatchTab({
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton onClick={handleReset} disabled={elapsed === 0}
-            sx={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', width: 52, height: 52, '&:hover': { backgroundColor: '#f5f5f5' } }}>
+            sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', width: 52, height: 52, '&:hover': { backgroundColor: 'action.hover' }, color: 'text.primary' }}>
             <ReplayRoundedIcon />
           </IconButton>
           <IconButton onClick={() => setIsRunning((r) => !r)} sx={{
             width: 72, height: 72,
-            backgroundColor: isRunning ? '#d32f2f' : '#1A73E8', color: '#fff',
-            '&:hover': { backgroundColor: isRunning ? '#b71c1c' : '#1557b0' },
+            backgroundColor: isRunning ? 'error.main' : 'primary.main', color: 'error.contrastText',
+            '&:hover': { backgroundColor: isRunning ? 'error.dark' : 'primary.dark' },
           }}>
             {isRunning ? <PauseRoundedIcon sx={{ fontSize: '36px' }} /> : <PlayArrowRoundedIcon sx={{ fontSize: '36px' }} />}
           </IconButton>
@@ -1016,7 +1011,6 @@ export default function Record() {
   const [presetHours, setPresetHours] = useState('');
   const [presetMinutes, setPresetMinutes] = useState('');
 
-  const [manualTotalMinutes, setManualTotalMinutes] = useState(0);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -1026,7 +1020,6 @@ export default function Record() {
   const manualSaveFnRef = useRef<(() => void) | null>(null);
   const swUseFnRef = useRef<(() => void) | null>(null);
   const swPauseFnRef = useRef<(() => void) | null>(null);
-  // 保存後の自動遷移中はブロックしないためのフラグ
   const isSaveNavigatingRef = useRef(false);
 
   const [manualIsDirty, setManualIsDirty] = useState(false);
@@ -1034,7 +1027,6 @@ export default function Record() {
     setManualIsDirty(dirty);
   }, []);
 
-  // Snackbar
   const navigate = useNavigate();
 
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -1045,11 +1037,9 @@ export default function Record() {
   };
   const handleSnackbarClose = () => setSnackbar((s) => ({ ...s, open: false }));
 
-  // 保存完了ポップアップ用
   const [savePopupOpen, setSavePopupOpen] = useState(false);
   const [savePopupLabel, setSavePopupLabel] = useState('');
 
-  // ヘッダーボタンの disabled 条件
   const headerButtonDisabled =
     tabIndex === 0
       ? (isSaving || selectedMaterial === null)
@@ -1064,7 +1054,7 @@ export default function Record() {
   };
 
   const handleTotalMinutesChange = useCallback((n: number) => {
-    setManualTotalMinutes(n);
+    // manualTotalMinutes is removed as it's not used in parent
   }, []);
 
   const handleSwStateChange = useCallback((elapsed: number, isRunning: boolean) => {
@@ -1072,14 +1062,12 @@ export default function Record() {
     setSwIsRunning(isRunning);
   }, []);
 
-  // 手動入力に何か入力中 or ストップウォッチに経過時間あり → 離脱ブロック
   const shouldBlock = !isSaveNavigatingRef.current && (manualIsDirty || swElapsed > 0);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       shouldBlock && currentLocation.pathname !== nextLocation.pathname
   );
 
-  // タブ切り替えハンドラ：ストップウォッチ→手動は自動一時停止
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     if (newValue === 0 && swIsRunning) {
       swPauseFnRef.current?.();
@@ -1105,7 +1093,7 @@ export default function Record() {
           categoryName: item.categories?.name || 'カテゴリなし',
           name: item.title,
           image: item.image_url,
-          colorCode: item.categories?.color_code || '#e0e0e0',
+          colorCode: item.categories?.color_code || theme.palette.divider,
           sortOrder: item.categories?.sort_order || 0,
           unit: item.unit || 'ページ',
         })));
@@ -1169,13 +1157,11 @@ export default function Record() {
         ? '教材なし'
         : (selectedMaterial as Material).name;
 
-      // フォームをリセット
       setSelectedMaterial(null);
       setPresetHours('');
       setPresetMinutes('');
       setManualIsDirty(false);
 
-      // 中央ポップアップを表示して1.5秒後にレポートへ遷移
       setSavePopupLabel(label);
       setSavePopupOpen(true);
       isSaveNavigatingRef.current = true;
@@ -1185,7 +1171,7 @@ export default function Record() {
       }, 1500);
     } catch (error) {
       console.error('保存エラー:', error);
-      isSaveNavigatingRef.current = false; // 保存失敗時はブロック機能を復帰
+      isSaveNavigatingRef.current = false;
       showSnackbar('保存に失敗しました。時間をおいて再度お試しください。', 'error');
     } finally {
       setIsSaving(false);
@@ -1198,13 +1184,12 @@ export default function Record() {
       maxWidth: '1100px', margin: '0 auto', width: '100%' 
     }}>
 
-      {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isMobile ? 2 : 4, color: '#333' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isMobile ? 2 : 4, color: 'text.primary' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
             <ModeEditOutlineOutlinedIcon />
           </Box>
-          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>記録の入力</Typography>
+          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>記録の入力</Typography>
         </Box>
         <Button
           variant="contained"
@@ -1218,25 +1203,23 @@ export default function Record() {
         </Button>
       </Box>
 
-      {/* タブ */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: isMobile ? 0 : 4 }}>
-        <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
+        <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth" sx={{ '& .MuiTab-root': { color: 'text.secondary' } }}>
           <Tab
             icon={<ModeEditOutlineOutlinedIcon />}
             iconPosition="start"
             label="手動入力"
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap', }}
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap' }}
           />
           <Tab
             icon={<TimerOutlinedIcon />}
             iconPosition="start"
             label="ストップウォッチ"
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap', }}
+            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap' }}
           />
         </Tabs>
       </Box>
 
-      {/* タブコンテンツ：両タブを常時マウントしてstateを保持、CSSで表示切り替え */}
       <Box sx={{ flexGrow: 1, overflowY: 'auto', pb: isMobile ? 0 : 3, px: isMobile ? 0 : 1 }}>
         <Box sx={{ display: tabIndex === 0 ? 'block' : 'none' }}>
           <ManualInputTab
@@ -1263,7 +1246,6 @@ export default function Record() {
         </Box>
       </Box>
 
-      {/* 教材選択モーダル */}
       <MaterialSelectDialog
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
@@ -1273,34 +1255,32 @@ export default function Record() {
         onSelect={setSelectedMaterial}
       />
 
-      {/* 保存完了ポップアップ */}
       <Fade in={savePopupOpen} timeout={300}>
         <Box sx={{
           position: 'fixed', inset: 0, zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: 'rgba(0,0,0,0.35)',
+          backgroundColor: 'background.overlay',
           pointerEvents: 'none',
         }}>
           <Box sx={{
-            backgroundColor: '#fff',
+            backgroundColor: 'background.paper',
             borderRadius: '24px',
             px: { xs: 4, sm: 5 }, py: 4,
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-            boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+            boxShadow: theme.customShadows.lg,
             minWidth: { xs: '200px', sm: '260px' },
           }}>
-            <CheckCircleOutlineIcon sx={{ fontSize: '64px', color: '#34A853' }} />
-            <Typography sx={{ fontWeight: 'bold', fontSize: '20px', color: '#222' }}>
+            <CheckCircleOutlineIcon sx={{ fontSize: '64px', color: 'success.main' }} />
+            <Typography sx={{ fontWeight: 'bold', fontSize: '20px', color: 'text.primary' }}>
               記録しました！
             </Typography>
-            <Typography variant="body2" sx={{ color: '#888', textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
               {savePopupLabel}
             </Typography>
           </Box>
         </Box>
       </Fade>
 
-      {/* 離脱確認ダイアログ（状況に応じてメッセージを出し分け） */}
       <NavigationBlockerDialog
         open={blocker.state === 'blocked'}
         onProceed={() => blocker.proceed?.()}
@@ -1314,7 +1294,6 @@ export default function Record() {
         }
       />
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}

@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Typography, Box
+  Button, Typography, Box, useTheme
 } from '@mui/material';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
@@ -26,24 +26,23 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const theme = useTheme();
 
   const touchHandledRef = useRef(false);
 
   const handleTouchEnd = (e: React.TouchEvent, action: () => void) => {
     touchHandledRef.current = true;
     setTimeout(() => { touchHandledRef.current = false; }, 500);
-
     const touch = e.changedTouches[0];
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
-
     if (
       touch.clientX >= rect.left &&
       touch.clientX <= rect.right &&
       touch.clientY >= rect.top &&
       touch.clientY <= rect.bottom
     ) {
-      action(); // 枠内で離した時だけ実行
+      action();
     }
   };
 
@@ -58,12 +57,19 @@ export default function ConfirmDialog({
       onClose={onCancel}
       maxWidth="xs"
       fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: { xs: 1, sm: 2 }, m: { xs: 2, sm: 'auto' } } }}
+      PaperProps={{ 
+        sx: { 
+          borderRadius: '20px', 
+          p: { xs: 1, sm: 2 }, 
+          m: { xs: 2, sm: 'auto' },
+          backgroundImage: 'none',
+        } 
+      }}
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <WarningAmberRoundedIcon sx={{ color: '#f50000', fontSize: '28px' }} />
-          <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+          <WarningAmberRoundedIcon sx={{ color: 'error.main', fontSize: '28px' }} />
+          <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.1rem', sm: '1.25rem' }, color: 'text.primary' }}>
             {title}
           </Typography>
         </Box>
@@ -80,7 +86,14 @@ export default function ConfirmDialog({
           onTouchEnd={(e) => handleTouchEnd(e, onCancel)}
           variant="outlined"
           onClick={(e) => handleClick(e, onCancel)}
-          sx={{ color: '#666', fontWeight: 'bold', flex: 1, borderRadius: '8px', py: 1, borderColor: '#e0e0e0' }}
+          sx={{ 
+            color: 'text.secondary', 
+            fontWeight: 'bold', 
+            flex: 1, 
+            borderRadius: '8px', 
+            py: 1, 
+            borderColor: 'divider' 
+          }}
         >
           {cancelLabel}
         </Button>
@@ -93,9 +106,9 @@ export default function ConfirmDialog({
             flex: 1,
             fontWeight: 'bold',
             borderRadius: '8px',
-            backgroundColor: '#d32f2f',
             py: 1,
-            '&:hover': { backgroundColor: '#b71c1c' },
+            backgroundColor: 'error.main',
+            color: 'error.contrastText',
           }}
         >
           {confirmLabel}

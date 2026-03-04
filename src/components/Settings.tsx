@@ -12,7 +12,7 @@ export default function Settings() {
     <Box sx={{ display: 'flex', flexDirection: 'column', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
 
       {/* ページヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: '#333' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: 'text.primary' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
           <SettingsOutlinedIcon />
         </Box>

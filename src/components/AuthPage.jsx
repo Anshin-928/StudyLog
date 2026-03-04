@@ -3,15 +3,17 @@
 import { useState } from 'react';
 import {
   Box, Typography, TextField, Button,
-  Tab, Tabs, Alert, CircularProgress, InputAdornment, IconButton,
+  Tab, Tabs, Alert, CircularProgress, InputAdornment, IconButton, useTheme,
 } from '@mui/material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import studyLogLogo from '../assets/studyLogLogo.svg';
+import studyLogLogoDark from '../assets/studyLogLogo_dark.svg';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function AuthPage() {
+  const theme = useTheme();
   const [tabIndex, setTabIndex] = useState(0); // 0: ログイン, 1: 新規登録
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +24,20 @@ export default function AuthPage() {
 
   const navigate = useNavigate();
   const isLogin = tabIndex === 0;
+
+  // オートフィルの青色背景をテーマカラーで上書きする設定
+  const textFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '12px',
+      backgroundColor: 'background.subtle',
+      '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus': {
+        WebkitBoxShadow: `0 0 0 1000px ${theme.palette.background.subtle} inset !important`,
+        WebkitTextFillColor: `${theme.palette.text.primary} !important`,
+        caretColor: theme.palette.text.primary,
+        borderRadius: 'inherit',
+      },
+    },
+  };
 
   const handleTabChange = (_, newValue) => {
     setTabIndex(newValue);
@@ -57,7 +73,6 @@ export default function AuthPage() {
         navigate('/home', { replace: true });
       }
     } catch (error) {
-      // Supabase のエラーメッセージを日本語に変換
       const msg = error.message;
       if (msg.includes('Invalid login credentials')) {
         setErrorMessage('メールアドレスまたはパスワードが正しくありません。');
@@ -81,7 +96,7 @@ export default function AuthPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        backgroundColor: '#F0F4F9',
+        backgroundColor: 'background.default',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -90,9 +105,9 @@ export default function AuthPage() {
     >
       <Box
         sx={{
-          backgroundColor: '#fff',
+          backgroundColor: 'background.paper',
           borderRadius: '24px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+          boxShadow: theme.customShadows.md,
           p: { xs: 3, sm: 5 },
           width: '100%',
           maxWidth: '420px',
@@ -100,13 +115,17 @@ export default function AuthPage() {
       >
         {/* ロゴ・アプリ名 */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1, gap: 1.5 }}>
-          <img src={studyLogLogo} alt="StudyLog" style={{ height: '36px' }} />
-          <Typography variant="h5" sx={{ fontWeight: '900', fontSize: '28px', letterSpacing: '-0.5px', color: '#1A1A1A' }}>
+          <img 
+            src={theme.palette.mode === 'dark' ? studyLogLogoDark : studyLogLogo} 
+            alt="StudyLog" 
+            style={{ height: '36px' }} 
+          />
+          <Typography variant="h5" sx={{ fontWeight: '900', fontSize: '28px', letterSpacing: '-0.5px', color: 'text.primary' }}>
             StudyLog
           </Typography>
         </Box>
 
-        <Typography variant="body2" sx={{ textAlign: 'center', color: '#999', mb: 4, fontSize: '13px' }}>
+        <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', mb: 4, fontSize: '13px' }}>
           学習記録を、もっと楽しく。
         </Typography>
 
@@ -116,9 +135,26 @@ export default function AuthPage() {
             value={tabIndex}
             onChange={handleTabChange}
             variant="fullWidth"
+            // 🌟 修正: インジケーター（下線）の角も丸く設定
+            TabIndicatorProps={{ sx: { borderRadius: '3px 3px 0 0' } }}
           >
-            <Tab label="ログイン" sx={{ fontWeight: 'bold' }} />
-            <Tab label="新規登録" sx={{ fontWeight: 'bold' }} />
+            {/* 🌟 修正: Tab 本体の左上と右上を丸く設定し、ホバー効果を追加 */}
+            <Tab 
+              label="ログイン" 
+              sx={{ 
+                fontWeight: 'bold', 
+                borderRadius: '12px 12px 0 0',
+                '&:hover': { backgroundColor: 'action.hover' } 
+              }} 
+            />
+            <Tab 
+              label="新規登録" 
+              sx={{ 
+                fontWeight: 'bold', 
+                borderRadius: '12px 12px 0 0',
+                '&:hover': { backgroundColor: 'action.hover' } 
+              }} 
+            />
           </Tabs>
         </Box>
 
@@ -144,10 +180,7 @@ export default function AuthPage() {
           fullWidth
           size="medium"
           disabled={isLoading}
-          sx={{
-            mb: 2,
-            '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' },
-          }}
+          sx={{ mb: 2, ...textFieldSx }}
         />
 
         {/* パスワード */}
@@ -178,10 +211,7 @@ export default function AuthPage() {
               ),
             },
           }}
-          sx={{
-            mb: 3,
-            '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f9f9f9' },
-          }}
+          sx={{ mb: 3, ...textFieldSx }}
         />
 
         {/* 送信ボタン */}

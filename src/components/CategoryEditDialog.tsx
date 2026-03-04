@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
   Button, Box, IconButton, TextField, Popover, CircularProgress,
-  Snackbar, Alert, Typography
+  Snackbar, Alert, Typography, useTheme, alpha
 } from '@mui/material';
 import DragIndicatorOutlinedIcon from '@mui/icons-material/DragIndicatorOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -30,6 +30,7 @@ interface CategoryEditDialogProps {
 }
 
 export default function CategoryEditDialog({ open, onClose, onUpdated }: CategoryEditDialogProps) {
+  const theme = useTheme(); 
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,11 +44,11 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const listContainerRef = useRef<HTMLDivElement>(null);
   const dragEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ★ カテゴリ削除確認ダイアログ用 state
+  // カテゴリ削除確認ダイアログ用 state
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const deleteCategoryName = categories.find(c => c.id === deleteCategoryId)?.name ?? '';
 
-  // ★ 保存エラー Snackbar
+  // 保存エラー Snackbar
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
   const showSnackbar = (message: string) => setSnackbar({ open: true, message });
   const handleSnackbarClose = () => setSnackbar(s => ({ ...s, open: false }));
@@ -141,12 +142,12 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
     setCategories([...categories, newCat]);
   };
 
-  // ★ ゴミ箱アイコン → 確認ダイアログを開く（window.confirm を廃止）
+  // ゴミ箱アイコン → 確認ダイアログを開く
   const handleDeleteCategory = (id: string) => {
     setDeleteCategoryId(id);
   };
 
-  // ★ 確認ダイアログの「削除する」→ リストから除外
+  // 確認ダイアログの「削除する」→ リストから除外
   const handleConfirmDelete = () => {
     setCategories(categories.filter(cat => cat.id !== deleteCategoryId));
     setDeleteCategoryId(null);
@@ -163,7 +164,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
       if (nullCat) {
         nullCategoryId = nullCat.id;
       } else {
-        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: '#9E9E9E', sort_order: 0, user_id: user.id }]).select().single();
+        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: theme.palette.divider, sort_order: 0, user_id: user.id }]).select().single();
         nullCategoryId = newNullCat?.id;
       }
 
@@ -201,7 +202,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   return (
     <>
       <Dialog open={open} onClose={(_, reason) => { if (reason === 'backdropClick') return; if (!isSaving) onClose(); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}>
-        <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>カテゴリの編集</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>カテゴリの編集</DialogTitle>
         <DialogContent sx={{ minHeight: '300px' }}>
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress /></Box>
@@ -226,27 +227,32 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                 return (
                   <Box
                     key={cat.id}
-                    draggable
-                    onDragStart={(e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, index)}
+                    draggable={!isDefault} // カテゴリなしはドラッグ不可にする
+                    onDragStart={(e: React.DragEvent<HTMLDivElement>) => !isDefault && handleDragStart(e, index)}
                     onDragEnd={handleDragEnd}
                     sx={{ pb: `${ITEM_GAP_PX}px`, position: 'relative', zIndex: isDraggingThis ? 10 : 1 }}
                   >
                     <Box
                       sx={{
                         display: 'flex', alignItems: 'center', p: 1.5,
-                        backgroundColor: isDraggingThis ? '#f8fafd' : '#fff',
-                        border: isDraggingThis ? '2px dashed #1A73E8' : '1px solid #e0e0e0',
+                        backgroundColor: isDraggingThis 
+                          ? alpha(theme.palette.primary.main, 0.08) 
+                          : 'background.paper',
+                        border: '1px solid',
+                        borderColor: isDraggingThis ? 'primary.main' : 'divider',
                         borderRadius: '8px',
-                        opacity: isDraggingThis ? 0.6 : 1,
+                        opacity: isDraggingThis ? 0.7 : 1,
                         transform: `translateY(${translateY})`,
                         transition: draggedIndex !== null ? 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)' : 'none',
                         pointerEvents: draggedIndex !== null ? 'none' : 'auto',
-                        cursor: 'grab',
-                        '&:active': { cursor: 'grabbing' },
-                        boxShadow: isDraggingThis ? '0 8px 24px rgba(26,115,232,0.15)' : '0 2px 4px rgba(0,0,0,0.02)',
+                        cursor: isDefault ? 'default' : 'grab',
+                        '&:active': { cursor: isDefault ? 'default' : 'grabbing' },
+                        boxShadow: isDraggingThis 
+                          ? theme.customShadows.md 
+                          : 'none',
                       }}
                     >
-                      <DragIndicatorOutlinedIcon sx={{ color: '#ccc', mr: 1 }} />
+                      <DragIndicatorOutlinedIcon sx={{ color: 'text.disabled', mr: 1, opacity: isDefault ? 0 : 1 }} />
 
                       <IconButton size="small" onClick={(e: React.MouseEvent<HTMLButtonElement>) => !isDefault && handleColorClick(e, cat.id)} sx={{ mr: 1, p: 0.5 }} disabled={isDefault}>
                         <CircleIcon sx={{ color: cat.color_code, fontSize: '20px' }} />
@@ -258,11 +264,11 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNameChange(cat.id, e.target.value)}
                         disabled={isDefault}
                         fullWidth
-                        InputProps={{ disableUnderline: true, sx: { fontWeight: 'bold', color: '#333' } }}
+                        InputProps={{ disableUnderline: true, sx: { fontWeight: 'bold', color: 'text.primary' } }}
                       />
 
                       {!isDefault && (
-                        <IconButton size="small" onClick={() => handleDeleteCategory(cat.id)} sx={{ ml: 1, color: '#999', '&:hover': { color: '#d32f2f' } }}>
+                        <IconButton size="small" onClick={() => handleDeleteCategory(cat.id)} sx={{ ml: 1, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
                           <DeleteOutlineIcon fontSize="small" />
                         </IconButton>
                       )}
@@ -278,7 +284,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
           )}
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={onClose} disabled={isSaving} sx={{ color: '#666', fontWeight: 'bold' }}>キャンセル</Button>
+          <Button onClick={onClose} disabled={isSaving} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>キャンセル</Button>
           <Button onClick={handleSave} variant="contained" disabled={isSaving} disableElevation sx={{ borderRadius: '8px', fontWeight: 'bold', px: 4 }}>
             {isSaving ? '保存中...' : '保存して完了'}
           </Button>
@@ -291,7 +297,17 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
         anchorEl={colorAnchorEl}
         onClose={() => setColorAnchorEl(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        sx={{ '& .MuiPaper-root': { borderRadius: '12px', p: 1.5, display: 'flex', gap: 1 } }}
+        sx={{ 
+          '& .MuiPaper-root': { 
+            borderRadius: '12px', 
+            p: 1.5, 
+            display: 'flex', 
+            gap: 1,
+            backgroundColor: 'background.paper',
+            backgroundImage: 'none',
+            boxShadow: theme.customShadows.md
+          } 
+        }}
       >
         {PALETTE.map(color => (
           <IconButton key={color} onClick={() => handleColorSelect(color)} sx={{ p: 0.5 }}>
@@ -300,7 +316,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
         ))}
       </Popover>
 
-      {/* ★ カテゴリ削除確認ダイアログ */}
+      {/* カテゴリ削除確認ダイアログ */}
       <ConfirmDialog
         open={deleteCategoryId !== null}
         title="カテゴリを削除しますか？"
@@ -319,7 +335,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
         onCancel={() => setDeleteCategoryId(null)}
       />
 
-      {/* ★ 保存エラー Snackbar */}
+      {/* 保存エラー Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}

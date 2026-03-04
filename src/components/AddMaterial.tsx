@@ -7,7 +7,7 @@ import {
   ListItemAvatar, ListItemText, CircularProgress, IconButton, Divider, Tabs, Tab,
   Snackbar, Alert, Autocomplete,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  useMediaQuery, useTheme,
+  useMediaQuery, useTheme, alpha
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
@@ -119,7 +119,7 @@ export default function AddMaterial() {
     if (existing) return existing.id;
 
     const insertData: any = { name, user_id: userId };
-    if (name === 'カテゴリなし') insertData.color_code = '#9E9E9E';
+    if (name === 'カテゴリなし') insertData.color_code = theme.palette.divider;
 
     const { data: created, error } = await supabase
       .from('categories').insert([insertData]).select().single();
@@ -294,17 +294,17 @@ export default function AddMaterial() {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
 
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1.5, sm: 4 }, color: '#333' }}>
-        <IconButton onClick={() => navigate('/materials')} sx={{ mr: 2, backgroundColor: '#f5f5f5' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1.5, sm: 4 }, color: 'text.primary' }}>
+        <IconButton onClick={() => navigate('/materials')} sx={{ mr: 2, backgroundColor: 'action.hover' }}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'text.primary', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           新しい教材を登録
         </Typography>
       </Box>
 
       {/* タブ */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: { xs: 1.5, sm: 4 }, color: '#333' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: { xs: 1.5, sm: 4 }, color: 'text.primary' }}>
         <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} variant="fullWidth">
           <Tab
             icon={isMobile ? undefined : <SearchIcon />}
@@ -331,7 +331,7 @@ export default function AddMaterial() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') searchBooks(); }}
-              sx={{ backgroundColor: '#fff', borderRadius: '8px' }}
+              sx={{ backgroundColor: 'background.paper', borderRadius: '8px' }}
               disabled={isAdding}
             />
             <Button variant="contained" onClick={searchBooks} disableElevation disabled={isAdding}
@@ -340,9 +340,9 @@ export default function AddMaterial() {
             </Button>
           </Box>
 
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #eee', p: 2, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', backgroundColor: 'background.paper', borderRadius: '16px', border: '1px solid', borderColor: 'divider', p: 2, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
             {!isSearching && searchResults.length === 0 && !searchQuery && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10, color: '#aaa' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10, color: 'text.disabled' }}>
                 <SearchIcon sx={{ fontSize:  { xs: 54, sm: 64 }, mb: 2, opacity: 0.5 }} />
                 <Typography variant="body1" sx={{ fontWeight: 'bold', textAlign: 'center', whiteSpace: 'pre-wrap' }}>
                   {isMobile ?  'キーワードを入力して\n教材を検索してください':'キーワードを入力して教材を検索してください'}
@@ -363,12 +363,13 @@ export default function AddMaterial() {
                     <React.Fragment key={index}>
                       <ListItemButton
                         onClick={(e) => handleAddFromSearchClick(e, book)}
-                        sx={{ borderRadius: '12px', mb: 1, py: { xs: 1, sm: 2 }, px: { xs: 0, sm: 2 }, transition: '0.2s', '&:hover': { backgroundColor: '#f8fafd' } }}
+                        sx={{ borderRadius: '12px', mb: 1, py: { xs: 1, sm: 2 }, px: { xs: 0, sm: 2 }, transition: '0.2s', '&:hover': { backgroundColor: 'action.hover' } }}
                       >
                         <ListItemAvatar sx={{ mr: { xs: 2, sm: 3 } }}>
-                          <img
+                          <Box
+                            component="img"
                             src={book.mediumImageUrl} alt="表紙"
-                            style={{ height: isMobile ? '72px' : '88px', width: 'auto', objectFit: 'contain', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f5f5f5' }}
+                            sx={{ height: isMobile ? '72px' : '88px', width: 'auto', objectFit: 'contain', borderRadius: '8px', border: '1px solid', borderColor: 'divider', backgroundColor: 'background.default' }}
                           />
                         </ListItemAvatar>
                         <ListItemText
@@ -409,10 +410,11 @@ export default function AddMaterial() {
             <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>カテゴリを選択</DialogTitle>
             <DialogContent sx={{ pt: 2 }}>
               {pendingBook && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 1.5, backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-                  <img
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 1.5, backgroundColor: 'background.default', borderRadius: '8px' }}>
+                  <Box
+                    component="img"
                     src={pendingBook.mediumImageUrl} alt="表紙"
-                    style={{ height: '64px', width: 'auto', objectFit: 'contain', borderRadius: '4px', border: '1px solid #ddd' }}
+                    sx={{ height: '64px', width: 'auto', objectFit: 'contain', borderRadius: '4px', border: '1px solid', borderColor: 'divider' }}
                   />
                   <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'  }}>
                     {pendingBook.title}
@@ -443,7 +445,7 @@ export default function AddMaterial() {
               </Box>
             </DialogContent>
             <DialogActions sx={{ p: { xs: 2, sm: 3 }, pt: 0 }}>
-              <Button onClick={() => setPendingBook(null)} disabled={isAdding} sx={{ color: '#666', fontWeight: 'bold' }}>
+              <Button onClick={() => setPendingBook(null)} disabled={isAdding} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
                 キャンセル
               </Button>
               <Button
@@ -462,7 +464,7 @@ export default function AddMaterial() {
 
       {/* ========== タブ1: オリジナル登録 ========== */}
       {tabIndex === 1 && (
-        <Box sx={{ flexGrow: 1, overflow: 'auto', backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #eee', p: { xs: 2, sm: 4 } }}>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', backgroundColor: 'background.paper', borderRadius: '16px', border: '1px solid', borderColor: 'divider', p: { xs: 2, sm: 4 } }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>オリジナル教材の詳細を入力</Typography>
 
           {/* 教材名 */}
@@ -500,8 +502,8 @@ export default function AddMaterial() {
           </Box>
 
           {/* テンプレート選択 */}
-          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: '#666' }}>表紙画像を選択</Typography>
-          <Box sx={{ display: 'flex', gap: 1, mb: 4, flexWrap: 'wrap', p: 2, backgroundColor: '#f9f9f9', borderRadius: '12px' }}>
+          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}>表紙画像を選択</Typography>
+          <Box sx={{ display: 'flex', gap: 1, mb: 4, flexWrap: 'wrap', p: 2, backgroundColor: 'background.default', borderRadius: '12px' }}>
             {TEMPLATES.map((tmpl) => (
               <Box
                 key={tmpl.id}
@@ -509,8 +511,9 @@ export default function AddMaterial() {
                 sx={{
                   width: { xs: 48, sm: 48 }, height: { xs: 64, sm: 64 },
                   cursor: 'pointer', borderRadius: { xs: '4px', sm: '4px' }, overflow: 'hidden',
-                  border: selectedTemplate === tmpl.url && !originalImage ? '3px solid #1A73E8' : '1px solid transparent',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  border: selectedTemplate === tmpl.url && !originalImage ? '3px solid' : '1px solid transparent',
+                  borderColor: selectedTemplate === tmpl.url && !originalImage ? 'primary.main' : 'transparent',
+                  boxShadow: (theme) => theme.customShadows.sm,
                   transition: '0.2s', '&:hover': { opacity: 0.8, transform: 'translateY(-2px)' }
                 }}
               >
@@ -523,15 +526,25 @@ export default function AddMaterial() {
           <input type="file" accept="image/*" id="image-upload-input" style={{ display: 'none' }} onChange={handleImageChange} disabled={isAdding} />
           <label htmlFor="image-upload-input">
             <Box sx={{
-              border: originalImage ? '3px solid #1A73E8' : '2px dashed #ddd',
+              border: originalImage ? '3px solid' : '2px dashed',
+              borderColor: originalImage ? 'primary.main' : 'divider',
               borderRadius: '12px', p: 2, textAlign: 'center', mb: 4,
-              backgroundColor: originalImage ? '#f0f4f9' : '#fafafa',
-              color: '#999', cursor: 'pointer', transition: '0.2s',
-              '&:hover': { borderColor: '#1A73E8', color: '#1A73E8', backgroundColor: '#f0f4f9' }
+              backgroundColor: originalImage ? alpha(theme.palette.primary.main, 0.08) : 'background.default',
+              color: 'text.secondary', cursor: 'pointer', transition: '0.2s',
+              '&:hover': { borderColor: 'primary.main', color: 'primary.main', backgroundColor: alpha(theme.palette.primary.main, 0.08) }
             }}>
               {previewUrl ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <img src={previewUrl} alt="Preview" style={{ maxHeight: '160px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+                  <Box
+                    component="img"
+                    src={previewUrl}
+                    alt="Preview"
+                    sx={{
+                      maxHeight: '160px', maxWidth: '100%', objectFit: 'contain',
+                      borderRadius: '8px',
+                      boxShadow: (theme) => theme.customShadows.sm
+                    }}
+                  />
                   <Typography variant="caption" sx={{ mt: 2, display: 'block' }}>クリックで画像を変更</Typography>
                 </Box>
               ) : (

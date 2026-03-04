@@ -55,17 +55,24 @@ export default function NavigationBlockerDialog({
       onClose={onCancel}
       maxWidth="xs"
       fullWidth
-      PaperProps={{ sx: { borderRadius: '20px', p: { xs: 1, sm: 2 }, m: { xs: 2, sm: 'auto' } } }}
+      PaperProps={{ 
+        sx: { 
+          borderRadius: '20px', 
+          p: { xs: 1, sm: 2 }, 
+          m: { xs: 2, sm: 'auto' },
+          backgroundImage: 'none' // ダークモード時の意図しない重なりを防止
+        } 
+      }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-        <WarningAmberRoundedIcon sx={{ color: '#f57c00', fontSize: '28px' }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
+        <WarningAmberRoundedIcon sx={{ color: 'warning.main', fontSize: '28px' }} />
+        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.05rem', sm: '1.25rem' }, color: 'text.primary' }}>
           未保存の変更があります
         </Typography>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 0, pb: { xs: 2, sm: 3 } }}>
-        <Typography variant="body2" sx={{ color: '#666', whiteSpace: 'pre-line', lineHeight: 1.8, fontSize: { xs: '13px', sm: '14px' } }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-line', lineHeight: 1.8, fontSize: { xs: '13px', sm: '14px' } }}>
           {message}
         </Typography>
       </DialogContent>
@@ -75,7 +82,14 @@ export default function NavigationBlockerDialog({
           onTouchEnd={(e) => handleTouchEnd(e, onCancel)}
           onClick={(e) => handleClick(e, onCancel)}
           variant="outlined"
-          sx={{ fontWeight: 'bold', borderRadius: '8px', flex: 1, borderColor: '#e0e0e0', color: '#333', py: 1 }}
+          sx={{ 
+            fontWeight: 'bold', 
+            borderRadius: '8px', 
+            flex: 1, 
+            borderColor: 'divider', 
+            color: 'text.primary', 
+            py: 1 
+          }}
         >
           キャンセル
         </Button>

@@ -1,7 +1,8 @@
 // src/components/Sidebar.jsx
 
 import {
-  Drawer, Toolbar, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useMediaQuery, useTheme
+  Drawer, Toolbar, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
+  useMediaQuery, useTheme, alpha,
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -28,8 +29,12 @@ export default function Sidebar({ isSidebarOpen }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // スマホではサイドバー自体を描画しない（ボトムナビに委ねる）
   if (isMobile) return null;
+
+  // 選択中の背景色：ライトは #D3E3FD、ダークはプライマリの薄い透過
+  const selectedBg = theme.palette.mode === 'dark'
+    ? alpha(theme.palette.primary.main, 0.18)
+    : '#D3E3FD';
 
   return (
     <Drawer
@@ -46,56 +51,59 @@ export default function Sidebar({ isSidebarOpen }) {
           width: isSidebarOpen ? openDrawerWidth : closedDrawerWidth,
           transition: 'width 0.2s',
           overflowX: 'hidden',
-          backgroundColor: '#F0F4F9',
+          backgroundColor: theme.palette.background.default,
           borderRight: 'none',
-          color: '#333',
+          color: theme.palette.text.primary,
         },
       }}
     >
       <Toolbar />
       <List sx={{ px: 0 }}>
-        {mainMenus.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ display: 'block', mb: 0 }}>
-            <ListItemButton
-              onClick={() => navigate(item.path)}
-              selected={location.pathname === item.path}
-              sx={{
-                minHeight: 48,
-                justifyContent: 'flex-start',
-                ml: isSidebarOpen ? 0 : 1,
-                mr: isSidebarOpen ? 2 : 1,
-                px: 0,
-                borderRadius: isSidebarOpen ? '0 24px 24px 0' : '24px',
-                '&.Mui-selected': {
-                  backgroundColor: '#D3E3FD',
-                  '&:hover': { backgroundColor: '#D3E3FD' },
-                },
-              }}
-            >
-              <ListItemIcon
+        {mainMenus.map((item) => {
+          const isSelected = location.pathname === item.path;
+          return (
+            <ListItem key={item.text} disablePadding sx={{ display: 'block', mb: 0 }}>
+              <ListItemButton
+                onClick={() => navigate(item.path)}
+                selected={isSelected}
                 sx={{
-                  minWidth: 0,
-                  ml: isSidebarOpen ? '24px' : '16px',
-                  mr: '16px',
-                  justifyContent: 'center',
-                  color: location.pathname === item.path ? '#1A73E8' : 'inherit',
+                  minHeight: 48,
+                  justifyContent: 'flex-start',
+                  ml: isSidebarOpen ? 0 : 1,
+                  mr: isSidebarOpen ? 2 : 1,
+                  px: 0,
+                  borderRadius: isSidebarOpen ? '0 24px 24px 0' : '24px',
+                  '&.Mui-selected': {
+                    backgroundColor: selectedBg,
+                    '&:hover': { backgroundColor: selectedBg },
+                  },
                 }}
               >
-                {item.icon}
-              </ListItemIcon>
-              {isSidebarOpen && (
-                <ListItemText
-                  primary={item.text}
+                <ListItemIcon
                   sx={{
-                    '& .MuiTypography-root': {
-                      fontWeight: location.pathname === item.path ? 'bold' : 'medium',
-                    },
+                    minWidth: 0,
+                    ml: isSidebarOpen ? '24px' : '16px',
+                    mr: '16px',
+                    justifyContent: 'center',
+                    color: isSelected ? theme.palette.primary.main : 'inherit',
                   }}
-                />
-              )}
-            </ListItemButton>
-          </ListItem>
-        ))}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                {isSidebarOpen && (
+                  <ListItemText
+                    primary={item.text}
+                    sx={{
+                      '& .MuiTypography-root': {
+                        fontWeight: isSelected ? 'bold' : 'medium',
+                      },
+                    }}
+                  />
+                )}
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
     </Drawer>
   );

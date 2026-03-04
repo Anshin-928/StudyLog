@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog, DialogContent,
-  Box, Typography, IconButton, CircularProgress,
+  Box, Typography, IconButton, CircularProgress, useTheme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -37,7 +37,6 @@ function calcStreak(studyDates: Set<string>): number {
   const today = todayStr();
   const cursor = new Date();
 
-  // 今日まだ記録がない場合は昨日から数える
   if (!studyDates.has(today)) cursor.setDate(cursor.getDate() - 1);
 
   while (true) {
@@ -51,7 +50,7 @@ function calcStreak(studyDates: Set<string>): number {
 }
 
 function getCalendarCells(year: number, month: number): (number | null)[] {
-  const firstDay = new Date(year, month - 1, 1).getDay(); // 0=Sun
+  const firstDay = new Date(year, month - 1, 1).getDay(); 
   const lastDate = new Date(year, month, 0).getDate();
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
@@ -67,10 +66,10 @@ function makeDateKey(year: number, month: number, day: number): string {
 // メイン
 // ==========================================
 export default function StreakDialog({ open, onClose }: StreakDialogProps) {
+  const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [studyDates, setStudyDates] = useState<Set<string>>(new Set());
 
-  // カレンダー表示月（year, month: 1-indexed）
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
@@ -96,10 +95,8 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
   }, [open]);
 
   const streak = useMemo(() => calcStreak(studyDates), [studyDates]);
-
   const cells = useMemo(() => getCalendarCells(viewYear, viewMonth), [viewYear, viewMonth]);
 
-  // 表示月の学習日数
   const monthStudyDays = useMemo(() => {
     const prefix = `${viewYear}-${String(viewMonth).padStart(2, '0')}-`;
     let count = 0;
@@ -140,17 +137,17 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
         sx: {
           borderRadius: '24px',
           overflow: 'hidden',
-          boxShadow: '0 24px 48px rgba(0,0,0,0.18)',
+          boxShadow: theme.customShadows.lg,
+          backgroundImage: 'none'
         },
       }}
     >
-      {/* ヘッダー */}
       <Box sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         px: 3, pt: 2.5, pb: 0,
       }}>
-        <Typography sx={{ fontWeight: 'bold', fontSize: '17px', color: '#333' }}>学習記録</Typography>
-        <IconButton onClick={onClose} size="small" sx={{ color: '#999' }}>
+        <Typography sx={{ fontWeight: 'bold', fontSize: '17px', color: 'text.primary' }}>学習記録</Typography>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
@@ -162,44 +159,45 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
           </Box>
         ) : (
           <>
-            {/* ストリーク */}
+            {/* ストリーク表示エリア */}
             <Box sx={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexDirection: 'column', py: 3, gap: 0.5,
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography sx={{
-                  fontSize: '64px', fontWeight: '900', color: streak > 0 ? '#FF6B00' : '#bbb',
+                  fontSize: '64px', fontWeight: '900', 
+                  color: streak > 0 ? 'streak.main' : 'text.disabled',
                   lineHeight: 1, letterSpacing: '-2px',
                 }}>
                   {streak}
                 </Typography>
                 <LocalFireDepartmentRoundedIcon sx={{
                   fontSize: '56px',
-                  color: streak >= 7 ? '#FF6B00' : streak >= 3 ? '#FFA726' : streak > 0 ? '#FFB74D' : '#ccc',
+                  color: streak > 0 ? 'streak.main' : 'text.disabled',
                 }} />
               </Box>
-              <Typography sx={{ fontWeight: 'bold', color: '#888', fontSize: '15px' }}>
+              <Typography sx={{ fontWeight: 'bold', color: 'text.secondary', fontSize: '15px' }}>
                 {streak > 0 ? `${streak}日 連続達成！` : '今日から始めよう！'}
               </Typography>
             </Box>
 
-            {/* 学習日数バー */}
+            {/* 学習日数統計バー */}
             <Box sx={{
-              display: 'flex', border: '1px solid #f0f0f0', borderRadius: '14px',
-              overflow: 'hidden', mb: 3,
+              display: 'flex', border: '1px solid', borderColor: 'divider', borderRadius: '14px',
+              overflow: 'hidden', mb: 3, backgroundColor: 'background.subtle'
             }}>
               <Box sx={{
                 flex: 1, py: 2, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: 0.5, borderRight: '1px solid #f0f0f0',
+                alignItems: 'center', gap: 0.5, borderRight: '1px solid', borderColor: 'divider',
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <CheckCircleRoundedIcon sx={{ color: '#1A73E8', fontSize: '18px' }} />
-                  <Typography sx={{ fontWeight: '900', fontSize: '22px', color: '#1A73E8' }}>
+                  <CheckCircleRoundedIcon sx={{ color: 'primary.main', fontSize: '18px' }} />
+                  <Typography sx={{ fontWeight: '900', fontSize: '22px', color: 'primary.main' }}>
                     {monthStudyDays}
                   </Typography>
                 </Box>
-                <Typography variant="caption" sx={{ color: '#999', fontWeight: 'bold' }}>
+                <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 'bold' }}>
                   今月の学習日数
                 </Typography>
               </Box>
@@ -208,36 +206,37 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
                 alignItems: 'center', gap: 0.5,
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <CheckCircleRoundedIcon sx={{ color: '#34A853', fontSize: '18px' }} />
-                  <Typography sx={{ fontWeight: '900', fontSize: '22px', color: '#34A853' }}>
+                  <CheckCircleRoundedIcon sx={{ color: 'success.main', fontSize: '18px' }} />
+                  <Typography sx={{ fontWeight: '900', fontSize: '22px', color: 'success.main' }}>
                     {studyDates.size}
                   </Typography>
                 </Box>
-                <Typography variant="caption" sx={{ color: '#999', fontWeight: 'bold' }}>
+                <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 'bold' }}>
                   累計学習日数
                 </Typography>
               </Box>
             </Box>
 
-            {/* カレンダーナビ */}
+            {/* カレンダー操作ナビ */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <IconButton onClick={handlePrevMonth} size="small">
+              <IconButton onClick={handlePrevMonth} size="small" sx={{ color: 'text.primary' }}>
                 <ChevronLeftIcon />
               </IconButton>
-              <Typography sx={{ fontWeight: 'bold', fontSize: '16px', color: '#333' }}>
+              <Typography sx={{ fontWeight: 'bold', fontSize: '16px', color: 'text.primary' }}>
                 {viewYear}年{viewMonth}月
               </Typography>
-              <IconButton onClick={handleNextMonth} size="small" disabled={isNextDisabled}>
+              <IconButton onClick={handleNextMonth} size="small" disabled={isNextDisabled} sx={{ color: 'text.primary' }}>
                 <ChevronRightIcon />
               </IconButton>
             </Box>
 
-            {/* 曜日ヘッダー */}
+            {/* カレンダー曜日見出し */}
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 1 }}>
               {DAY_LABELS.map((d, i) => (
                 <Typography key={d} variant="caption" sx={{
                   textAlign: 'center', fontWeight: 'bold',
-                  color: i === 0 ? '#EA4335' : i === 6 ? '#1A73E8' : '#bbb',
+                  // 日曜は error.main（赤）、土曜は primary.main（青）
+                  color: i === 0 ? 'error.main' : i === 6 ? 'primary.main' : 'text.disabled',
                   fontSize: '11px',
                 }}>
                   {d}
@@ -245,14 +244,13 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
               ))}
             </Box>
 
-            {/* 日付グリッド */}
+            {/* カレンダー日付グリッド */}
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
               {cells.map((day, i) => {
                 if (day === null) return <Box key={`empty-${i}`} />;
                 const dateKey = makeDateKey(viewYear, viewMonth, day);
                 const isStudied = studyDates.has(dateKey);
                 const isToday = dateKey === today;
-                const dayOfWeek = (i) % 7; // not quite right since there's offset... let me fix
                 const cellDayOfWeek = (new Date(viewYear, viewMonth - 1, day).getDay());
 
                 return (
@@ -260,22 +258,23 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     aspectRatio: '1',
                     borderRadius: '50%',
-                    backgroundColor: isStudied ? '#1A73E8' : 'transparent',
-                    border: isToday && !isStudied ? '2px solid #1A73E8' : 'none',
+                    backgroundColor: isStudied ? 'primary.main' : 'transparent',
+                    border: isToday && !isStudied ? '2px solid' : 'none',
+                    borderColor: 'primary.main',
                     position: 'relative',
                   }}>
                     <Typography sx={{
                       fontSize: '13px',
                       fontWeight: isStudied || isToday ? 'bold' : 'normal',
                       color: isStudied
-                        ? '#fff'
+                        ? 'error.contrastText' // 学習済みは白文字
                         : isToday
-                        ? '#1A73E8'
+                        ? 'primary.main'
                         : cellDayOfWeek === 0
-                        ? '#EA4335'
+                        ? 'error.main' // 日曜
                         : cellDayOfWeek === 6
-                        ? '#1A73E8'
-                        : '#333',
+                        ? 'primary.main' // 土曜
+                        : 'text.primary',
                     }}>
                       {day}
                     </Typography>

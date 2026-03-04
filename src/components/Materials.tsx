@@ -134,7 +134,7 @@ export default function Materials() {
   // ==========================================
   // データ取得
   // ==========================================
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async () => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -171,7 +171,7 @@ export default function Materials() {
         setAllCategories(catData.map((c: any) => ({
           id: c.id,
           name: c.name,
-          colorCode: c.color_code || '#e0e0e0',
+          colorCode: c.color_code || theme.palette.divider,
           sortOrder: c.sort_order || 0,
         })));
       }
@@ -183,7 +183,7 @@ export default function Materials() {
           categoryName: item.categories?.name || 'カテゴリなし',
           name: item.title,
           image: item.image_url,
-          colorCode: item.categories?.color_code || '#e0e0e0',
+          colorCode: item.categories?.color_code || theme.palette.divider,
           categorySortOrder: item.categories?.sort_order || 0,
           materialSortOrder: item.sort_order || 0,
         }));
@@ -196,11 +196,11 @@ export default function Materials() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [theme.palette.divider]);
 
   useEffect(() => {
     fetchMaterials();
-  }, []);
+  }, [fetchMaterials]);
 
   // ==========================================
   // FLIP アニメーション
@@ -505,7 +505,7 @@ export default function Materials() {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
 
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 4, color: '#333', justifyContent: 'space-between' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 4, color: 'text.primary', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
             <MenuBookOutlinedIcon />
@@ -531,7 +531,7 @@ export default function Materials() {
             <Tooltip title="カテゴリや教材の整理">
               <IconButton
                 onClick={handleMenuOpen}
-                sx={{ color: '#666', borderRadius: '50%', '&:hover': { backgroundColor: '#e0e0e0' } }}
+                sx={{ color: 'text.secondary', borderRadius: '50%', '&:hover': { backgroundColor: 'action.hover' } }}
               >
                 <FormatListBulletedIcon />
               </IconButton>
@@ -541,14 +541,14 @@ export default function Materials() {
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              sx={{ '& .MuiPaper-root': { borderRadius: '12px', minWidth: '180px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' } }}
+              sx={{ '& .MuiPaper-root': { borderRadius: '12px', minWidth: '180px', backgroundImage: 'none', boxShadow: theme.palette.mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.3)' } }}
             >
               <MenuItem onClick={openCategoryDialog} sx={{ borderRadius: '8px', mx: 1, mb: 0.5 }}>
-                <ListItemIcon><BookmarksOutlinedIcon fontSize="small" sx={{ color: '#666' }} /></ListItemIcon>
+                <ListItemIcon><BookmarksOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} /></ListItemIcon>
                 カテゴリを編集
               </MenuItem>
               <MenuItem onClick={handleReorderModeStart} sx={{ borderRadius: '8px', mx: 1 }}>
-                <ListItemIcon><SwapVertOutlinedIcon fontSize="small" sx={{ color: '#666' }} /></ListItemIcon>
+                <ListItemIcon><SwapVertOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} /></ListItemIcon>
                 教材を並べ替え
               </MenuItem>
             </Menu>
@@ -581,16 +581,16 @@ export default function Materials() {
           <CircularProgress />
         </Box>
       ) : materials.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, flexDirection: 'column', color: '#999' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, flexDirection: 'column', color: 'text.disabled' }}>
           <MenuBookOutlinedIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
-          <Typography variant="h6">まだ教材がありません</Typography>
-          <Typography variant="body2">右上のボタンから追加してみましょう！</Typography>
+          <Typography variant="h6" sx={{ color: 'text.secondary' }}>まだ教材がありません</Typography>
+          <Typography variant="body2" sx={{ color: 'text.disabled' }}>右上のボタンから追加してみましょう</Typography>
         </Box>
       ) : (
         <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', px: isMobile ? 1 : 1, pr: isMobile ? 1 : 1, pb: isMobile ? 0 : 3, pt: 1 }}>
           <Grid container spacing={isMobile ? 2 : 4} direction="column">
             {sortedCategoryEntries.map(([categoryName, items, catInfo]) => {
-              const groupColor = catInfo?.colorCode ?? items[0]?.colorCode ?? '#1A73E8';
+              const groupColor = catInfo?.colorCode ?? items[0]?.colorCode ?? theme.palette.primary.main;
               const isEmpty = items.length === 0;
 
               if (isEmpty && !isReorderMode) return null;
@@ -599,7 +599,7 @@ export default function Materials() {
                 <Grid size={12} key={categoryName} sx={{ mb: 2 }}>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: 'bold', color: '#333', mb: 2, pl: 1.5, borderLeft: `4px solid ${groupColor}` }}
+                    sx={{ fontWeight: 'bold', color: 'text.primary', mb: 2, pl: 1.5, borderLeft: `4px solid ${groupColor}` }}
                   >
                     {categoryName}
                   </Typography>
@@ -616,7 +616,8 @@ export default function Materials() {
                       ...(isReorderMode && isEmpty && {
                         minHeight: '100px',
                         borderRadius: '12px',
-                        border: '2px dashed #ccc',
+                        border: '2px dashed',
+                        borderColor: 'divider',
                         alignItems: 'center',
                         justifyContent: 'center',
                         display: 'flex',
@@ -624,7 +625,7 @@ export default function Materials() {
                     }}
                   >
                     {isEmpty && isReorderMode && (
-                      <Typography variant="body2" sx={{ color: '#bbb', pointerEvents: 'none' }}>
+                      <Typography variant="body2" sx={{ color: 'text.disabled', pointerEvents: 'none' }}>
                         ここにドラッグして移動
                       </Typography>
                     )}
@@ -645,7 +646,8 @@ export default function Materials() {
                             '&:active': { cursor: isReorderMode ? 'grabbing' : 'default' },
                             ...(isDragging && {
                               borderRadius: '12px',
-                              outline: '2px dashed #1A73E8',
+                              outline: '2px dashed',
+                              outlineColor: 'primary.main',
                               outlineOffset: '2px',
                             }),
                           }}

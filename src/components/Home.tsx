@@ -1,6 +1,6 @@
 // src/components/Home.tsx
 
-import { Box, Typography, Grid, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 
 export default function Home() {
@@ -9,8 +9,7 @@ export default function Home() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: '#333' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: 'text.primary' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
           <HomeOutlinedIcon />
         </Box>
