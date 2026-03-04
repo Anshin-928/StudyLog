@@ -1,6 +1,6 @@
 // src/components/ConfirmDialog.tsx
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Typography, Box
@@ -10,7 +10,7 @@ import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  message: React.ReactNode;   // 文字列でも JSX でも受け取れる
+  message: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
@@ -26,38 +26,67 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+
+  const touchHandledRef = useRef(false);
+
+  const handleTouchEnd = (e: React.TouchEvent, action: () => void) => {
+    touchHandledRef.current = true;
+    setTimeout(() => { touchHandledRef.current = false; }, 500);
+
+    const touch = e.changedTouches[0];
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+
+    if (
+      touch.clientX >= rect.left &&
+      touch.clientX <= rect.right &&
+      touch.clientY >= rect.top &&
+      touch.clientY <= rect.bottom
+    ) {
+      action(); // 枠内で離した時だけ実行
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent, action: () => void) => {
+    if (touchHandledRef.current) return;
+    action();
+  };
+
   return (
     <Dialog
       open={open}
       onClose={onCancel}
       maxWidth="xs"
       fullWidth
-      PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}
+      PaperProps={{ sx: { borderRadius: '20px', p: { xs: 1, sm: 2 }, m: { xs: 2, sm: 'auto' } } }}
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <WarningAmberRoundedIcon sx={{ color: '#f57c00', fontSize: '28px' }} />
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+          <WarningAmberRoundedIcon sx={{ color: '#f50000', fontSize: '28px' }} />
+          <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
             {title}
           </Typography>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 0, pb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+      <DialogContent sx={{ pt: 0, pb: { xs: 2, sm: 3 } }}>
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, fontSize: { xs: '13px', sm: '14px' } }}>
           {message}
         </Typography>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+      <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}>
         <Button
-          onClick={onCancel}
-          sx={{ color: '#666', fontWeight: 'bold', flex: 1, borderRadius: '8px' }}
+          onTouchEnd={(e) => handleTouchEnd(e, onCancel)}
+          variant="outlined"
+          onClick={(e) => handleClick(e, onCancel)}
+          sx={{ color: '#666', fontWeight: 'bold', flex: 1, borderRadius: '8px', py: 1, borderColor: '#e0e0e0' }}
         >
           {cancelLabel}
         </Button>
         <Button
-          onClick={onConfirm}
+          onTouchEnd={(e) => handleTouchEnd(e, onConfirm)}
+          onClick={(e) => handleClick(e, onConfirm)}
           variant="contained"
           disableElevation
           sx={{
@@ -65,6 +94,7 @@ export default function ConfirmDialog({
             fontWeight: 'bold',
             borderRadius: '8px',
             backgroundColor: '#d32f2f',
+            py: 1,
             '&:hover': { backgroundColor: '#b71c1c' },
           }}
         >
