@@ -9,10 +9,12 @@ import {
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { useBlocker } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
 import { compressImage } from '../lib/compressImage';
+import SettingsContent from './SettingsContent';
 
 interface ProfileData {
   id: string;
@@ -36,7 +38,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 未保存の画像ファイルとプレビューURL
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [previewAvatarUrl, setPreviewAvatarUrl] = useState<string | null>(null);
 
@@ -74,18 +75,15 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
     fetchProfile();
   }, []);
 
-  // 画像選択時はstateに保持するだけ（アップロードはまだしない）
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // 圧縮だけここで済ませておく
     const compressed = await compressImage(file);
     setPendingAvatarFile(compressed);
     setPreviewAvatarUrl(URL.createObjectURL(compressed));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // 「保存する」で画像・表示名・自己紹介をまとめて保存
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -94,7 +92,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
 
       let newAvatarUrl: string | undefined;
 
-      // 画像が選択されていればアップロード
       if (pendingAvatarFile) {
         const fileExt = pendingAvatarFile.name.split('.').pop();
         const fileName = `${user.id}_${Date.now()}.${fileExt}`;
@@ -140,23 +137,20 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
     await supabase.auth.signOut();
   };
 
-  // 画像・表示名・自己紹介のいずれかが変わっていれば保存可能
   const isDirty = pendingAvatarFile !== null || (profile
     ? displayName !== (profile.display_name || '') || bio !== (profile.bio || '')
     : false);
 
-  // 未保存の変更があるとき離脱ブロック
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname
   );
 
-  // 表示するアバター：未保存のプレビュー > 保存済みURL > イニシャル
   const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
   const avatarLetter = (displayName || email || '?')[0].toUpperCase();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '680px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
 
       {/* ページヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, color: '#333' }}>
@@ -172,11 +166,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
           disableElevation
           disabled={!isDirty || isSaving}
           onClick={handleSave}
-          sx={{ 
-            borderRadius: '5px', 
-            fontWeight: 'bold', 
-            px: isMobile ? 2 : 3,
-          }}
+          sx={{ borderRadius: '5px', fontWeight: 'bold', px: isMobile ? 2 : 3 }}
         >
           {isSaving ? <CircularProgress size={20} color="inherit" /> : '保存する'}
         </Button>
@@ -195,7 +185,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
 
               {/* アバター */}
               <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                {/* 96x96に固定してオーバーレイが真円になるようにする */}
                 <Box sx={{ position: 'relative', width: 96, height: 96 }}>
                   <Avatar
                     src={avatarSrc}
@@ -203,7 +192,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   >
                     {!avatarSrc && avatarLetter}
                   </Avatar>
-                  {/* ホバーオーバーレイ */}
                   <Box
                     onClick={() => !isSaving && fileInputRef.current?.click()}
                     sx={{
@@ -294,6 +282,27 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
               ログアウト
             </Button>
           </Box>
+
+          {/* モバイルのみ: 設定セクション */}
+          {isMobile && (
+            <>
+              {/* 区切り線 + 見出し */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
+                <Divider sx={{ flexGrow: 1 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 0.5 }}>
+                  <SettingsOutlinedIcon sx={{ fontSize: '18px', color: '#aaa' }} />
+                  <Typography sx={{ fontSize: '13px', color: '#aaa', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    設定
+                  </Typography>
+                </Box>
+                <Divider sx={{ flexGrow: 1 }} />
+              </Box>
+
+              {/* 設定セクション本体 */}
+              <SettingsContent />
+            </>
+          )}
+
         </Box>
       )}
 
