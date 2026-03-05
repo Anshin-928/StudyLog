@@ -3,16 +3,6 @@
 import '@mui/material/styles';
 
 declare module '@mui/material/styles' {
-  interface Palette {
-    streak: Palette['primary'];
-    chart: string[];
-  }
-  interface PaletteOptions {
-    streak?: PaletteOptions['primary'];
-    chart?: string[];
-  }
-
-  // Theme（読み取り時）の型を拡張
   interface Theme {
     customShadows: {
       sm: string;
@@ -20,12 +10,43 @@ declare module '@mui/material/styles' {
       lg: string;
     };
   }
-  // ThemeOptions（createTheme時の設定）の型を拡張
+
   interface ThemeOptions {
     customShadows?: {
       sm?: string;
       md?: string;
       lg?: string;
     };
+  }
+
+  interface Palette {
+    streak: {
+      main: string;
+      lighter: string;
+      border: string;
+    };
+    chart: string[];
+  }
+
+  interface PaletteOptions {
+    streak?: {
+      main?: string;
+      lighter?: string;
+      border?: string;
+    };
+    chart?: string[];
+  }
+
+  interface PaletteColor {
+    lighter?: string;
+  }
+  
+  interface SimplePaletteColorOptions {
+    lighter?: string;
+  }
+
+  interface TypeBackground {
+    subtle: string;
+    overlay: string;
   }
 }

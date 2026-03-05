@@ -4,23 +4,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Avatar, TextField, Button,
   CircularProgress, Snackbar, Alert, Divider,
-  useMediaQuery, useTheme, alpha
+  useMediaQuery, useTheme, alpha, Chip,
+  Autocomplete,
 } from '@mui/material';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import TrackChangesOutlinedIcon from '@mui/icons-material/TrackChangesOutlined';
 import { useBlocker } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
 import { compressImage } from '../lib/compressImage';
 import SettingsContent from './SettingsContent';
+import {
+  GOAL_CATEGORIES,
+  GOAL_GROUP_SUGGESTIONS,
+  GoalCategory,
+} from '../constants/goalGroups';
 
 interface ProfileData {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  goal_group: string | null;
+  goal_category: GoalCategory | null;
 }
 
 interface ProfileProps {
@@ -34,6 +43,8 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [email, setEmail] = useState('');
+  const [goalCategory, setGoalCategory] = useState<GoalCategory | null>(null);
+  const [goalGroup, setGoalGroup] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +76,8 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
           setProfile(data);
           setDisplayName(data.display_name || '');
           setBio(data.bio || '');
+          setGoalCategory(data.goal_category || null);
+          setGoalGroup(data.goal_group || '');
         }
       } catch (e) {
         console.error(e);
@@ -82,6 +95,16 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
     setPendingAvatarFile(compressed);
     setPreviewAvatarUrl(URL.createObjectURL(compressed));
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleCategoryChange = (cat: GoalCategory) => {
+    if (goalCategory === cat) {
+      setGoalCategory(null);
+      setGoalGroup('');
+    } else {
+      setGoalCategory(cat);
+      setGoalGroup('');
+    }
   };
 
   const handleSave = async () => {
@@ -106,6 +129,8 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
       const updates: any = {
         display_name: displayName.trim() || null,
         bio: bio.trim() || null,
+        goal_group: goalGroup.trim() || null,
+        goal_category: goalCategory || null,
       };
       if (newAvatarUrl) updates.avatar_url = newAvatarUrl;
 
@@ -119,6 +144,8 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
         ...prev,
         display_name: displayName,
         bio,
+        goal_group: goalGroup.trim() || null,
+        goal_category: goalCategory,
         ...(newAvatarUrl ? { avatar_url: newAvatarUrl } : {}),
       } : null);
       setPendingAvatarFile(null);
@@ -138,7 +165,10 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   };
 
   const isDirty = pendingAvatarFile !== null || (profile
-    ? displayName !== (profile.display_name || '') || bio !== (profile.bio || '')
+    ? displayName !== (profile.display_name || '')
+      || bio !== (profile.bio || '')
+      || goalGroup !== (profile.goal_group || '')
+      || goalCategory !== (profile.goal_category || null)
     : false);
 
   const blocker = useBlocker(
@@ -149,16 +179,30 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
   const avatarLetter = (displayName || email || '?')[0].toUpperCase();
 
-  // ログアウトボタン用のテーマカラー設定
   const isDark = theme.palette.mode === 'dark';
   const dangerColor = theme.palette.error.main;
   const dangerBorder = alpha(dangerColor, isDark ? 0.3 : 0.25);
   const dangerHoverBg = alpha(dangerColor, isDark ? 0.2 : 0.08);
 
+  const suggestions = goalCategory ? GOAL_GROUP_SUGGESTIONS[goalCategory] : [];
+
+  // 🌟 修正: オートフィル対策を統合
+  const textFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '12px',
+      backgroundColor: 'background.default',
+      '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus': {
+        WebkitBoxShadow: `0 0 0 1000px ${theme.palette.background.default} inset !important`,
+        WebkitTextFillColor: `${theme.palette.text.primary} !important`,
+        caretColor: theme.palette.text.primary,
+        borderRadius: 'inherit',
+      },
+    },
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
 
-      {/* ページヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
@@ -185,11 +229,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
 
-          {/* プロフィール編集カード */}
           <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' }, gap: { xs: 2, sm: 4 } }}>
 
-              {/* アバター */}
               <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ position: 'relative', width: 96, height: 96 }}>
                   <Avatar
@@ -229,7 +271,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                 )}
               </Box>
 
-              {/* 表示名・自己紹介 */}
               <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2.5, width: { xs: '100%', sm: 'auto' } }}>
                 <TextField
                   label="表示名"
@@ -238,7 +279,7 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   fullWidth
                   inputProps={{ maxLength: 50 }}
                   helperText={`${displayName.length} / 50`}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.default' } }}
+                  sx={textFieldSx}
                 />
                 <TextField
                   label="自己紹介"
@@ -249,13 +290,123 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   rows={3}
                   inputProps={{ maxLength: 200 }}
                   helperText={`${bio.length} / 200`}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.default' } }}
+                  sx={textFieldSx}
                 />
               </Box>
             </Box>
           </Box>
 
-          {/* アカウント情報カード */}
+          <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
+              <TrackChangesOutlinedIcon sx={{ fontSize: '20px', color: 'primary.main' }} />
+              <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary' }}>
+                目標
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', ml: 0.5 }}>
+                同じ目標を持つ人のタイムラインに表示されます
+              </Typography>
+            </Box>
+
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 1 }}>
+              カテゴリ
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+              {GOAL_CATEGORIES.map((cat) => {
+                const selected = goalCategory === cat.id;
+                return (
+                  <Chip
+                    key={cat.id}
+                    label={cat.label}
+                    onClick={() => handleCategoryChange(cat.id)}
+                    variant={selected ? 'filled' : 'outlined'}
+                    color={selected ? 'primary' : 'default'}
+                    sx={{
+                      fontWeight: selected ? 'bold' : 'normal',
+                      borderRadius: '8px',
+                      transition: 'all 0.15s ease',
+                      ...(selected ? {} : {
+                        borderColor: 'divider',
+                        color: 'text.secondary',
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.06),
+                          borderColor: 'primary.main',
+                          color: 'primary.main',
+                        },
+                      }),
+                    }}
+                  />
+                );
+              })}
+            </Box>
+
+            {goalCategory && (
+              <Autocomplete
+                freeSolo
+                options={suggestions}
+                value={goalGroup}
+                onInputChange={(_, newValue) => setGoalGroup(newValue)}
+                onChange={(_, newValue) => setGoalGroup(newValue || '')}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={
+                      goalCategory === 'university' ? '志望校を入力' :
+                      goalCategory === 'qualification' ? '資格名を入力' :
+                      goalCategory === 'language' ? '目標スコアを入力' :
+                      '目標を入力'
+                    }
+                    helperText="リストにない場合は自由に入力できます"
+                    sx={textFieldSx}
+                  />
+                )}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      borderRadius: '12px',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      boxShadow: theme.shadows[4],
+                      backgroundColor: 'background.paper',
+                    },
+                  },
+                  listbox: {
+                    sx: { py: 0.5 },
+                  },
+                }}
+              />
+            )}
+
+            {!goalCategory && (
+              <Box sx={{
+                border: '1px dashed',
+                borderColor: 'divider',
+                borderRadius: '12px',
+                p: 3,
+                textAlign: 'center',
+              }}>
+                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                  上のカテゴリを選ぶと目標を入力できます
+                </Typography>
+              </Box>
+            )}
+
+            {profile?.goal_group && !isDirty && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2.5 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>現在の目標：</Typography>
+                <Chip
+                  label={profile.goal_group}
+                  size="small"
+                  sx={{
+                    backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.15 : 0.08),
+                    color: 'primary.main',
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
+
           <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
             <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary', mb: 1.5 }}>
               アカウント情報
@@ -273,7 +424,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
             </Box>
           </Box>
 
-          {/* ログアウトボタン */}
           <Box>
             <Button
               variant="outlined"
@@ -289,10 +439,8 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
             </Button>
           </Box>
 
-          {/* モバイルのみ: 設定セクション */}
           {isMobile && (
             <>
-              {/* 区切り線 + 見出し */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
                 <Divider sx={{ flexGrow: 1 }} />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 0.5 }}>
@@ -303,8 +451,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                 </Box>
                 <Divider sx={{ flexGrow: 1 }} />
               </Box>
-
-              {/* 設定セクション本体 */}
               <SettingsContent />
             </>
           )}
@@ -312,7 +458,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
         </Box>
       )}
 
-      {/* 離脱確認ダイアログ */}
       <NavigationBlockerDialog
         open={blocker.state === 'blocked'}
         onProceed={() => blocker.proceed?.()}
