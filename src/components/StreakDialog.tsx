@@ -79,9 +79,14 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
     const fetchDates = async () => {
       setIsLoading(true);
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
         const { data } = await supabase
           .from('study_logs')
-          .select('study_datetime');
+          .select('study_datetime')
+          .eq('user_id', user.id); 
+
         if (data) {
           setStudyDates(new Set(data.map((r: any) => toLocalDateStr(r.study_datetime))));
         }
@@ -135,16 +140,17 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: '24px',
+          borderRadius: { xs: '20px', sm: '24px' },
           overflow: 'hidden',
           boxShadow: theme.customShadows.lg,
-          backgroundImage: 'none'
+          backgroundImage: 'none',
+          m: { xs: 2, sm: 3 },
         },
       }}
     >
       <Box sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        px: 3, pt: 2.5, pb: 0,
+        px: { xs: 2.5, sm: 3 }, pt: { xs: 2, sm: 2.5 }, pb: 0,
       }}>
         <Typography sx={{ fontWeight: 'bold', fontSize: '17px', color: 'text.primary' }}>学習記録</Typography>
         <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
@@ -152,7 +158,7 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
         </IconButton>
       </Box>
 
-      <DialogContent sx={{ px: 3, pt: 2, pb: 3 }}>
+      <DialogContent sx={{ px: { xs: 2, sm: 3 }, pt: { xs: 1.5, sm: 2 }, pb: { xs: 2.5, sm: 3 } }}>
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
             <CircularProgress />
@@ -162,18 +168,18 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
             {/* ストリーク表示エリア */}
             <Box sx={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexDirection: 'column', py: 3, gap: 0.5,
+              flexDirection: 'column', py: { xs: 1.5, sm: 3 }, gap: 1,
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography sx={{
-                  fontSize: '64px', fontWeight: '900', 
+                  fontSize: { xs: '56px', sm: '64px' }, fontWeight: '900', 
                   color: streak > 0 ? 'streak.main' : 'text.disabled',
                   lineHeight: 1, letterSpacing: '-2px',
                 }}>
                   {streak}
                 </Typography>
                 <LocalFireDepartmentRoundedIcon sx={{
-                  fontSize: '56px',
+                  fontSize: { xs: '52px', sm: '56px' },
                   color: streak > 0 ? 'streak.main' : 'text.disabled',
                 }} />
               </Box>
@@ -185,7 +191,7 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
             {/* 学習日数統計バー */}
             <Box sx={{
               display: 'flex', border: '1px solid', borderColor: 'divider', borderRadius: '14px',
-              overflow: 'hidden', mb: 3, backgroundColor: 'background.subtle'
+              overflow: 'hidden', mb: { xs: 2.5, sm: 3 }, backgroundColor: 'background.subtle'
             }}>
               <Box sx={{
                 flex: 1, py: 2, display: 'flex', flexDirection: 'column',
@@ -193,7 +199,7 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                   <CheckCircleRoundedIcon sx={{ color: 'primary.main', fontSize: '18px' }} />
-                  <Typography sx={{ fontWeight: '900', fontSize: '22px', color: 'primary.main' }}>
+                  <Typography sx={{ fontWeight: '900', fontSize: '26px', color: 'primary.main' }}>
                     {monthStudyDays}
                   </Typography>
                 </Box>
@@ -207,7 +213,7 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                   <CheckCircleRoundedIcon sx={{ color: 'success.main', fontSize: '18px' }} />
-                  <Typography sx={{ fontWeight: '900', fontSize: '22px', color: 'success.main' }}>
+                  <Typography sx={{ fontWeight: '900', fontSize: '26px', color: 'success.main' }}>
                     {studyDates.size}
                   </Typography>
                 </Box>
@@ -264,7 +270,7 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
                     position: 'relative',
                   }}>
                     <Typography sx={{
-                      fontSize: '13px',
+                      fontSize: { xs: '13px', sm: '14px' },
                       fontWeight: isStudied || isToday ? 'bold' : 'normal',
                       color: isStudied
                         ? 'error.contrastText' // 学習済みは白文字

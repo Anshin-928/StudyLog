@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Tabs, Tab, Avatar, Chip,
+  Box, Typography, Tabs, Tab, Avatar,
   CircularProgress, useMediaQuery, useTheme, alpha,
 } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
-import TrackChangesOutlinedIcon from '@mui/icons-material/TrackChangesOutlined';
+import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
+import defaultAvatarPng from '../assets/defaultAvatarPng.png';
 
 // ==========================================
 // 型定義
@@ -68,7 +70,7 @@ function goalCategoryLabel(cat: string | null): string {
 // ==========================================
 // タイムラインアイテム（Divider区切り形式）
 // ==========================================
-function TimelineItem({ entry }: { entry: TimelineEntry }) {
+function TimelineItem({ entry, onUserClick }: { entry: TimelineEntry; onUserClick: (userId: string) => void }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const avatarLetter = (entry.displayName || '?')[0].toUpperCase();
@@ -76,6 +78,7 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
   return (
     <Box sx={{
       backgroundColor: 'background.paper',
+      borderRadius: '8px',
       borderBottom: '1px solid',
       borderColor: 'divider',
       p: { xs: 2, sm: 2.5 },
@@ -85,33 +88,24 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
       transition: 'background-color 0.2s',
       '&:hover': { backgroundColor: 'action.hover' },
     }}>
-      {/* ヘッダー: 名前＆目標 ----------------- 右端に正確な日時 */}
+      {/* ヘッダー */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+          onClick={() => onUserClick(entry.userId)}
+        >
           <Avatar
-            src={entry.avatarUrl || undefined}
+            src={entry.avatarUrl || defaultAvatarPng}
             sx={{ width: 40, height: 40, fontSize: '16px', backgroundColor: 'primary.main', color: t => t.palette.common.white, flexShrink: 0 }}
           >
-            {!entry.avatarUrl && avatarLetter}
           </Avatar>
           <Box sx={{ minWidth: 0 }}>
             <Typography sx={{ fontWeight: 'bold', fontSize: '16px', color: 'text.primary', mb: 0.2 }}>
               {entry.displayName || 'ユーザー'}
             </Typography>
-            {entry.goalGroup && (
-              <Chip
-                label={entry.goalGroup}
-                size="small"
-                sx={{
-                  height: '18px', fontSize: '16px', fontWeight: 'bold',
-                  backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.15 : 0.08),
-                  color: 'primary.main', borderRadius: '4px',
-                }}
-              />
-            )}
           </Box>
         </Box>
-        <Typography sx={{ fontSize: '16px', color: 'text.disabled', fontWeight: 500, pt: 0.5, flexShrink: 0 }}>
+        <Typography sx={{ fontSize: '12px', color: 'text.disabled', fontWeight: 500, pt: 0.5, flexShrink: 0 }}>
           {formatExactTime(entry.studyDatetime)}
         </Typography>
       </Box>
@@ -126,72 +120,47 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
             <img 
               src={entry.materialImage} 
               alt="" 
-              style={{ 
-                height: '100%', width: 'auto', objectFit: 'contain', 
-                borderRadius: '4px', boxShadow: theme.customShadows.sm 
-              }} 
+              style={{ height: '100%', width: 'auto', objectFit: 'contain', borderRadius: '2px' }} 
             />
           ) : (
-            <Box sx={{ height: 80, width: 56, borderRadius: '4px', backgroundColor: 'background.default', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ height: 80, width: 56, borderRadius: '2px', backgroundColor: 'background.default', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderColor: 'divider' }}>
               <MenuBookOutlinedIcon sx={{ color: 'text.disabled', fontSize: '24px' }} />
             </Box>
           )}
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, minWidth: 0 }}>
-          <Typography sx={{ 
-            fontSize: '13.5px', fontWeight: 'bold', color: 'text.primary', 
-            display: '-webkit-box', overflow: 'hidden', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, 
-            mb: 1, lineHeight: 1.3 
-          }}>
+          <Typography sx={{ fontSize: '13.5px', fontWeight: 'bold', color: 'text.primary', mb: 1, lineHeight: 1.3 }}>
             {entry.materialName || '教材なし'}
           </Typography>
-          {/* <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.8 }}>
-            <Typography sx={{ fontSize: '22px', fontWeight: 600, color: 'text.primary', lineHeight: 1, letterSpacing: '-0.5px' }}>
-              {formatDuration(entry.durationMinutes)}
-            </Typography>
-            {entry.pages != null && entry.pages > 0 && (
-              <Typography sx={{ fontSize: '18px', fontWeight: 'bold', color: 'text.secondary' }}>
-                / {entry.pages}{entry.unit || 'ページ'}
-              </Typography>
-            )}
-          </Box> */}
-
+          
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.8 }}>
-            {/* 学習時間がある場合のみ表示 */}
             {entry.durationMinutes != null && entry.durationMinutes > 0 && (
-              <Typography sx={{ fontSize: '22px', fontWeight: 900, color: 'text.primary', lineHeight: 1, letterSpacing: '-0.5px' }}>
+              <Typography sx={{ fontSize: '22px', fontWeight: 900, color: 'text.primary', lineHeight: 1 }}>
                 {formatDuration(entry.durationMinutes)}
               </Typography>
             )}
 
-            {/* 学習量がある場合 */}
             {entry.pages != null && entry.pages > 0 && (
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                {/* 学習時間がある場合のみスラッシュを表示 */}
                 {entry.durationMinutes != null && entry.durationMinutes > 0 && (
-                  <Typography sx={{ fontSize: '22px', fontWeight: 'bold', color: 'text.secondary', mx: 0.2 }}>
-                    /
-                  </Typography>
+                  <Typography sx={{ fontSize: '20px', fontWeight: 'bold', color: 'text.secondary', mx: 0.2 }}>/</Typography>
                 )}
-                {/* 学習量単体でも目立つようにサイズを 22px (時間と同じ) に調整 */}
                 <Typography sx={{ fontSize: '22px', fontWeight: 900, color: 'text.primary', lineHeight: 1 }}>
                   {entry.pages}
                 </Typography>
-                {/* 単位は少し控えめにしてバランスをとる */}
-                <Typography sx={{ fontSize: '18px', fontWeight: 'bold', color: 'text.secondary' }}>
+                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', color: 'text.secondary' }}>
                   {entry.unit || 'ページ'}
                 </Typography>
               </Box>
             )}
           </Box>
         </Box>
-        
       </Box>
 
       {entry.imageUrl && (
         <Box sx={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '240px', border: '1px solid', borderColor: 'divider', mt: 0.5 }}>
-          <img src={entry.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <img src={entry.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </Box>
       )}
 
@@ -221,6 +190,7 @@ function EmptyState({ icon, title, description }: { icon: React.ReactNode; title
 // ==========================================
 export default function Home() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [tabIndex, setTabIndex] = useState(0); 
@@ -230,6 +200,7 @@ export default function Home() {
   const [isLoadingFollow, setIsLoadingFollow] = useState(true);
   const [isLoadingGoal, setIsLoadingGoal] = useState(true);
   const [myId, setMyId] = useState<string | null>(null);
+  const [followingCount, setFollowingCount] = useState(0);
 
   const mapLogs = useCallback((logs: any[], profileMap: Record<string, any>): TimelineEntry[] => {
     return logs.map(row => ({
@@ -266,12 +237,18 @@ export default function Home() {
   const fetchFollowLogs = useCallback(async (userId: string) => {
     setIsLoadingFollow(true);
     try {
-      const { data: logs } = await supabase.from('study_logs').select('id, user_id, material_id, study_datetime, duration_minutes, pages, memo, image_url, materials(title, image_url, unit)').eq('user_id', userId).order('study_datetime', { ascending: false }).limit(30);
-      const { data: profileData } = await supabase.from('profiles').select('id, display_name, avatar_url, goal_group, goal_category').eq('id', userId).single();
+      const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', userId);
+      const followingIds = (follows ?? []).map((f: any) => f.following_id);
+      setFollowingCount(followingIds.length);
+      const targetIds = [userId, ...followingIds];
+
+      const { data: profilesData } = await supabase.from('profiles').select('id, display_name, avatar_url, goal_group, goal_category').in('id', targetIds);
       const profileMap: Record<string, any> = {};
-      if (profileData) {
-        profileMap[userId] = { displayName: profileData.display_name, avatarUrl: profileData.avatar_url, goalGroup: profileData.goal_group, goalCategory: profileData.goal_category };
-      }
+      (profilesData ?? []).forEach((p: any) => {
+        profileMap[p.id] = { displayName: p.display_name, avatarUrl: p.avatar_url, goalGroup: p.goal_group, goalCategory: p.goal_category };
+      });
+
+      const { data: logs } = await supabase.from('study_logs').select('id, user_id, material_id, study_datetime, duration_minutes, pages, memo, image_url, materials(title, image_url, unit)').in('user_id', targetIds).order('study_datetime', { ascending: false }).limit(40);
       setFollowLogs(mapLogs(logs ?? [], profileMap));
     } catch (e) { console.error(e); } finally { setIsLoadingFollow(false); }
   }, [mapLogs]);
@@ -305,7 +282,7 @@ export default function Home() {
         <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>ホーム</Typography>
       </Box>
 
-      {/* タブの角丸と余白 */}
+      {/* タブ */}
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 0 }}>
         <Tabs
           value={tabIndex}
@@ -313,37 +290,22 @@ export default function Home() {
           variant="fullWidth"
           TabIndicatorProps={{ sx: { height: 3, borderRadius: '10px 10px 0 0' } }}
         >
-          <Tab 
-            icon={<PeopleOutlinedIcon sx={{ fontSize: '18px' }} />} 
-            iconPosition="start" 
-            label="フォロー" 
-            sx={{ minHeight: '48px', fontWeight: 'bold', borderRadius: '10px 10px 0 0', '&:hover': { backgroundColor: 'action.hover' } }} 
-          />
-          <Tab 
-            icon={<TrackChangesOutlinedIcon sx={{ fontSize: '18px' }} />} 
-            iconPosition="start" 
-            label="目標" 
-            sx={{ minHeight: '48px', fontWeight: 'bold', borderRadius: '10px 10px 0 0', '&:hover': { backgroundColor: 'action.hover' } }} 
-          />
+          <Tab icon={<PeopleOutlinedIcon sx={{ fontSize: '18px' }} />} iconPosition="start" label="フォロー" sx={{ minHeight: '48px', fontWeight: 'bold', borderRadius: '10px 10px 0 0' }} />
+          <Tab icon={<OutlinedFlagOutlinedIcon sx={{ fontSize: '18px' }} />} iconPosition="start" label="目標" sx={{ minHeight: '48px', fontWeight: 'bold', borderRadius: '10px 10px 0 0' }} />
         </Tabs>
       </Box>
 
-      {/* タイムラインエリア */}
+      {/* タイムライン */}
       <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
         {tabIndex === 0 ? (
           isLoadingFollow ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
           ) : followLogs.length === 0 ? (
-            <EmptyState icon={<PeopleOutlinedIcon sx={{ fontSize: 'inherit' }} />} title="記録がまだありません" description="記録するボタンから学習を記録すると&#10;ここに表示されます" />
+            <EmptyState icon={<PeopleOutlinedIcon sx={{ fontSize: 'inherit' }} />} title={followingCount === 0 ? "フォロー中のユーザーがいません" : "記録がまだありません"} description="ユーザー検索から他のユーザーをフォローすると&#10;ここに記録が流れてきます" />
           ) : (
             <Box>
-              {/* バナーの上下に余白を配置 */}
-              <Box sx={{ mx: 2, my: 2, px: 2, py: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 1.5, backgroundColor: alpha(theme.palette.primary.main, 0.03) }}>
-                <PeopleOutlinedIcon sx={{ fontSize: '16px', color: 'primary.main' }} />
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>現在は自分の記録のみ表示しています。フォロー機能は近日公開予定です。</Typography>
-              </Box>
               <Box sx={{ mt: 1 }}>
-                {followLogs.map(entry => <TimelineItem key={entry.id} entry={entry} />)}
+                {followLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} />)}
               </Box>
             </Box>
           )
@@ -351,21 +313,20 @@ export default function Home() {
           isLoadingGoal ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
           ) : !myProfile?.goalGroup ? (
-            <EmptyState icon={<TrackChangesOutlinedIcon sx={{ fontSize: 'inherit' }} />} title="目標が設定されていません" description="プロフィール画面から目標を設定すると&#10;同じ目標を持つ人の記録が表示されます" />
+            <EmptyState icon={<OutlinedFlagOutlinedIcon sx={{ fontSize: 'inherit' }} />} title="目標が設定されていません" description="プロフィール画面から目標を設定すると&#10;同じ目標を持つ人の記録が表示されます" />
           ) : goalLogs.length === 0 ? (
-            <EmptyState icon={<TrackChangesOutlinedIcon sx={{ fontSize: 'inherit' }} />} title="まだ記録がありません" description={`「${myProfile.goalGroup}」を目指す\n仲間の記録がここに表示されます`} />
+            <EmptyState icon={<OutlinedFlagOutlinedIcon sx={{ fontSize: 'inherit' }} />} title="まだ記録がありません" description={`「${myProfile.goalGroup}」を目指す\n仲間の記録がここに表示されます`} />
           ) : (
             <Box>
-              {/* 目標バナーの上下余白 */}
-              <Box sx={{ mx: 2, my: 2, px: 2, py: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 1.5, backgroundColor: alpha(theme.palette.primary.main, 0.03) }}>
-                <TrackChangesOutlinedIcon sx={{ fontSize: '18px', color: 'primary.main' }} />
+              <Box sx={{ mx: 2, mt: 3, mb: 2, px: 2, py: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 1.5, backgroundColor: alpha(theme.palette.primary.main, 0.03) }}>
+                <OutlinedFlagOutlinedIcon sx={{ fontSize: '18px', color: 'primary.main' }} />
                 <Box>
                   <Typography sx={{ fontWeight: 'bold', fontSize: '13px', color: 'primary.main' }}>{myProfile.goalGroup}</Typography>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>{goalCategoryLabel(myProfile.goalCategory)} · {goalLogs.length}件の記録</Typography>
                 </Box>
               </Box>
               <Box sx={{ mt: 1 }}>
-                {goalLogs.map(entry => <TimelineItem key={entry.id} entry={entry} />)}
+                {goalLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} />)}
               </Box>
             </Box>
           )

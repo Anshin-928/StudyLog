@@ -16,8 +16,10 @@ import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutl
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 
 import { supabase } from './lib/supabase';
+import defaultAvatarPng from './assets/defaultAvatarPng.png';
 import Sidebar from './components/Sidebar';
 import AuthPage from './components/AuthPage';
 import Home from './components/Home';
@@ -28,6 +30,8 @@ import Settings from './components/Settings';
 import AddMaterial from './components/AddMaterial';
 import StreakDialog from './components/StreakDialog';
 import Profile from './components/Profile';
+import EditProfile from './components/EditProfile';
+import Users from './components/Users';
 
 const THEME_KEY = 'studylog-theme-mode';
 
@@ -74,8 +78,16 @@ function RecordPage() {
 }
 
 function ProfilePage() {
+  return <Profile />;
+}
+
+function EditProfilePage() {
   const { onProfileSaved } = useContext(AppCallbacksContext);
-  return <Profile onProfileSaved={onProfileSaved} />;
+  return <EditProfile onProfileSaved={onProfileSaved} />;
+}
+
+function UserProfilePage() {
+  return <Profile />;
 }
 
 // ボトムナビゲーション（スマホ専用）
@@ -83,8 +95,8 @@ const bottomNavItems = [
   { label: 'ホーム',       path: '/home',      icon: <HomeOutlinedIcon /> },
   { label: '記録する',     path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
   { label: 'レポート',     path: '/report',    icon: <BarChartOutlinedIcon /> },
-  { label: '教材',         path: '/materials', icon: <MenuBookOutlinedIcon /> },
-  { label: 'プロフィール', path: '/profile',   icon: <AccountCircleOutlinedIcon /> },
+  { label: '教材',     path: '/materials',     icon: <MenuBookOutlinedIcon /> },
+  { label: 'ユーザー',     path: '/users',     icon: <PeopleOutlinedIcon /> }
 ];
 
 function BottomNav() {
@@ -254,11 +266,9 @@ function AppShell() {
               }}
             />
 
-            {/* アバター（PCのみ） */}
-            {!isMobile && (
               <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
                 <Avatar
-                  src={profileData.avatar_url || undefined}
+                  src={profileData.avatar_url || defaultAvatarPng}
                   sx={{
                     width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
                     backgroundColor: theme.palette.primary.main,
@@ -266,10 +276,8 @@ function AppShell() {
                     transition: 'border-color 0.2s', '&:hover': { borderColor: theme.palette.primary.main },
                   }}
                 >
-                  {!profileData.avatar_url && avatarLetter}
                 </Avatar>
               </IconButton>
-            )}
           </Toolbar>
         </AppBar>
 
@@ -335,6 +343,9 @@ const router = createBrowserRouter([
       { path: 'settings', element: <Settings /> },
       { path: 'materials/add-new-material', element: <AddMaterial /> },
       { path: 'profile', element: <ProfilePage /> },
+      { path: 'profile/edit', element: <EditProfilePage /> },
+      { path: 'users', element: <Users /> },
+      { path: 'users/:userId', element: <UserProfilePage /> },
     ],
   },
 ]);

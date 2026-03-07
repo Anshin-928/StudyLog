@@ -1,225 +1,388 @@
 // src/components/Profile.tsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Avatar, TextField, Button,
-  CircularProgress, Snackbar, Alert, Divider,
-  useMediaQuery, useTheme, alpha, Chip,
-  Autocomplete,
+  Box, Typography, Avatar, Button, Chip,
+  CircularProgress, useMediaQuery, useTheme, alpha, IconButton,
+  Dialog, DialogTitle, DialogContent, List, ListItem, ListItemButton, ListItemAvatar, ListItemText,
 } from '@mui/material';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
-import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import TrackChangesOutlinedIcon from '@mui/icons-material/TrackChangesOutlined';
-import { useBlocker } from 'react-router-dom';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
+import PersonRemoveOutlinedIcon from '@mui/icons-material/PersonRemoveOutlined';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import { supabase } from '../lib/supabase';
-import NavigationBlockerDialog from './NavigationBlockerDialog';
-import { compressImage } from '../lib/compressImage';
-import SettingsContent from './SettingsContent';
-import {
-  GOAL_CATEGORIES,
-  GOAL_GROUP_SUGGESTIONS,
-  GoalCategory,
-} from '../constants/goalGroups';
+import { GOAL_CATEGORIES } from '../constants/goalGroups';
+import defaultAvatarPng from '../assets/defaultAvatarPng.png';
 
+// ==========================================
+// 型定義
+// ==========================================
 interface ProfileData {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
   goal_group: string | null;
-  goal_category: GoalCategory | null;
+  goal_category: string | null;
 }
 
-interface ProfileProps {
-  onProfileSaved?: () => void;
+interface TimelineEntry {
+  id: string;
+  materialName: string | null;
+  materialImage: string | null;
+  durationMinutes: number | null;
+  pages: number | null;
+  unit: string | null;
+  memo: string | null;
+  imageUrl: string | null;
+  studyDatetime: string;
 }
 
-export default function Profile({ onProfileSaved }: ProfileProps) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [displayName, setDisplayName] = useState('');
-  const [bio, setBio] = useState('');
-  const [email, setEmail] = useState('');
-  const [goalCategory, setGoalCategory] = useState<GoalCategory | null>(null);
-  const [goalGroup, setGoalGroup] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+// ==========================================
+// ユーティリティ
+// ==========================================
+function formatDuration(mins: number | null): string {
+  if (!mins || mins <= 0) return '';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}分`;
+  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
+}
 
-  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
-  const [previewAvatarUrl, setPreviewAvatarUrl] = useState<string | null>(null);
+function formatExactTime(isoStr: string): string {
+  const d = new Date(isoStr);
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  const dayStr = days[d.getDay()];
+  const h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${month}月${day}日 ${dayStr}曜日 ${h}:${m}`;
+}
 
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false, message: '', severity: 'success',
-  });
-  const showSnackbar = (message: string, severity: 'success' | 'error' = 'success') =>
-    setSnackbar({ open: true, message, severity });
+function goalCategoryLabel(cat: string | null): string {
+  if (!cat) return '';
+  return GOAL_CATEGORIES.find(c => c.id === cat)?.label ?? '';
+}
+
+// ==========================================
+// タイムラインアイテム（単一ユーザー用・ヘッダーなし）
+// ==========================================
+function TimelineItem({ entry }: { entry: TimelineEntry }) {
+  return (
+    <Box sx={{
+      borderBottom: '1px solid',
+      borderColor: 'divider',
+      p: { xs: 2, sm: 2.5 },
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 1.5,
+    }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Typography sx={{ fontSize: '12px', color: 'text.disabled', fontWeight: 500 }}>
+          {formatExactTime(entry.studyDatetime)}
+        </Typography>
+      </Box>
+
+      <Box sx={{
+        display: 'flex', gap: 2, p: 1.8,
+        backgroundColor: 'background.subtle', borderRadius: '12px', border: '1px solid', borderColor: 'divider',
+      }}>
+        <Box sx={{ height: 80, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {entry.materialImage ? (
+            <img
+              src={entry.materialImage}
+              alt=""
+              style={{ height: '100%', width: 'auto', objectFit: 'contain', borderRadius: '4px' }}
+            />
+          ) : (
+            <Box sx={{
+              height: 80, width: 56, borderRadius: '4px',
+              backgroundColor: 'background.default',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '1px solid', borderColor: 'divider',
+            }}>
+              <MenuBookOutlinedIcon sx={{ color: 'text.disabled', fontSize: '24px' }} />
+            </Box>
+          )}
+        </Box>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: '13.5px', fontWeight: 'bold', color: 'text.primary', mb: 1, lineHeight: 1.3 }}>
+            {entry.materialName || '教材なし'}
+          </Typography>
+
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.8 }}>
+            {entry.durationMinutes != null && entry.durationMinutes > 0 && (
+              <Typography sx={{ fontSize: '22px', fontWeight: 900, color: 'text.primary', lineHeight: 1 }}>
+                {formatDuration(entry.durationMinutes)}
+              </Typography>
+            )}
+            {entry.pages != null && entry.pages > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                {entry.durationMinutes != null && entry.durationMinutes > 0 && (
+                  <Typography sx={{ fontSize: '20px', fontWeight: 'bold', color: 'text.secondary', mx: 0.2 }}>/</Typography>
+                )}
+                <Typography sx={{ fontSize: '22px', fontWeight: 900, color: 'text.primary', lineHeight: 1 }}>
+                  {entry.pages}
+                </Typography>
+                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', color: 'text.secondary' }}>
+                  {entry.unit || 'ページ'}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Box>
+
+      {entry.imageUrl && (
+        <Box sx={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '240px', border: '1px solid', borderColor: 'divider' }}>
+          <img src={entry.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </Box>
+      )}
+
+      {entry.memo && (
+        <Typography sx={{ fontSize: '14px', color: 'text.primary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+          {entry.memo}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+// ==========================================
+// フォローリストダイアログ
+// ==========================================
+function FollowListDialog({
+  open, type, targetUserId, onClose, onUserClick,
+}: {
+  open: boolean;
+  type: 'following' | 'followers';
+  targetUserId: string;
+  onClose: () => void;
+  onUserClick: (userId: string) => void;
+}) {
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    if (!open) return;
+    const fetch = async () => {
       setIsLoading(true);
+      setUsers([]);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        setEmail(user.email || '');
-
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (error) throw error;
-        if (data) {
-          setProfile(data);
-          setDisplayName(data.display_name || '');
-          setBio(data.bio || '');
-          setGoalCategory(data.goal_category || null);
-          setGoalGroup(data.goal_group || '');
+        let ids: string[] = [];
+        if (type === 'following') {
+          const { data } = await supabase.from('follows').select('following_id').eq('follower_id', targetUserId);
+          ids = (data || []).map(r => r.following_id);
+        } else {
+          const { data } = await supabase.from('follows').select('follower_id').eq('following_id', targetUserId);
+          ids = (data || []).map(r => r.follower_id);
         }
-      } catch (e) {
-        console.error(e);
+        if (ids.length === 0) { setUsers([]); return; }
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, display_name, avatar_url, goal_group')
+          .in('id', ids);
+        setUsers(profiles || []);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchProfile();
-  }, []);
+    fetch();
+  }, [open, type, targetUserId]);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const compressed = await compressImage(file);
-    setPendingAvatarFile(compressed);
-    setPreviewAvatarUrl(URL.createObjectURL(compressed));
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs"
+      PaperProps={{ sx: { borderRadius: '16px' } }}
+    >
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+        <Typography sx={{ fontWeight: 'bold', fontSize: '16px' }}>
+          {type === 'following' ? 'フォロー中' : 'フォロワー'}
+        </Typography>
+        <IconButton size="small" onClick={onClose}>
+          <CloseRoundedIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers sx={{ p: 0 }}>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress /></Box>
+        ) : users.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ color: 'text.disabled', fontSize: '14px' }}>まだいません</Typography>
+          </Box>
+        ) : (
+          <List disablePadding>
+            {users.map(user => (
+              <ListItem key={user.id} disablePadding>
+                <ListItemButton
+                  onClick={() => { onClose(); onUserClick(user.id); }}
+                  sx={{ px: 2.5, py: 1.5 }}
+                >
+                  <ListItemAvatar>
+                    <Avatar src={user.avatar_url || defaultAvatarPng} sx={{ width: 44, height: 44 }} />
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      <Typography sx={{ fontWeight: 'bold', fontSize: '14px', color: 'text.primary' }}>
+                        {user.display_name || 'ユーザー'}
+                      </Typography>
+                    }
+                    secondary={user.goal_group && (
+                      <Typography component="span" sx={{ fontSize: '12px', color: 'text.disabled' }}>
+                        {user.goal_group}
+                      </Typography>
+                    )}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-  const handleCategoryChange = (cat: GoalCategory) => {
-    if (goalCategory === cat) {
-      setGoalCategory(null);
-      setGoalGroup('');
-    } else {
-      setGoalCategory(cat);
-      setGoalGroup('');
-    }
-  };
+// ==========================================
+// メイン
+// ==========================================
+export default function Profile() {
+  const { userId: paramUserId } = useParams<{ userId?: string }>();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isDark = theme.palette.mode === 'dark';
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
+  const [myId, setMyId] = useState<string | null>(null);
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [followCounts, setFollowCounts] = useState({ following: 0, followers: 0 });
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [logs, setLogs] = useState<TimelineEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFollowProcessing, setIsFollowProcessing] = useState(false);
+  const [followDialog, setFollowDialog] = useState<{ open: boolean; type: 'following' | 'followers' }>({ open: false, type: 'following' });
+
+  // 自分のIDとターゲットユーザーIDを確定する
+  useEffect(() => {
+    const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setMyId(user.id);
+      setTargetUserId(paramUserId || user.id);
+    };
+    init();
+  }, [paramUserId]);
 
-      let newAvatarUrl: string | undefined;
+  // プロフィール・フォロー情報・学習ログを取得
+  const fetchAll = useCallback(async (targetId: string, currentUserId: string) => {
+    setIsLoading(true);
+    try {
+      const [
+        { data: profileData },
+        { count: followingCount },
+        { count: followerCount },
+        { data: logsData },
+      ] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', targetId).single(),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetId),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetId),
+        supabase.from('study_logs')
+          .select('id, study_datetime, duration_minutes, pages, memo, image_url, materials(title, image_url, unit)')
+          .eq('user_id', targetId)
+          .order('study_datetime', { ascending: false })
+          .limit(30),
+      ]);
 
-      if (pendingAvatarFile) {
-        const fileExt = pendingAvatarFile.name.split('.').pop();
-        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, pendingAvatarFile);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-        newAvatarUrl = urlData.publicUrl;
+      if (profileData) setProfile(profileData);
+      setFollowCounts({ following: followingCount ?? 0, followers: followerCount ?? 0 });
+
+      setLogs((logsData ?? []).map((row: any) => ({
+        id: row.id,
+        materialName: row.materials?.title ?? null,
+        materialImage: row.materials?.image_url ?? null,
+        durationMinutes: row.duration_minutes ?? null,
+        pages: row.pages ?? null,
+        unit: row.materials?.unit ?? null,
+        memo: row.memo ?? null,
+        imageUrl: row.image_url ?? null,
+        studyDatetime: row.study_datetime,
+      })));
+
+      // 他人のプロフィールを見る場合のみフォロー状態を確認
+      if (targetId !== currentUserId) {
+        const { data: followData } = await supabase
+          .from('follows')
+          .select('*')
+          .eq('follower_id', currentUserId)
+          .eq('following_id', targetId)
+          .maybeSingle();
+        setIsFollowing(!!followData);
       }
-
-      const updates: any = {
-        display_name: displayName.trim() || null,
-        bio: bio.trim() || null,
-        goal_group: goalGroup.trim() || null,
-        goal_category: goalCategory || null,
-      };
-      if (newAvatarUrl) updates.avatar_url = newAvatarUrl;
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-      if (error) throw error;
-
-      setProfile(prev => prev ? {
-        ...prev,
-        display_name: displayName,
-        bio,
-        goal_group: goalGroup.trim() || null,
-        goal_category: goalCategory,
-        ...(newAvatarUrl ? { avatar_url: newAvatarUrl } : {}),
-      } : null);
-      setPendingAvatarFile(null);
-      setPreviewAvatarUrl(null);
-      onProfileSaved?.();
-      showSnackbar('プロフィールを保存しました');
     } catch (e) {
       console.error(e);
-      showSnackbar('保存に失敗しました', 'error');
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (targetUserId && myId) {
+      fetchAll(targetUserId, myId);
+    }
+  }, [targetUserId, myId, fetchAll]);
+
+  const handleToggleFollow = async () => {
+    if (!myId || !targetUserId) return;
+    setIsFollowProcessing(true);
+    try {
+      if (isFollowing) {
+        await supabase.from('follows').delete().eq('follower_id', myId).eq('following_id', targetUserId);
+        setIsFollowing(false);
+        setFollowCounts(prev => ({ ...prev, followers: prev.followers - 1 }));
+      } else {
+        await supabase.from('follows').insert({ follower_id: myId, following_id: targetUserId });
+        setIsFollowing(true);
+        setFollowCounts(prev => ({ ...prev, followers: prev.followers + 1 }));
+      }
+    } finally {
+      setIsFollowProcessing(false);
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
-  const isDirty = pendingAvatarFile !== null || (profile
-    ? displayName !== (profile.display_name || '')
-      || bio !== (profile.bio || '')
-      || goalGroup !== (profile.goal_group || '')
-      || goalCategory !== (profile.goal_category || null)
-    : false);
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname
-  );
-
-  const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
-  const avatarLetter = (displayName || email || '?')[0].toUpperCase();
-
-  const isDark = theme.palette.mode === 'dark';
-  const dangerColor = theme.palette.error.main;
-  const dangerBorder = alpha(dangerColor, isDark ? 0.3 : 0.25);
-  const dangerHoverBg = alpha(dangerColor, isDark ? 0.2 : 0.08);
-
-  const suggestions = goalCategory ? GOAL_GROUP_SUGGESTIONS[goalCategory] : [];
-
-  // 🌟 修正: オートフィル対策を統合
-  const textFieldSx = {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: '12px',
-      backgroundColor: 'background.default',
-      '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus': {
-        WebkitBoxShadow: `0 0 0 1000px ${theme.palette.background.default} inset !important`,
-        WebkitTextFillColor: `${theme.palette.text.primary} !important`,
-        caretColor: theme.palette.text.primary,
-        borderRadius: 'inherit',
-      },
-    },
-  };
+  const isOwn = myId !== null && targetUserId === myId;
+  const avatarLetter = (profile?.display_name || '?')[0]?.toUpperCase();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
-            <AccountCircleOutlinedIcon />
-          </Box>
-          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>マイプロフィール</Typography>
-        </Box>
-        <Button
-          variant="contained"
-          size='large'
-          disableElevation
-          disabled={!isDirty || isSaving}
-          onClick={handleSave}
-          sx={{ borderRadius: '5px', fontWeight: 'bold', px: isMobile ? 2 : 3 }}
-        >
-          {isSaving ? <CircularProgress size={20} color="inherit" /> : '保存する'}
-        </Button>
+      {targetUserId && (
+        <FollowListDialog
+          open={followDialog.open}
+          type={followDialog.type}
+          targetUserId={targetUserId}
+          onClose={() => setFollowDialog(prev => ({ ...prev, open: false }))}
+          onUserClick={(userId) => navigate(`/users/${userId}`)}
+        />
+      )}
+
+      {/* ページヘッダー */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+        {paramUserId && (
+          <IconButton onClick={() => navigate(-1)} sx={{ mr: 0.5 }}>
+            <ArrowBackRoundedIcon />
+          </IconButton>
+        )}
+        <AccountCircleOutlinedIcon sx={{ fontSize: isMobile ? '24px' : '28px', color: 'text.primary' }} />
+        <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>
+          {isOwn ? 'マイプロフィール' : 'プロフィール'}
+        </Typography>
       </Box>
 
       {isLoading ? (
@@ -229,251 +392,171 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
 
-          <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' }, gap: { xs: 2, sm: 4 } }}>
+          {/* プロフィールカード */}
+          <Box sx={{
+            backgroundColor: 'background.paper',
+            border: '1px solid', borderColor: 'divider',
+            borderRadius: '16px',
+            p: { xs: 3, sm: 4 },
+          }}>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'center', sm: 'flex-start' },
+              gap: { xs: 2.5, sm: 4 },
+            }}>
 
-              <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ position: 'relative', width: 96, height: 96 }}>
-                  <Avatar
-                    src={avatarSrc}
-                    sx={{ width: 96, height: 96, fontSize: '36px', backgroundColor: 'primary.main', color: (t) => t.palette.common.white }}
-                  >
-                    {!avatarSrc && avatarLetter}
-                  </Avatar>
-                  <Box
-                    onClick={() => !isSaving && fileInputRef.current?.click()}
-                    sx={{
-                      position: 'absolute', inset: 0, borderRadius: '50%',
-                      backgroundColor: 'background.overlay',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: isMobile ? 0.7 : 0, transition: 'opacity 0.2s',
-                      cursor: isSaving ? 'default' : 'pointer',
-                      '&:hover': { opacity: 1 },
-                    }}
-                  >
-                    <PhotoCameraRoundedIcon sx={{ color: (t) => t.palette.common.white, fontSize: '26px' }} />
-                  </Box>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleAvatarChange}
-                  />
-                </Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', lineHeight: 1.4, display: { xs: 'none', sm: 'block' } }}>
-                  クリックで変更
-                </Typography>
-                {pendingAvatarFile && (
-                  <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                    未保存
-                  </Typography>
-                )}
-              </Box>
-
-              <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2.5, width: { xs: '100%', sm: 'auto' } }}>
-                <TextField
-                  label="表示名"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  fullWidth
-                  inputProps={{ maxLength: 50 }}
-                  helperText={`${displayName.length} / 50`}
-                  sx={textFieldSx}
-                />
-                <TextField
-                  label="自己紹介"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  fullWidth
-                  multiline
-                  rows={3}
-                  inputProps={{ maxLength: 200 }}
-                  helperText={`${bio.length} / 200`}
-                  sx={textFieldSx}
-                />
-              </Box>
-            </Box>
-          </Box>
-
-          <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-              <TrackChangesOutlinedIcon sx={{ fontSize: '20px', color: 'primary.main' }} />
-              <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary' }}>
-                目標
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', ml: 0.5 }}>
-                同じ目標を持つ人のタイムラインに表示されます
-              </Typography>
-            </Box>
-
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 1 }}>
-              カテゴリ
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-              {GOAL_CATEGORIES.map((cat) => {
-                const selected = goalCategory === cat.id;
-                return (
-                  <Chip
-                    key={cat.id}
-                    label={cat.label}
-                    onClick={() => handleCategoryChange(cat.id)}
-                    variant={selected ? 'filled' : 'outlined'}
-                    color={selected ? 'primary' : 'default'}
-                    sx={{
-                      fontWeight: selected ? 'bold' : 'normal',
-                      borderRadius: '8px',
-                      transition: 'all 0.15s ease',
-                      ...(selected ? {} : {
-                        borderColor: 'divider',
-                        color: 'text.secondary',
-                        '&:hover': {
-                          backgroundColor: alpha(theme.palette.primary.main, 0.06),
-                          borderColor: 'primary.main',
-                          color: 'primary.main',
-                        },
-                      }),
-                    }}
-                  />
-                );
-              })}
-            </Box>
-
-            {goalCategory && (
-              <Autocomplete
-                freeSolo
-                options={suggestions}
-                value={goalGroup}
-                onInputChange={(_, newValue) => setGoalGroup(newValue)}
-                onChange={(_, newValue) => setGoalGroup(newValue || '')}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label={
-                      goalCategory === 'university' ? '志望校を入力' :
-                      goalCategory === 'qualification' ? '資格名を入力' :
-                      goalCategory === 'language' ? '目標スコアを入力' :
-                      '目標を入力'
-                    }
-                    helperText="リストにない場合は自由に入力できます"
-                    sx={textFieldSx}
-                  />
-                )}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      borderRadius: '12px',
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      boxShadow: theme.shadows[4],
-                      backgroundColor: 'background.paper',
-                    },
-                  },
-                  listbox: {
-                    sx: { py: 0.5 },
-                  },
+              {/* アバター */}
+              <Avatar
+                src={profile?.avatar_url || defaultAvatarPng}
+                sx={{
+                  width: { xs: 80, sm: 96 },
+                  height: { xs: 80, sm: 96 },
+                  fontSize: { xs: '30px', sm: '36px' },
+                  backgroundColor: 'primary.main',
+                  color: t => t.palette.common.white,
+                  flexShrink: 0,
                 }}
-              />
-            )}
+              >
+              </Avatar>
 
-            {!goalCategory && (
+              {/* 情報エリア */}
               <Box sx={{
-                border: '1px dashed',
-                borderColor: 'divider',
-                borderRadius: '12px',
-                p: 3,
-                textAlign: 'center',
+                flexGrow: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
+                textAlign: { xs: 'center', sm: 'left' },
+                width: '100%',
               }}>
-                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                  上のカテゴリを選ぶと目標を入力できます
-                </Typography>
-              </Box>
-            )}
+                {/* 名前・自己紹介 */}
+                <Box>
+                  <Typography sx={{ fontWeight: 'bold', fontSize: { xs: '20px', sm: '22px' }, color: 'text.primary', mb: 0.5 }}>
+                    {profile?.display_name || 'ユーザー'}
+                  </Typography>
+                  {profile?.bio && (
+                    <Typography sx={{ fontSize: '14px', color: 'text.secondary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      {profile.bio}
+                    </Typography>
+                  )}
+                </Box>
 
-            {profile?.goal_group && !isDirty && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>現在の目標：</Typography>
-                <Chip
-                  label={profile.goal_group}
-                  size="small"
-                  sx={{
-                    backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.15 : 0.08),
-                    color: 'primary.main',
-                    fontWeight: 'bold',
-                    borderRadius: '6px',
-                  }}
-                />
+                {/* 目標 */}
+                {profile?.goal_group && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                    <OutlinedFlagOutlinedIcon sx={{ fontSize: '16px', color: 'primary.main' }} />
+                    <Chip
+                      label={profile.goal_group}
+                      size="small"
+                      sx={{
+                        backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.15 : 0.08),
+                        color: 'primary.main',
+                        fontWeight: 'bold',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                      }}
+                    />
+                    {profile.goal_category && (
+                      <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                        {goalCategoryLabel(profile.goal_category)}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+
+                {/* フォロー・フォロワー数 */}
+                <Box sx={{ display: 'flex', gap: 3, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                  <Box
+                    onClick={() => setFollowDialog({ open: true, type: 'following' })}
+                    sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', sm: 'flex-start' }, cursor: 'pointer', '&:hover': { opacity: 0.7 } }}
+                  >
+                    <Typography sx={{ fontWeight: 'bold', fontSize: '18px', color: 'text.primary', lineHeight: 1 }}>
+                      {followCounts.following}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>フォロー</Typography>
+                  </Box>
+                  <Box
+                    onClick={() => setFollowDialog({ open: true, type: 'followers' })}
+                    sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', sm: 'flex-start' }, cursor: 'pointer', '&:hover': { opacity: 0.7 } }}
+                  >
+                    <Typography sx={{ fontWeight: 'bold', fontSize: '18px', color: 'text.primary', lineHeight: 1 }}>
+                      {followCounts.followers}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>フォロワー</Typography>
+                  </Box>
+                </Box>
+
+                {/* アクションボタン */}
+                <Box sx={{ display: 'flex', justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                  {isOwn ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<EditOutlinedIcon />}
+                      onClick={() => navigate('/profile/edit')}
+                      sx={{
+                        borderRadius: '20px', fontWeight: 'bold', px: 3,
+                        textTransform: 'none', borderColor: 'divider', color: 'text.primary',
+                        '&:hover': { borderColor: 'primary.main', color: 'primary.main', backgroundColor: alpha(theme.palette.primary.main, 0.04) },
+                      }}
+                    >
+                      プロフィールを編集
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={isFollowing ? 'outlined' : 'contained'}
+                      startIcon={isFollowing ? <PersonRemoveOutlinedIcon /> : <PersonAddOutlinedIcon />}
+                      disabled={isFollowProcessing}
+                      onClick={handleToggleFollow}
+                      sx={{
+                        borderRadius: '20px', fontWeight: 'bold', px: 3,
+                        textTransform: 'none',
+                        ...(isFollowing ? { borderColor: 'divider', color: 'text.secondary' } : {}),
+                      }}
+                    >
+                      {isFollowProcessing
+                        ? <CircularProgress size={16} color="inherit" />
+                        : isFollowing ? 'フォロー中' : 'フォローする'
+                      }
+                    </Button>
+                  )}
+                </Box>
               </Box>
-            )}
+            </Box>
           </Box>
 
-          <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
-            <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary', mb: 1.5 }}>
-              アカウント情報
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-              <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>メールアドレス</Typography>
-              <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 'bold' }}>{email}</Typography>
-            </Box>
-            <Divider />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-              <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>ユーザーID</Typography>
-              <Typography sx={{ color: 'text.disabled', fontSize: '12px', fontFamily: 'monospace' }}>
-                {profile?.id}
+          {/* 学習記録タイムライン */}
+          <Box sx={{
+            backgroundColor: 'background.paper',
+            border: '1px solid', borderColor: 'divider',
+            borderRadius: '16px',
+            overflow: 'hidden',
+          }}>
+            <Box sx={{
+              px: { xs: 2, sm: 3 }, py: 2,
+              borderBottom: '1px solid', borderColor: 'divider',
+              display: 'flex', alignItems: 'center', gap: 1,
+            }}>
+              <MenuBookOutlinedIcon sx={{ fontSize: '18px', color: 'text.secondary' }} />
+              <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary' }}>
+                学習記録
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.disabled', ml: 0.5 }}>
+                {logs.length}件
               </Typography>
             </Box>
-          </Box>
 
-          <Box>
-            <Button
-              variant="outlined"
-              startIcon={<LogoutRoundedIcon />}
-              onClick={handleLogout}
-              sx={{
-                color: dangerColor, borderColor: dangerBorder, borderRadius: '12px',
-                fontWeight: 'bold', px: 3,
-                '&:hover': { backgroundColor: dangerHoverBg, borderColor: dangerColor },
-              }}
-            >
-              ログアウト
-            </Button>
-          </Box>
-
-          {isMobile && (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
-                <Divider sx={{ flexGrow: 1 }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 0.5 }}>
-                  <SettingsOutlinedIcon sx={{ fontSize: '18px', color: 'text.secondary' }} />
-                  <Typography sx={{ fontSize: '13px', color: 'text.secondary', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    設定
-                  </Typography>
-                </Box>
-                <Divider sx={{ flexGrow: 1 }} />
+            {logs.length === 0 ? (
+              <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                <MenuBookOutlinedIcon sx={{ fontSize: '40px', color: 'text.disabled', opacity: 0.4 }} />
+                <Typography sx={{ fontSize: '14px', color: 'text.disabled' }}>まだ記録がありません</Typography>
               </Box>
-              <SettingsContent />
-            </>
-          )}
+            ) : (
+              logs.map(entry => <TimelineItem key={entry.id} entry={entry} />)
+            )}
+          </Box>
 
         </Box>
       )}
-
-      <NavigationBlockerDialog
-        open={blocker.state === 'blocked'}
-        onProceed={() => blocker.proceed?.()}
-        onCancel={() => blocker.reset?.()}
-      />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

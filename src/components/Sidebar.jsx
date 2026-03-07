@@ -11,13 +11,15 @@ import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutl
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 
 export const mainMenus = [
-  { text: 'ホーム',   path: '/home',      icon: <HomeOutlinedIcon /> },
-  { text: '記録する', path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
-  { text: 'レポート', path: '/report',    icon: <BarChartOutlinedIcon /> },
-  { text: '教材管理', path: '/materials', icon: <MenuBookOutlinedIcon /> },
-  { text: '設定',     path: '/settings',  icon: <SettingsOutlinedIcon /> },
+  { text: 'ホーム',        path: '/home',      icon: <HomeOutlinedIcon /> },
+  { text: '記録する',      path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
+  { text: 'レポート',      path: '/report',    icon: <BarChartOutlinedIcon /> },
+  { text: '教材管理',      path: '/materials', icon: <MenuBookOutlinedIcon /> },
+  { text: 'ユーザーを探す', path: '/users',     icon: <PeopleOutlinedIcon /> },
+  { text: '設定',         path: '/settings',  icon: <SettingsOutlinedIcon /> },
 ];
 
 export const closedDrawerWidth = 72;
