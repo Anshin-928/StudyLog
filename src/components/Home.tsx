@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Tabs, Tab, Avatar,
-  CircularProgress, useMediaQuery, useTheme, alpha,
+  CircularProgress, useMediaQuery, useTheme, alpha, IconButton,
 } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
@@ -70,7 +71,7 @@ function goalCategoryLabel(cat: string | null): string {
 // ==========================================
 // タイムラインアイテム（Divider区切り形式）
 // ==========================================
-function TimelineItem({ entry, onUserClick }: { entry: TimelineEntry; onUserClick: (userId: string) => void }) {
+function TimelineItem({ entry, onUserClick, onImageClick }: { entry: TimelineEntry; onUserClick: (userId: string) => void; onImageClick: (url: string) => void }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const avatarLetter = (entry.displayName || '?')[0].toUpperCase();
@@ -159,7 +160,10 @@ function TimelineItem({ entry, onUserClick }: { entry: TimelineEntry; onUserClic
       </Box>
 
       {entry.imageUrl && (
-        <Box sx={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '240px', border: '1px solid', borderColor: 'divider', mt: 0.5 }}>
+        <Box
+          onClick={() => onImageClick(entry.imageUrl!)}
+          sx={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '240px', border: '1px solid', borderColor: 'divider', mt: 0.5, cursor: 'zoom-in' }}
+        >
           <img src={entry.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </Box>
       )}
@@ -193,7 +197,8 @@ export default function Home() {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [tabIndex, setTabIndex] = useState(0); 
+  const [tabIndex, setTabIndex] = useState(0);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
   const [followLogs, setFollowLogs] = useState<TimelineEntry[]>([]);
   const [goalLogs, setGoalLogs] = useState<TimelineEntry[]>([]);
@@ -274,6 +279,35 @@ export default function Home() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+      {/* ライトボックス */}
+      {lightboxUrl && (
+        <Box
+          onClick={() => setLightboxUrl(null)}
+          sx={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <IconButton
+            onClick={(e) => { e.stopPropagation(); setLightboxUrl(null); }}
+            sx={{
+              position: 'absolute', top: 16, left: 16,
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              color: '#fff',
+              '&:hover': { backgroundColor: 'rgba(255,255,255,0.3)' },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <img
+            src={lightboxUrl}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', borderRadius: '8px' }}
+          />
+        </Box>
+      )}
       {/* ページヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 2, color: 'text.primary' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, '& svg': { fontSize: isMobile ? '24px' : '28px' } }}>
@@ -305,7 +339,7 @@ export default function Home() {
           ) : (
             <Box>
               <Box sx={{ mt: 1 }}>
-                {followLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} />)}
+                {followLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} onImageClick={setLightboxUrl} />)}
               </Box>
             </Box>
           )
@@ -326,7 +360,7 @@ export default function Home() {
                 </Box>
               </Box>
               <Box sx={{ mt: 1 }}>
-                {goalLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} />)}
+                {goalLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} onImageClick={setLightboxUrl} />)}
               </Box>
             </Box>
           )
