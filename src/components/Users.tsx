@@ -3,17 +3,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, TextField, Avatar, Button,
-  CircularProgress, useMediaQuery, useTheme, alpha, Chip,
-  InputAdornment, Divider,
+  CircularProgress, useTheme, alpha, Chip, Divider,
 } from '@mui/material';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import TrackChangesOutlinedIcon from '@mui/icons-material/TrackChangesOutlined';
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
-import PersonRemoveOutlinedIcon from '@mui/icons-material/PersonRemoveOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import defaultAvatarPng from '../assets/defaultAvatarPng.png';
+
+type FollowStatus = 'none' | 'pending' | 'accepted';
 
 // ==========================================
 // ユーザー行コンポーネント
@@ -21,10 +20,17 @@ import defaultAvatarPng from '../assets/defaultAvatarPng.png';
 function UserRow({
   user, isMe, onToggleFollow, isProcessing, onUserClick,
 }: {
-  user: any; isMe: boolean; onToggleFollow: any; isProcessing: boolean; onUserClick: (userId: string) => void;
+  user: any; isMe: boolean; onToggleFollow: (id: string, status: FollowStatus) => void;
+  isProcessing: boolean; onUserClick: (userId: string) => void;
 }) {
   const theme = useTheme();
-  const avatarLetter = (user.display_name || '?')[0].toUpperCase();
+  const status: FollowStatus = user.followStatus ?? 'none';
+
+  const buttonLabel = status === 'accepted' ? 'フォロー中' : status === 'pending' ? '申請中' : (user.is_public ? 'フォロー' : 'フォロー申請');
+  const buttonVariant = status === 'none' ? 'contained' : 'outlined';
+  const buttonSx = status !== 'none'
+    ? { borderColor: 'divider', color: 'text.secondary' }
+    : {};
 
   return (
     <Box sx={{
@@ -40,14 +46,16 @@ function UserRow({
         <Avatar
           src={user.avatar_url || defaultAvatarPng}
           sx={{ width: 48, height: 48, fontSize: '18px', backgroundColor: 'primary.main', color: 'white', flexShrink: 0 }}
-        >
-        </Avatar>
+        />
 
         <Box sx={{ minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3 }}>
             <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary' }}>
               {user.display_name || 'ユーザー'}
             </Typography>
+            {!user.is_public && (
+              <LockOutlinedIcon sx={{ fontSize: '14px', color: 'text.disabled' }} />
+            )}
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             {user.goal_group && (
@@ -70,17 +78,13 @@ function UserRow({
 
       {!isMe && (
         <Button
-          variant={user.isFollowing ? 'outlined' : 'contained'}
+          variant={buttonVariant}
           size="small"
           disabled={isProcessing}
-          onClick={() => onToggleFollow(user.id, user.isFollowing)}
-          sx={{
-            borderRadius: '20px', fontWeight: 'bold', px: 2, minWidth: '90px',
-            textTransform: 'none',
-            ...(user.isFollowing ? { borderColor: 'divider', color: 'text.secondary' } : {})
-          }}
+          onClick={() => onToggleFollow(user.id, status)}
+          sx={{ borderRadius: '20px', fontWeight: 'bold', px: 2, minWidth: '90px', textTransform: 'none', ...buttonSx }}
         >
-          {isProcessing ? <CircularProgress size={16} color="inherit" /> : user.isFollowing ? 'フォロー中' : 'フォロー'}
+          {isProcessing ? <CircularProgress size={16} color="inherit" /> : buttonLabel}
         </Button>
       )}
     </Box>
@@ -88,7 +92,6 @@ function UserRow({
 }
 
 export default function Users() {
-  const theme = useTheme();
   const navigate = useNavigate();
   const [myId, setMyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,15 +116,17 @@ export default function Users() {
 
       const ids = (profiles || []).map(p => p.id);
 
-      // フォローリストとフォロワー数を一括取得
+      // 自分のフォロー状態（status付き）とフォロワー数（accepted のみ）を一括取得
       const [{ data: myFollows }, { data: followerRows }] = await Promise.all([
-        supabase.from('follows').select('following_id').eq('follower_id', myId),
+        supabase.from('follows').select('following_id, status').eq('follower_id', myId),
         ids.length > 0
-          ? supabase.from('follows').select('following_id').in('following_id', ids)
+          ? supabase.from('follows').select('following_id').in('following_id', ids).eq('status', 'accepted')
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
-      const followingSet = new Set(myFollows?.map(f => f.following_id));
+      const followMap: Record<string, FollowStatus> = {};
+      (myFollows || []).forEach(f => { followMap[f.following_id] = f.status as FollowStatus; });
+
       const countMap: Record<string, number> = {};
       (followerRows || []).forEach(f => {
         countMap[f.following_id] = (countMap[f.following_id] ?? 0) + 1;
@@ -129,14 +134,13 @@ export default function Users() {
 
       setUsers((profiles || []).map(p => ({
         ...p,
-        isFollowing: followingSet.has(p.id),
+        followStatus: followMap[p.id] ?? 'none',
         follower_count: countMap[p.id] ?? 0,
       })));
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
   }, [myId]);
 
-  // myId確定後 + 検索クエリ変化でデバウンス実行
   useEffect(() => {
     if (!myId) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -144,13 +148,17 @@ export default function Users() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchQuery, myId, fetchUsers]);
 
-  const handleToggleFollow = async (targetId: string, isFollowing: boolean) => {
+  const handleToggleFollow = async (targetId: string, currentStatus: FollowStatus) => {
     setProcessingIds(prev => new Set(prev).add(targetId));
     try {
-      if (isFollowing) {
+      if (currentStatus !== 'none') {
+        // フォロー中 or 申請中 → 解除・キャンセル
         await supabase.from('follows').delete().eq('follower_id', myId).eq('following_id', targetId);
       } else {
-        await supabase.from('follows').insert({ follower_id: myId, following_id: targetId });
+        // 新規フォロー：相手が非公開なら pending
+        const target = users.find(u => u.id === targetId);
+        const newStatus = target?.is_public ? 'accepted' : 'pending';
+        await supabase.from('follows').insert({ follower_id: myId, following_id: targetId, status: newStatus });
       }
       fetchUsers(searchQuery);
     } finally {
@@ -171,15 +179,8 @@ export default function Users() {
         placeholder="名前で検索..."
         value={searchQuery}
         onChange={e => setSearchQuery(e.target.value)}
-        sx={{
-          mb: 4,
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '12px', backgroundColor: 'background.paper',
-          }
-        }}
-        InputProps={{
-          startAdornment: <SearchRoundedIcon sx={{ mr: 1, color: 'text.disabled' }} />
-        }}
+        sx={{ mb: 4, '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.paper' } }}
+        slotProps={{ input: { startAdornment: <SearchRoundedIcon sx={{ mr: 1, color: 'text.disabled' }} /> } }}
       />
 
       <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }}>

@@ -15,6 +15,10 @@ import PersonRemoveOutlinedIcon from '@mui/icons-material/PersonRemoveOutlined';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined';
+
+type FollowStatus = 'none' | 'pending' | 'accepted';
 import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
 import defaultAvatarPng from '../assets/defaultAvatarPng.png';
@@ -29,6 +33,7 @@ interface ProfileData {
   bio: string | null;
   goal_group: string | null;
   goal_category: string | null;
+  is_public: boolean;
 }
 
 interface TimelineEntry {
@@ -159,13 +164,15 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
 // フォローリストダイアログ
 // ==========================================
 function FollowListDialog({
-  open, type, targetUserId, onClose, onUserClick,
+  open, type, targetUserId, onClose, onUserClick, isOwnProfile, onRemoveFollower,
 }: {
   open: boolean;
   type: 'following' | 'followers';
   targetUserId: string;
   onClose: () => void;
   onUserClick: (userId: string) => void;
+  isOwnProfile?: boolean;
+  onRemoveFollower?: (followerId: string) => void;
 }) {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -178,10 +185,10 @@ function FollowListDialog({
       try {
         let ids: string[] = [];
         if (type === 'following') {
-          const { data } = await supabase.from('follows').select('following_id').eq('follower_id', targetUserId);
+          const { data } = await supabase.from('follows').select('following_id').eq('follower_id', targetUserId).eq('status', 'accepted');
           ids = (data || []).map(r => r.following_id);
         } else {
-          const { data } = await supabase.from('follows').select('follower_id').eq('following_id', targetUserId);
+          const { data } = await supabase.from('follows').select('follower_id').eq('following_id', targetUserId).eq('status', 'accepted');
           ids = (data || []).map(r => r.follower_id);
         }
         if (ids.length === 0) { setUsers([]); return; }
@@ -196,6 +203,11 @@ function FollowListDialog({
     };
     fetch();
   }, [open, type, targetUserId]);
+
+  const handleRemove = async (followerId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== followerId));
+    onRemoveFollower?.(followerId);
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs"
@@ -219,10 +231,24 @@ function FollowListDialog({
         ) : (
           <List disablePadding>
             {users.map(user => (
-              <ListItem key={user.id} disablePadding>
+              <ListItem
+                key={user.id}
+                disablePadding
+                secondaryAction={
+                  isOwnProfile && type === 'followers' ? (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemove(user.id)}
+                      sx={{ color: 'text.disabled', '&:hover': { color: 'error.main' } }}
+                    >
+                      <PersonRemoveOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  ) : undefined
+                }
+              >
                 <ListItemButton
                   onClick={() => { onClose(); onUserClick(user.id); }}
-                  sx={{ px: 2.5, py: 1.5 }}
+                  sx={{ px: 2.5, py: 1.5, pr: isOwnProfile && type === 'followers' ? 7 : 2.5 }}
                 >
                   <ListItemAvatar>
                     <Avatar src={user.avatar_url || defaultAvatarPng} sx={{ width: 44, height: 44 }} />
@@ -263,7 +289,8 @@ export default function Profile() {
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [followCounts, setFollowCounts] = useState({ following: 0, followers: 0 });
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStatus, setFollowStatus] = useState<FollowStatus>('none');
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [logs, setLogs] = useState<TimelineEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowProcessing, setIsFollowProcessing] = useState(false);
@@ -280,6 +307,22 @@ export default function Profile() {
     init();
   }, [paramUserId]);
 
+  // フォローリクエスト一覧を取得（自分のプロフィールのみ）
+  const fetchPendingRequests = useCallback(async (myUserId: string) => {
+    const { data: pendingRows } = await supabase
+      .from('follows')
+      .select('follower_id')
+      .eq('following_id', myUserId)
+      .eq('status', 'pending');
+    const ids = (pendingRows || []).map(r => r.follower_id);
+    if (ids.length === 0) { setPendingRequests([]); return; }
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .in('id', ids);
+    setPendingRequests(profiles || []);
+  }, []);
+
   // プロフィール・フォロー情報・学習ログを取得
   const fetchAll = useCallback(async (targetId: string, currentUserId: string) => {
     setIsLoading(true);
@@ -291,8 +334,8 @@ export default function Profile() {
         { data: logsData },
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', targetId).single(),
-        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetId),
-        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetId),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetId).eq('status', 'accepted'),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetId).eq('status', 'accepted'),
         supabase.from('study_logs')
           .select('id, study_datetime, duration_minutes, pages, memo, image_url, materials(title, image_url, unit)')
           .eq('user_id', targetId)
@@ -315,22 +358,25 @@ export default function Profile() {
         studyDatetime: row.study_datetime,
       })));
 
-      // 他人のプロフィールを見る場合のみフォロー状態を確認
-      if (targetId !== currentUserId) {
+      if (targetId === currentUserId) {
+        // 自分のプロフィール：フォローリクエストを取得
+        fetchPendingRequests(currentUserId);
+      } else {
+        // 他人のプロフィール：自分のフォロー状態を確認
         const { data: followData } = await supabase
           .from('follows')
-          .select('*')
+          .select('status')
           .eq('follower_id', currentUserId)
           .eq('following_id', targetId)
           .maybeSingle();
-        setIsFollowing(!!followData);
+        setFollowStatus(followData ? (followData.status as FollowStatus) : 'none');
       }
     } catch (e) {
       console.error(e);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchPendingRequests]);
 
   useEffect(() => {
     if (targetUserId && myId) {
@@ -342,21 +388,69 @@ export default function Profile() {
     if (!myId || !targetUserId) return;
     setIsFollowProcessing(true);
     try {
-      if (isFollowing) {
+      if (followStatus !== 'none') {
+        // フォロー中 or 申請中 → 解除・キャンセル
         await supabase.from('follows').delete().eq('follower_id', myId).eq('following_id', targetUserId);
-        setIsFollowing(false);
-        setFollowCounts(prev => ({ ...prev, followers: prev.followers - 1 }));
+        if (followStatus === 'accepted') {
+          setFollowCounts(prev => ({ ...prev, followers: prev.followers - 1 }));
+        }
+        setFollowStatus('none');
       } else {
-        await supabase.from('follows').insert({ follower_id: myId, following_id: targetUserId });
-        setIsFollowing(true);
-        setFollowCounts(prev => ({ ...prev, followers: prev.followers + 1 }));
+        // 新規フォロー：相手が非公開なら pending
+        const newStatus: FollowStatus = profile?.is_public ? 'accepted' : 'pending';
+        await supabase.from('follows').insert({ follower_id: myId, following_id: targetUserId, status: newStatus });
+        setFollowStatus(newStatus);
+        if (newStatus === 'accepted') {
+          setFollowCounts(prev => ({ ...prev, followers: prev.followers + 1 }));
+        }
       }
     } finally {
       setIsFollowProcessing(false);
     }
   };
 
+  // フォロワーを強制解除（自分のフォロワーリストから）
+  const handleRemoveFollower = async (followerId: string) => {
+    if (!myId) return;
+    await supabase.from('follows').delete().eq('follower_id', followerId).eq('following_id', myId);
+    setFollowCounts(prev => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
+  };
+
+  // フォローリクエストを承認
+  const handleApproveRequest = async (followerId: string) => {
+    if (!myId) return;
+    try {
+      const { error } = await supabase
+        .from('follows')
+        .update({ status: 'accepted' })
+        .eq('follower_id', followerId)
+        .eq('following_id', myId);
+      if (error) throw error;
+      setPendingRequests(prev => prev.filter(u => u.id !== followerId));
+      setFollowCounts(prev => ({ ...prev, followers: prev.followers + 1 }));
+    } catch (e) {
+      console.error('Approve error:', e);
+    }
+  };
+
+  // フォローリクエストを拒否
+  const handleRejectRequest = async (followerId: string) => {
+    if (!myId) return;
+    try {
+      const { error } = await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', followerId)
+        .eq('following_id', myId);
+      if (error) throw error;
+      setPendingRequests(prev => prev.filter(u => u.id !== followerId));
+    } catch (e) {
+      console.error('Reject error:', e);
+    }
+  };
+
   const isOwn = myId !== null && targetUserId === myId;
+  const isPrivateAndRestricted = profile !== null && !profile.is_public && !isOwn && followStatus !== 'accepted';
   const avatarLetter = (profile?.display_name || '?')[0]?.toUpperCase();
 
   return (
@@ -369,6 +463,8 @@ export default function Profile() {
           targetUserId={targetUserId}
           onClose={() => setFollowDialog(prev => ({ ...prev, open: false }))}
           onUserClick={(userId) => navigate(`/users/${userId}`)}
+          isOwnProfile={isOwn}
+          onRemoveFollower={handleRemoveFollower}
         />
       )}
 
@@ -391,6 +487,55 @@ export default function Profile() {
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2 }}>
+
+          {/* フォローリクエスト（自分のプロフィールのみ・pendingがある場合） */}
+          {isOwn && pendingRequests.length > 0 && (
+            <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', overflow: 'hidden' }}>
+              <Box sx={{ px: { xs: 2, sm: 3 }, py: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PersonAddOutlinedIcon sx={{ fontSize: '18px', color: 'primary.main' }} />
+                <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary' }}>
+                  フォローリクエスト
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold', ml: 0.5 }}>
+                  {pendingRequests.length}件
+                </Typography>
+              </Box>
+              <List disablePadding>
+                {pendingRequests.map(user => (
+                  <ListItem key={user.id} disablePadding sx={{ borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none' } }}>
+                    <ListItemButton onClick={() => navigate(`/users/${user.id}`)} sx={{ px: { xs: 2, sm: 3 }, py: 1.5, pr: 14 }}>
+                      <ListItemAvatar>
+                        <Avatar src={user.avatar_url || defaultAvatarPng} sx={{ width: 40, height: 40 }} />
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Typography sx={{ fontWeight: 'bold', fontSize: '14px', color: 'text.primary' }}>
+                            {user.display_name || 'ユーザー'}
+                          </Typography>
+                        }
+                      />
+                    </ListItemButton>
+                    <Box sx={{ position: 'absolute', right: { xs: 12, sm: 16 }, display: 'flex', gap: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleApproveRequest(user.id)}
+                        sx={{ backgroundColor: 'primary.main', color: 'white', '&:hover': { backgroundColor: 'primary.dark' }, width: 32, height: 32 }}
+                      >
+                        <CheckOutlinedIcon sx={{ fontSize: '16px' }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRejectRequest(user.id)}
+                        sx={{ border: '1px solid', borderColor: 'divider', color: 'text.secondary', '&:hover': { color: 'error.main', borderColor: 'error.main' }, width: 32, height: 32 }}
+                      >
+                        <CloseRoundedIcon sx={{ fontSize: '16px' }} />
+                      </IconButton>
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
 
           {/* プロフィールカード */}
           <Box sx={{
@@ -431,9 +576,14 @@ export default function Profile() {
               }}>
                 {/* 名前・自己紹介 */}
                 <Box>
-                  <Typography sx={{ fontWeight: 'bold', fontSize: { xs: '20px', sm: '22px' }, color: 'text.primary', mb: 0.5 }}>
-                    {profile?.display_name || 'ユーザー'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', sm: 'flex-start' }, mb: 0.5 }}>
+                    <Typography sx={{ fontWeight: 'bold', fontSize: { xs: '20px', sm: '22px' }, color: 'text.primary' }}>
+                      {profile?.display_name || 'ユーザー'}
+                    </Typography>
+                    {profile && !profile.is_public && (
+                      <LockOutlinedIcon sx={{ fontSize: '18px', color: 'text.disabled' }} />
+                    )}
+                  </Box>
                   {profile?.bio && (
                     <Typography sx={{ fontSize: '14px', color: 'text.secondary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                       {profile.bio}
@@ -503,19 +653,20 @@ export default function Profile() {
                     </Button>
                   ) : (
                     <Button
-                      variant={isFollowing ? 'outlined' : 'contained'}
-                      startIcon={isFollowing ? <PersonRemoveOutlinedIcon /> : <PersonAddOutlinedIcon />}
+                      variant={followStatus === 'none' ? 'contained' : 'outlined'}
+                      startIcon={followStatus === 'none' ? <PersonAddOutlinedIcon /> : <PersonRemoveOutlinedIcon />}
                       disabled={isFollowProcessing}
                       onClick={handleToggleFollow}
                       sx={{
-                        borderRadius: '20px', fontWeight: 'bold', px: 3,
-                        textTransform: 'none',
-                        ...(isFollowing ? { borderColor: 'divider', color: 'text.secondary' } : {}),
+                        borderRadius: '20px', fontWeight: 'bold', px: 3, textTransform: 'none',
+                        ...(followStatus !== 'none' ? { borderColor: 'divider', color: 'text.secondary' } : {}),
                       }}
                     >
                       {isFollowProcessing
                         ? <CircularProgress size={16} color="inherit" />
-                        : isFollowing ? 'フォロー中' : 'フォローする'
+                        : followStatus === 'accepted' ? 'フォロー中'
+                        : followStatus === 'pending' ? '申請中'
+                        : profile?.is_public ? 'フォローする' : 'フォロー申請'
                       }
                     </Button>
                   )}
@@ -540,12 +691,24 @@ export default function Profile() {
               <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary' }}>
                 学習記録
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.disabled', ml: 0.5 }}>
-                {logs.length}件
-              </Typography>
+              {!isPrivateAndRestricted && (
+                <Typography variant="caption" sx={{ color: 'text.disabled', ml: 0.5 }}>
+                  {logs.length}件
+                </Typography>
+              )}
             </Box>
 
-            {logs.length === 0 ? (
+            {isPrivateAndRestricted ? (
+              <Box sx={{ py: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <LockOutlinedIcon sx={{ fontSize: '48px', color: 'text.disabled', opacity: 0.4 }} />
+                <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.secondary' }}>
+                  このアカウントは非公開です
+                </Typography>
+                <Typography sx={{ fontSize: '13px', color: 'text.disabled', textAlign: 'center', maxWidth: '260px', lineHeight: 1.7 }}>
+                  フォローすると学習記録を見ることができます
+                </Typography>
+              </Box>
+            ) : logs.length === 0 ? (
               <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                 <MenuBookOutlinedIcon sx={{ fontSize: '40px', color: 'text.disabled', opacity: 0.4 }} />
                 <Typography sx={{ fontSize: '14px', color: 'text.disabled' }}>まだ記録がありません</Typography>

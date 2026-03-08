@@ -242,7 +242,7 @@ export default function Home() {
   const fetchFollowLogs = useCallback(async (userId: string) => {
     setIsLoadingFollow(true);
     try {
-      const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', userId);
+      const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', userId).eq('status', 'accepted');
       const followingIds = (follows ?? []).map((f: any) => f.following_id);
       setFollowingCount(followingIds.length);
       const targetIds = [userId, ...followingIds];

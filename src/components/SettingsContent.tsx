@@ -349,8 +349,8 @@ export default function SettingsContent() {
               </Typography>
               <Typography sx={{ fontSize: '13px', color: 'text.secondary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                 {isPublic
-                  ? 'すべてのユーザーがあなたの学習記録や教材を見られるようになります。'
-                  : 'あなたのアカウントは現在、非公開です。\n学習記録や教材は、あなたが承認したフォロワーにのみ表示されます。'}
+                  ? 'すべてのユーザーがあなたの学習記録を見ることができます。'
+                  : 'あなたのアカウントは現在、非公開です。\n承認したフォロワーのみが学習記録を見ることができます。'}
               </Typography>
             </Box>
             <Switch
