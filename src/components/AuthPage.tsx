@@ -68,6 +68,11 @@ export default function AuthPage() {
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        // identities が空の場合、そのメールはすでに登録済み（Supabaseの仕様）
+        if (data.user?.identities?.length === 0) {
+          setErrorMessage('このメールアドレスはすでに登録されています。ログインしてください。');
+          return;
+        }
         if (data.session) {
           if (data.user) {
             await supabase.from('profiles').upsert({
