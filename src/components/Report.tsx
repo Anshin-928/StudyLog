@@ -146,76 +146,75 @@ export default function Report() {
 
   useEffect(() => { fetchAllLogs(); }, [fetchAllLogs]);
 
-  const periodLogs = useMemo(() => {
-    const start = getPeriodStart(period);
-    return allLogs.filter(l => toLocalDate(l.studyDatetime) >= start);
+  // allLogs を 1回のループで periodLogs・今日/今月/総計を同時集計
+  const { todayMinutes, thisMonthMinutes, grandTotalMinutes, periodLogs } = useMemo(() => {
+    const today = todayStr();
+    const monthStart = thisMonthStart();
+    const periodStart = getPeriodStart(period);
+
+    let todayMinutes = 0;
+    let thisMonthMinutes = 0;
+    let grandTotalMinutes = 0;
+    const periodLogs: LogEntry[] = [];
+
+    for (const l of allLogs) {
+      const mins = l.durationMinutes ?? 0;
+      const d = toLocalDate(l.studyDatetime);
+      grandTotalMinutes += mins;
+      if (d >= monthStart) thisMonthMinutes += mins;
+      if (d === today) todayMinutes += mins;
+      if (d >= periodStart) periodLogs.push(l);
+    }
+
+    return { todayMinutes, thisMonthMinutes, grandTotalMinutes, periodLogs };
   }, [allLogs, period]);
 
-  const todayMinutes = useMemo(() => {
-    const today = todayStr();
-    return allLogs
-      .filter(l => toLocalDate(l.studyDatetime) === today)
-      .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
-  }, [allLogs]);
-
-  const thisMonthMinutes = useMemo(() => {
-    const start = thisMonthStart();
-    return allLogs
-      .filter(l => toLocalDate(l.studyDatetime) >= start)
-      .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
-  }, [allLogs]);
-
-  const grandTotalMinutes = useMemo(
-    () => allLogs.reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0),
-    [allLogs],
-  );
-
-  const pieData = useMemo(
-    () => buildPieData(periodLogs, theme.palette.chart),
-    [periodLogs, theme.palette.chart],
-  );
-  const periodTotalMinutes = useMemo(
-    () => periodLogs.reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0),
-    [periodLogs],
-  );
-
-  const pieDataWithTotal = useMemo(
-    () => pieData.map(d => ({ ...d, __total: periodTotalMinutes })),
-    [pieData, periodTotalMinutes],
-  );
+  // periodLogs から pieData・合計・pieDataWithTotal を一括生成
+  const { pieData, periodTotalMinutes, pieDataWithTotal } = useMemo(() => {
+    let periodTotalMinutes = 0;
+    for (const l of periodLogs) periodTotalMinutes += l.durationMinutes ?? 0;
+    const pieData = buildPieData(periodLogs, theme.palette.chart);
+    const pieDataWithTotal = pieData.map(d => ({ ...d, __total: periodTotalMinutes }));
+    return { pieData, periodTotalMinutes, pieDataWithTotal };
+  }, [periodLogs, theme.palette.chart]);
 
   const currentMonth = new Date().getMonth() + 1;
 
   const { dates: summaryDates } = useMemo(() => getTrendPeriodInfo('day', 0), []);
+
+  // summaryBarData: 事前に日付別グルーピング (O(n)) で O(n²) → O(n) へ改善
   const { summaryBarData, summaryMaterials, summaryBarMax, summaryYTicks } = useMemo(() => {
-    const targetLogs = allLogs.filter(l => summaryDates.includes(toLocalDate(l.studyDatetime)));
-    
+    const summaryDatesSet = new Set(summaryDates);
+
+    // 1回のループで日付別にログをグルーピング
+    const logsByDate = new Map<string, LogEntry[]>();
+    for (const l of allLogs) {
+      const d = toLocalDate(l.studyDatetime);
+      if (!summaryDatesSet.has(d)) continue;
+      if (!logsByDate.has(d)) logsByDate.set(d, []);
+      logsByDate.get(d)!.push(l);
+    }
+
+    // matMap と barData を同時構築（日付ごとに1回ずつアクセス）
     const matMap = new Map<string, { name: string; total: number; image: string | null }>();
-    targetLogs.forEach(l => {
-      if ((l.durationMinutes ?? 0) <= 0) return;
-      const key = l.materialId ?? '__none__';
-      const name = l.materialName ?? '教材なし';
-      if (!matMap.has(key)) matMap.set(key, { name, total: 0, image: l.materialImage });
-      matMap.get(key)!.total += l.durationMinutes!;
+    const barData = summaryDates.map(dateStr => {
+      const item: Record<string, any> = { tableLabel: shortDate(dateStr), date: dateStr, total: 0 };
+      for (const l of logsByDate.get(dateStr) ?? []) {
+        if ((l.durationMinutes ?? 0) <= 0) continue;
+        const key = l.materialId ?? '__none__';
+        const mins = l.durationMinutes!;
+        item[key] = (item[key] || 0) + mins;
+        item.total += mins;
+        if (!matMap.has(key)) matMap.set(key, { name: l.materialName ?? '教材なし', total: 0, image: l.materialImage });
+        matMap.get(key)!.total += mins;
+      }
+      return item;
     });
 
     const materials = Array.from(matMap.entries())
       .map(([key, data]) => ({ key, ...data }))
       .sort((a, b) => b.total - a.total)
       .map((m, i) => ({ ...m, color: theme.palette.chart[i % theme.palette.chart.length] }));
-
-    const barData = summaryDates.map(dateStr => {
-      const tableLabel = shortDate(dateStr);
-      const item: Record<string, any> = { tableLabel, date: dateStr, total: 0 };
-      const dayLogs = targetLogs.filter(l => toLocalDate(l.studyDatetime) === dateStr);
-      dayLogs.forEach(l => {
-        if ((l.durationMinutes ?? 0) <= 0) return;
-        const key = l.materialId ?? '__none__';
-        item[key] = (item[key] || 0) + l.durationMinutes!;
-        item.total += l.durationMinutes!;
-      });
-      return item;
-    });
 
     const max = Math.max(...barData.map(d => d.total as number), 1);
     const step = max <= 60 ? 15 : max <= 180 ? 30 : max <= 360 ? 60 : max <= 720 ? 120 : 240;
