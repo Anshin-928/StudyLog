@@ -1,7 +1,8 @@
-// src/App.jsx
+// src/App.tsx
 
-import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
 import studyLogLogo from './assets/studyLogLogo.svg';
 import studyLogLogoDark from './assets/studyLogLogo_dark.svg';
 import {
@@ -33,16 +34,63 @@ import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
 import Users from './components/Users';
 
+// ==========================================
+// MUI テーマ型拡張
+// ==========================================
+declare module '@mui/material/styles' {
+  interface Theme {
+    customShadows: { sm: string; md: string; lg: string };
+  }
+  interface ThemeOptions {
+    customShadows?: { sm: string; md: string; lg: string };
+  }
+  interface Palette {
+    streak: { main: string; lighter: string; border: string };
+    chart: string[];
+  }
+  interface PaletteOptions {
+    streak?: { main: string; lighter: string; border: string };
+    chart?: string[];
+  }
+  interface PaletteColor {
+    lighter?: string;
+  }
+  interface SimplePaletteColorOptions {
+    lighter?: string;
+  }
+  interface TypeBackground {
+    subtle?: string;
+    overlay?: string;
+  }
+}
+
+// ==========================================
+// Context
+// ==========================================
 const THEME_KEY = 'studylog-theme-mode';
 
-// カラーモード Context
-export const ColorModeContext = createContext({
+interface ColorModeContextType {
+  mode: string;
+  toggleColorMode: () => void;
+}
+export const ColorModeContext = createContext<ColorModeContextType>({
   mode: 'light',
   toggleColorMode: () => {},
 });
 
+interface AppCallbacksContextType {
+  onRecordSaved: () => void;
+  onProfileSaved: () => void;
+}
+export const AppCallbacksContext = createContext<AppCallbacksContextType>({
+  onRecordSaved: () => {},
+  onProfileSaved: () => {},
+});
+
+// ==========================================
 // ストリーク計算
-function calcStreakFromDates(isoDates) {
+// ==========================================
+function calcStreakFromDates(isoDates: string[]): number {
   const dates = new Set(
     isoDates.map(iso => {
       const d = new Date(iso);
@@ -66,19 +114,12 @@ function calcStreakFromDates(isoDates) {
   return streak;
 }
 
-// App Callbacks Context
-export const AppCallbacksContext = createContext({
-  onRecordSaved: () => {},
-  onProfileSaved: () => {},
-});
-
+// ==========================================
+// ページラッパー
+// ==========================================
 function RecordPage() {
   const { onRecordSaved } = useContext(AppCallbacksContext);
   return <Record onRecordSaved={onRecordSaved} />;
-}
-
-function ProfilePage() {
-  return <Profile />;
 }
 
 function EditProfilePage() {
@@ -86,17 +127,21 @@ function EditProfilePage() {
   return <EditProfile onProfileSaved={onProfileSaved} />;
 }
 
-function UserProfilePage() {
-  return <Profile />;
+// ==========================================
+// ボトムナビゲーション（スマホ専用）
+// ==========================================
+interface NavItem {
+  label: string;
+  path: string;
+  icon: React.ReactElement;
 }
 
-// ボトムナビゲーション（スマホ専用）
-const bottomNavItems = [
-  { label: 'ホーム',       path: '/home',      icon: <HomeOutlinedIcon /> },
-  { label: '記録する',     path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
-  { label: 'レポート',     path: '/report',    icon: <BarChartOutlinedIcon /> },
-  { label: '教材',     path: '/materials',     icon: <MenuBookOutlinedIcon /> },
-  { label: 'ユーザー',     path: '/users',     icon: <PeopleOutlinedIcon /> }
+const bottomNavItems: NavItem[] = [
+  { label: 'ホーム',   path: '/home',      icon: <HomeOutlinedIcon /> },
+  { label: '記録する', path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
+  { label: 'レポート', path: '/report',    icon: <BarChartOutlinedIcon /> },
+  { label: '教材',     path: '/materials', icon: <MenuBookOutlinedIcon /> },
+  { label: 'ユーザー', path: '/users',     icon: <PeopleOutlinedIcon /> },
 ];
 
 function BottomNav() {
@@ -117,7 +162,7 @@ function BottomNav() {
     >
       <BottomNavigation
         value={currentPath}
-        onChange={(_event, newValue) => navigate(newValue)}
+        onChange={(_event, newValue: string) => navigate(newValue)}
         sx={{ backgroundColor: 'transparent', height: 56 }}
       >
         {bottomNavItems.map((item) => (
@@ -132,8 +177,7 @@ function BottomNav() {
               minWidth: 0,
               color: theme.palette.text.disabled,
               borderRadius: '20px',
-              m: '4px',
-              p: '4px',
+              m: '4px', p: '4px',
               '&.Mui-selected': { color: theme.palette.primary.main },
               '& .MuiBottomNavigationAction-label': {
                 fontSize: '10px',
@@ -147,13 +191,20 @@ function BottomNav() {
   );
 }
 
+// ==========================================
 // AppShell
+// ==========================================
+interface ProfileData {
+  display_name: string;
+  avatar_url: string | null;
+}
+
 function AppShell() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const [session, setSession] = useState(undefined);
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [streak, setStreak] = useState(0);
   const [isStreakOpen, setIsStreakOpen] = useState(false);
-  const [profileData, setProfileData] = useState({ display_name: '', avatar_url: null });
+  const [profileData, setProfileData] = useState<ProfileData>({ display_name: '', avatar_url: null });
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -167,16 +218,14 @@ function AppShell() {
   const fetchStreak = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase
-      .from('study_logs').select('study_datetime').eq('user_id', user.id);
-    if (data) setStreak(calcStreakFromDates(data.map(d => d.study_datetime)));
+    const { data } = await supabase.from('study_logs').select('study_datetime').eq('user_id', user.id);
+    if (data) setStreak(calcStreakFromDates(data.map((d: { study_datetime: string }) => d.study_datetime)));
   }, []);
 
   const fetchProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase
-      .from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
+    const { data } = await supabase.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
     if (data) setProfileData({ display_name: data.display_name || '', avatar_url: data.avatar_url || null });
   }, []);
 
@@ -186,13 +235,12 @@ function AppShell() {
     fetchProfile();
   }, [session, fetchStreak, fetchProfile]);
 
-  const callbacks = useMemo(() => ({
+  const callbacks = useMemo<AppCallbacksContextType>(() => ({
     onRecordSaved: fetchStreak,
     onProfileSaved: fetchProfile,
   }), [fetchStreak, fetchProfile]);
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
-  const avatarLetter = (profileData.display_name || session?.user?.email || '?')[0]?.toUpperCase();
 
   if (session === undefined) {
     return (
@@ -208,7 +256,6 @@ function AppShell() {
     <AppCallbacksContext.Provider value={callbacks}>
       <Box sx={{ display: 'flex', height: '100dvh', backgroundColor: theme.palette.background.default }}>
 
-        {/* AppBar */}
         <AppBar
           position="fixed"
           elevation={0}
@@ -220,8 +267,6 @@ function AppShell() {
           }}
         >
           <Toolbar disableGutters sx={{ display: 'flex', alignItems: 'center', px: isMobile ? '12px' : '16px', minHeight: isMobile ? '52px !important' : '64px !important' }}>
-
-            {/* ロゴ＋タイトル */}
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: isMobile ? 1 : 0 }}>
               {!isMobile && (
                 <IconButton onClick={toggleSidebar} edge="start" sx={{ ml: 0, mr: 2, color: theme.palette.text.primary }}>
@@ -229,10 +274,10 @@ function AppShell() {
                 </IconButton>
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? 'auto' : '230px' }}>
-                <img 
+                <img
                   src={theme.palette.mode === 'dark' ? studyLogLogoDark : studyLogLogo}
-                  alt="StudyLog" 
-                  style={{ height: isMobile ? '30px' : '32px', marginRight: '8px' }} 
+                  alt="StudyLog"
+                  style={{ height: isMobile ? '30px' : '32px', marginRight: '8px' }}
                 />
                 <Typography variant="h6" sx={{ fontWeight: '900', fontSize: isMobile ? '20px' : '24px', letterSpacing: '-0.5px' }}>
                   StudyLog
@@ -242,7 +287,6 @@ function AppShell() {
 
             {!isMobile && <Box sx={{ flexGrow: 1 }} />}
 
-            {/* ストリーク */}
             <Chip
               icon={<LocalFireDepartmentRoundedIcon />}
               label={`${streak}`}
@@ -257,60 +301,49 @@ function AppShell() {
                 cursor: 'pointer', transition: '0.2s',
                 '&:hover': {
                   backgroundColor: streak > 0 ? theme.palette.streak.lighter : theme.palette.action.selected,
-                  opacity: 0.8
+                  opacity: 0.8,
                 },
-                '& .MuiChip-icon': { 
-                   color: streak > 0 ? `${theme.palette.streak.main} !important` : theme.palette.text.disabled 
+                '& .MuiChip-icon': {
+                  color: streak > 0 ? `${theme.palette.streak.main} !important` : theme.palette.text.disabled,
                 },
                 mr: 1,
               }}
             />
 
-              <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
-                <Avatar
-                  src={profileData.avatar_url || defaultAvatarPng}
-                  sx={{
-                    width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
-                    backgroundColor: theme.palette.primary.main,
-                    border: `2px solid ${theme.palette.primary.lighter}`,
-                    transition: 'border-color 0.2s', '&:hover': { borderColor: theme.palette.primary.main },
-                  }}
-                >
-                </Avatar>
-              </IconButton>
+            <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
+              <Avatar
+                src={profileData.avatar_url || defaultAvatarPng}
+                sx={{
+                  width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
+                  backgroundColor: theme.palette.primary.main,
+                  border: `2px solid ${theme.palette.primary.lighter}`,
+                  transition: 'border-color 0.2s', '&:hover': { borderColor: theme.palette.primary.main },
+                }}
+              />
+            </IconButton>
           </Toolbar>
         </AppBar>
 
-        {/* サイドバー（PC のみ） */}
         {!isMobile && <Sidebar isSidebarOpen={isSidebarOpen} />}
 
-        {/* メインコンテンツ */}
         <Box
           component="main"
           sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            pb: isMobile ? 0 : 2,
-            pr: isMobile ? 0 : 2,
+            flexGrow: 1, display: 'flex', flexDirection: 'column',
+            pb: isMobile ? 0 : 2, pr: isMobile ? 0 : 2,
             transition: 'margin-left 0.2s',
-            minWidth: 0,
-            minHeight: 0,
-            overflow: 'hidden',
+            minWidth: 0, minHeight: 0, overflow: 'hidden',
           }}
         >
           <Toolbar sx={{ minHeight: isMobile ? '52px !important' : '64px !important' }} />
-
           <Box sx={{
             backgroundColor: theme.palette.background.paper,
             flexGrow: 1,
             borderRadius: isMobile ? 0 : '24px',
             boxShadow: isMobile ? 'none' : (theme.palette.mode === 'dark' ? 'none' : theme.customShadows.sm),
-            overflowX: 'hidden',
-            overflowY: 'auto',
+            overflowX: 'hidden', overflowY: 'auto',
             p: isMobile ? 2 : 4,
-            display: 'flex',
-            flexDirection: 'column',
+            display: 'flex', flexDirection: 'column',
             pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 4,
             position: 'relative',
           }}>
@@ -318,16 +351,16 @@ function AppShell() {
           </Box>
         </Box>
 
-        {/* ボトムナビ（スマホのみ） */}
         {isMobile && <BottomNav />}
-
         <StreakDialog open={isStreakOpen} onClose={() => setIsStreakOpen(false)} />
       </Box>
     </AppCallbacksContext.Provider>
   );
 }
 
+// ==========================================
 // ルーター定義
+// ==========================================
 const router = createBrowserRouter([
   { path: '/login', element: <AuthPage /> },
   {
@@ -342,21 +375,23 @@ const router = createBrowserRouter([
       { path: 'materials', element: <Materials /> },
       { path: 'settings', element: <Settings /> },
       { path: 'materials/add-new-material', element: <AddMaterial /> },
-      { path: 'profile', element: <ProfilePage /> },
+      { path: 'profile', element: <Profile /> },
       { path: 'profile/edit', element: <EditProfilePage /> },
       { path: 'users', element: <Users /> },
-      { path: 'users/:userId', element: <UserProfilePage /> },
+      { path: 'users/:userId', element: <Profile /> },
     ],
   },
 ]);
 
+// ==========================================
 // App ルート（テーマ管理）
+// ==========================================
 export default function App() {
-  const [mode, setMode] = useState(() => {
-    return localStorage.getItem(THEME_KEY) || 'light';
+  const [mode, setMode] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'light';
   });
 
-  const colorMode = useMemo(() => ({
+  const colorMode = useMemo<ColorModeContextType>(() => ({
     mode,
     toggleColorMode: () => {
       setMode(prev => {
@@ -370,19 +405,19 @@ export default function App() {
   const theme = useMemo(() => createTheme({
     palette: {
       mode,
-      primary: { 
+      primary: {
         main: '#4285F4',
         lighter: mode === 'dark' ? 'rgba(66, 133, 244, 0.15)' : 'rgba(66, 133, 244, 0.08)',
       },
       chart: [
-        '#1A73E8', '#34A853', '#EA4335', '#FBBC05', '#8E24AA', 
-        '#00ACC1', '#FF6D00', '#546E7A', '#D81B60', '#00897B'
+        '#1A73E8', '#34A853', '#EA4335', '#FBBC05', '#8E24AA',
+        '#00ACC1', '#FF6D00', '#546E7A', '#D81B60', '#00897B',
       ],
-      error: { 
+      error: {
         main: mode === 'dark' ? '#ff5252' : '#d32f2f',
         dark: mode === 'dark' ? '#ff867f' : '#b71c1c',
         lighter: mode === 'dark' ? 'rgba(255, 82, 82, 0.15)' : 'rgba(211, 47, 47, 0.05)',
-        contrastText: '#FFFFFF'
+        contrastText: '#FFFFFF',
       },
       success: {
         main: mode === 'dark' ? '#81c995' : '#34A853',
@@ -397,13 +432,13 @@ export default function App() {
         lighter: mode === 'dark' ? 'rgba(255, 107, 0, 0.15)' : '#FFF4EC',
         border: mode === 'dark' ? 'rgba(255, 107, 0, 0.3)' : '#FFE0C2',
       },
-      background: { 
+      background: {
         default: mode === 'dark' ? '#202124' : '#F0F4F9',
         paper: mode === 'dark' ? '#303134' : '#FFFFFF',
         subtle: mode === 'dark' ? '#3c4043' : '#f9f9f9',
         overlay: mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)',
       },
-      text: { 
+      text: {
         primary: mode === 'dark' ? '#e8eaed' : '#333333',
         secondary: mode === 'dark' ? '#9aa0a6' : '#666666',
         disabled: mode === 'dark' ? '#5f6368' : '#aaaaaa',
@@ -418,12 +453,10 @@ export default function App() {
     components: {
       MuiPaper: {
         styleOverrides: {
-          root: {
-            backgroundImage: 'none',
-          }
-        }
-      }
-    }
+          root: { backgroundImage: 'none' },
+        },
+      },
+    },
   }), [mode]);
 
   return (

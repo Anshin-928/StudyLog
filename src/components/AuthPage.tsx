@@ -1,4 +1,4 @@
-// src/components/AuthPage.jsx
+// src/components/AuthPage.tsx
 
 import { useState } from 'react';
 import {
@@ -14,7 +14,7 @@ import { supabase } from '../lib/supabase';
 
 export default function AuthPage() {
   const theme = useTheme();
-  const [tabIndex, setTabIndex] = useState(0); // 0: ログイン, 1: 新規登録
+  const [tabIndex, setTabIndex] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +25,6 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const isLogin = tabIndex === 0;
 
-  // オートフィルの青色背景をテーマカラーで上書きする設定
   const textFieldSx = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '12px',
@@ -39,7 +38,7 @@ export default function AuthPage() {
     },
   };
 
-  const handleTabChange = (_, newValue) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
     setErrorMessage('');
     setSuccessMessage('');
@@ -72,8 +71,8 @@ export default function AuthPage() {
         setSuccessMessage('アカウントを作成しました！ログインしています...');
         navigate('/home', { replace: true });
       }
-    } catch (error) {
-      const msg = error.message;
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '';
       if (msg.includes('Invalid login credentials')) {
         setErrorMessage('メールアドレスまたはパスワードが正しくありません。');
       } else if (msg.includes('User already registered')) {
@@ -88,38 +87,16 @@ export default function AuthPage() {
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmit();
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        backgroundColor: 'background.default',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        p: 2,
-      }}
-    >
-      <Box
-        sx={{
-          backgroundColor: 'background.paper',
-          borderRadius: '24px',
-          boxShadow: theme.customShadows.md,
-          p: { xs: 3, sm: 5 },
-          width: '100%',
-          maxWidth: '420px',
-        }}
-      >
-        {/* ロゴ・アプリ名 */}
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <Box sx={{ backgroundColor: 'background.paper', borderRadius: '24px', boxShadow: theme.customShadows.md, p: { xs: 3, sm: 5 }, width: '100%', maxWidth: '420px' }}>
+
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1, gap: 1.5 }}>
-          <img 
-            src={theme.palette.mode === 'dark' ? studyLogLogoDark : studyLogLogo} 
-            alt="StudyLog" 
-            style={{ height: '36px' }} 
-          />
+          <img src={theme.palette.mode === 'dark' ? studyLogLogoDark : studyLogLogo} alt="StudyLog" style={{ height: '36px' }} />
           <Typography variant="h5" sx={{ fontWeight: '900', fontSize: '28px', letterSpacing: '-0.5px', color: 'text.primary' }}>
             StudyLog
           </Typography>
@@ -129,83 +106,36 @@ export default function AuthPage() {
           学習記録を、もっと楽しく。
         </Typography>
 
-        {/* タブ（ログイン / 新規登録） */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs
-            value={tabIndex}
-            onChange={handleTabChange}
-            variant="fullWidth"
-            // 🌟 修正: インジケーター（下線）の角も丸く設定
-            TabIndicatorProps={{ sx: { borderRadius: '3px 3px 0 0' } }}
-          >
-            {/* 🌟 修正: Tab 本体の左上と右上を丸く設定し、ホバー効果を追加 */}
-            <Tab 
-              label="ログイン" 
-              sx={{ 
-                fontWeight: 'bold', 
-                borderRadius: '12px 12px 0 0',
-                '&:hover': { backgroundColor: 'action.hover' } 
-              }} 
-            />
-            <Tab 
-              label="新規登録" 
-              sx={{ 
-                fontWeight: 'bold', 
-                borderRadius: '12px 12px 0 0',
-                '&:hover': { backgroundColor: 'action.hover' } 
-              }} 
-            />
+          <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth" TabIndicatorProps={{ sx: { borderRadius: '3px 3px 0 0' } }}>
+            <Tab label="ログイン" sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', '&:hover': { backgroundColor: 'action.hover' } }} />
+            <Tab label="新規登録" sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', '&:hover': { backgroundColor: 'action.hover' } }} />
           </Tabs>
         </Box>
 
-        {/* エラー / 成功メッセージ */}
-        {errorMessage && (
-          <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>
-            {errorMessage}
-          </Alert>
-        )}
-        {successMessage && (
-          <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>
-            {successMessage}
-          </Alert>
-        )}
+        {errorMessage && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{errorMessage}</Alert>}
+        {successMessage && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{successMessage}</Alert>}
 
-        {/* メールアドレス */}
         <TextField
-          label="メールアドレス"
-          type="email"
-          value={email}
+          label="メールアドレス" type="email" value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={handleKeyDown}
-          fullWidth
-          size="medium"
-          disabled={isLoading}
+          fullWidth size="medium" disabled={isLoading}
           sx={{ mb: 2, ...textFieldSx }}
         />
 
-        {/* パスワード */}
         <TextField
-          label="パスワード"
-          type={showPassword ? 'text' : 'password'}
-          value={password}
+          label="パスワード" type={showPassword ? 'text' : 'password'} value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={handleKeyDown}
-          fullWidth
-          size="medium"
-          disabled={isLoading}
+          fullWidth size="medium" disabled={isLoading}
           helperText={!isLogin ? '6文字以上で設定してください' : ''}
           slotProps={{
             input: {
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword((v) => !v)}
-                    edge="end"
-                    size="small"
-                  >
-                    {showPassword
-                      ? <VisibilityOffOutlinedIcon fontSize="small" />
-                      : <VisibilityOutlinedIcon fontSize="small" />}
+                  <IconButton onClick={() => setShowPassword(v => !v)} edge="end" size="small">
+                    {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -214,25 +144,12 @@ export default function AuthPage() {
           sx={{ mb: 3, ...textFieldSx }}
         />
 
-        {/* 送信ボタン */}
         <Button
-          variant="contained"
-          fullWidth
-          size="large"
-          onClick={handleSubmit}
-          disabled={isLoading}
-          disableElevation
-          sx={{
-            borderRadius: '12px',
-            fontWeight: 'bold',
-            fontSize: '16px',
-            py: 1.5,
-            boxShadow: 'none',
-          }}
+          variant="contained" fullWidth size="large"
+          onClick={handleSubmit} disabled={isLoading} disableElevation
+          sx={{ borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', py: 1.5, boxShadow: 'none' }}
         >
-          {isLoading
-            ? <CircularProgress size={24} color="inherit" />
-            : isLogin ? 'ログイン' : 'アカウントを作成'}
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : isLogin ? 'ログイン' : 'アカウントを作成'}
         </Button>
       </Box>
     </Box>

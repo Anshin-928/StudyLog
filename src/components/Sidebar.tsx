@@ -1,10 +1,11 @@
-// src/components/Sidebar.jsx
+// src/components/Sidebar.tsx
 
 import {
   Drawer, Toolbar, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
   useMediaQuery, useTheme, alpha,
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
 
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
@@ -13,19 +14,29 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 
-export const mainMenus = [
+interface SidebarItem {
+  text: string;
+  path: string;
+  icon: React.ReactElement;
+}
+
+export const mainMenus: SidebarItem[] = [
   { text: 'ホーム',        path: '/home',      icon: <HomeOutlinedIcon /> },
   { text: '記録する',      path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
   { text: 'レポート',      path: '/report',    icon: <BarChartOutlinedIcon /> },
   { text: '教材管理',      path: '/materials', icon: <MenuBookOutlinedIcon /> },
   { text: 'ユーザーを探す', path: '/users',     icon: <PeopleOutlinedIcon /> },
-  { text: '設定',         path: '/settings',  icon: <SettingsOutlinedIcon /> },
+  { text: '設定',          path: '/settings',  icon: <SettingsOutlinedIcon /> },
 ];
 
 export const closedDrawerWidth = 72;
 export const openDrawerWidth = 250;
 
-export default function Sidebar({ isSidebarOpen }) {
+interface SidebarProps {
+  isSidebarOpen: boolean;
+}
+
+export default function Sidebar({ isSidebarOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -33,7 +44,6 @@ export default function Sidebar({ isSidebarOpen }) {
 
   if (isMobile) return null;
 
-  // 選択中の背景色：ライトは #D3E3FD、ダークはプライマリの薄い透過
   const selectedBg = theme.palette.mode === 'dark'
     ? alpha(theme.palette.primary.main, 0.18)
     : '#D3E3FD';
@@ -95,11 +105,7 @@ export default function Sidebar({ isSidebarOpen }) {
                 {isSidebarOpen && (
                   <ListItemText
                     primary={item.text}
-                    sx={{
-                      '& .MuiTypography-root': {
-                        fontWeight: isSelected ? 'bold' : 'medium',
-                      },
-                    }}
+                    sx={{ '& .MuiTypography-root': { fontWeight: isSelected ? 'bold' : 'medium' } }}
                   />
                 )}
               </ListItemButton>
