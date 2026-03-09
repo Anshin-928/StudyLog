@@ -1,6 +1,6 @@
 // src/components/Materials.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useBlocker } from 'react-router-dom';
 import {
   Box, Typography, Grid, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon, Tooltip,
@@ -17,6 +17,8 @@ import ConfirmDialog from './ConfirmDialog';
 import MaterialCard from './MaterialCard';
 import { supabase } from '../lib/supabase';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
+import { useMaterials } from '../hooks/useMaterials';
+import type { Material, CategoryInfo } from '../hooks/useMaterials';
 
 import {
   DndContext,
@@ -38,27 +40,6 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
-// ==========================================
-// 型定義
-// ==========================================
-interface Material {
-  id: string;
-  categoryId: string;
-  categoryName: string;
-  name: string;
-  image: string;
-  colorCode: string;
-  categorySortOrder: number;
-  materialSortOrder: number;
-}
-
-interface CategoryInfo {
-  id: string;
-  name: string;
-  colorCode: string;
-  sortOrder: number;
-}
 
 // ==========================================
 // ユーティリティ
@@ -156,9 +137,7 @@ export default function Materials() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [allCategories, setAllCategories] = useState<CategoryInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { materials, allCategories, isLoading, setMaterials, refetch } = useMaterials();
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -202,59 +181,6 @@ export default function Materials() {
   const openCategoryDialog = () => { handleMenuClose(); setIsCategoryDialogOpen(true); };
   const handleReorderModeStart = () => { handleMenuClose(); setIsReorderMode(true); };
 
-  // ==========================================
-  // データ取得
-  // ==========================================
-  const fetchMaterials = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('materials')
-        .select(`id, category_id, title, image_url, sort_order, categories (name, color_code, sort_order)`)
-        .eq('status', 'active')
-        .eq('user_id', user.id);
-      if (error) throw error;
-
-      const { data: catData, error: catError } = await supabase
-        .from('categories')
-        .select('id, name, color_code, sort_order')
-        .eq('user_id', user.id)
-        .order('sort_order', { ascending: true });
-      if (catError) throw catError;
-
-      if (catData) {
-        setAllCategories(catData.map((c: any) => ({
-          id: c.id, name: c.name,
-          colorCode: c.color_code || theme.palette.divider,
-          sortOrder: c.sort_order || 0,
-        })));
-      }
-
-      if (data) {
-        const formatted: Material[] = data.map((item: any) => ({
-          id: item.id,
-          categoryId: item.category_id,
-          categoryName: item.categories?.name || 'カテゴリなし',
-          name: item.title,
-          image: item.image_url,
-          colorCode: item.categories?.color_code || theme.palette.divider,
-          categorySortOrder: item.categories?.sort_order || 0,
-          materialSortOrder: item.sort_order || 0,
-        }));
-        formatted.sort((a, b) => a.materialSortOrder - b.materialSortOrder);
-        setMaterials(formatted);
-      }
-    } catch (error) {
-      console.error('データ取得エラー:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [theme.palette.divider]);
-
-  useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
 
   // ==========================================
   // dnd-kit ドラッグハンドラ
@@ -517,13 +443,13 @@ export default function Materials() {
       <CategoryEditDialog
         open={isCategoryDialogOpen}
         onClose={() => setIsCategoryDialogOpen(false)}
-        onUpdated={() => fetchMaterials()}
+        onUpdated={() => refetch()}
       />
 
       <MaterialEditDialog
         materialId={editMaterialId}
         onClose={() => setEditMaterialId(null)}
-        onUpdated={() => { fetchMaterials(); showSnackbar('教材を更新しました', 'success'); }}
+        onUpdated={() => { refetch(); showSnackbar('教材を更新しました', 'success'); }}
       />
 
       <NavigationBlockerDialog
