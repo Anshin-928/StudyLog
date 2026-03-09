@@ -291,6 +291,7 @@ export default function Profile() {
   const [followCounts, setFollowCounts] = useState({ following: 0, followers: 0 });
   const [followStatus, setFollowStatus] = useState<FollowStatus>('none');
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [userGoals, setUserGoals] = useState<Array<{ id: string; goalGroup: string; goalCategory: string | null }>>([]);
   const [logs, setLogs] = useState<TimelineEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowProcessing, setIsFollowProcessing] = useState(false);
@@ -332,6 +333,7 @@ export default function Profile() {
         { count: followingCount },
         { count: followerCount },
         { data: logsData },
+        { data: goalsData },
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', targetId).single(),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetId).eq('status', 'accepted'),
@@ -341,10 +343,12 @@ export default function Profile() {
           .eq('user_id', targetId)
           .order('study_datetime', { ascending: false })
           .limit(30),
+        supabase.from('user_goals').select('id, goal_group, goal_category').eq('user_id', targetId).order('created_at', { ascending: true }),
       ]);
 
       if (profileData) setProfile(profileData);
       setFollowCounts({ following: followingCount ?? 0, followers: followerCount ?? 0 });
+      setUserGoals((goalsData ?? []).map((g: any) => ({ id: g.id, goalGroup: g.goal_group, goalCategory: g.goal_category })));
 
       setLogs((logsData ?? []).map((row: any) => ({
         id: row.id,
@@ -591,26 +595,18 @@ export default function Profile() {
                   )}
                 </Box>
 
-                {/* 目標 */}
-                {profile?.goal_group && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
-                    <OutlinedFlagOutlinedIcon sx={{ fontSize: '16px', color: 'primary.main' }} />
-                    <Chip
-                      label={profile.goal_group}
-                      size="small"
-                      sx={{
-                        backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.15 : 0.08),
-                        color: 'primary.main',
-                        fontWeight: 'bold',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                    />
-                    {profile.goal_category && (
-                      <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                        {goalCategoryLabel(profile.goal_category)}
-                      </Typography>
-                    )}
+                {/* 目標（複数対応） */}
+                {userGoals.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, justifyContent: { xs: 'center', sm: 'flex-start' }, alignItems: 'center' }}>
+                    <OutlinedFlagOutlinedIcon sx={{ fontSize: '16px', color: 'primary.main', flexShrink: 0 }} />
+                    {userGoals.map(goal => (
+                      <Chip
+                        key={goal.id}
+                        label={goal.goalGroup}
+                        size="small"
+                        sx={{ backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.15 : 0.08), color: 'primary.main', fontWeight: 'bold', borderRadius: '6px', fontSize: '12px' }}
+                      />
+                    ))}
                   </Box>
                 )}
 
