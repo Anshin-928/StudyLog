@@ -51,8 +51,8 @@ export default function AuthPage() {
       setErrorMessage('メールアドレスとパスワードを入力してください。');
       return;
     }
-    if (password.length < 6) {
-      setErrorMessage('パスワードは6文字以上で入力してください。');
+    if (password.length < 12) {
+      setErrorMessage('パスワードは12文字以上で入力してください。');
       return;
     }
 
@@ -68,14 +68,18 @@ export default function AuthPage() {
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        if (data.user) {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            display_name: '名称未設定',
-          }, { onConflict: 'id', ignoreDuplicates: true });
+        if (data.session) {
+          if (data.user) {
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              display_name: '名称未設定',
+            }, { onConflict: 'id', ignoreDuplicates: true });
+          }
+          setSuccessMessage('アカウントを作成しました！ログインしています...');
+          navigate('/home', { replace: true });
+        } else {
+          setSuccessMessage('確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。');
         }
-        setSuccessMessage('アカウントを作成しました！ログインしています...');
-        navigate('/home', { replace: true });
       }
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
@@ -84,7 +88,7 @@ export default function AuthPage() {
       } else if (msg.includes('User already registered')) {
         setErrorMessage('このメールアドレスはすでに登録されています。ログインしてください。');
       } else if (msg.includes('Password should be at least')) {
-        setErrorMessage('パスワードは6文字以上で入力してください。');
+        setErrorMessage('パスワードは12文字以上で入力してください。');
       } else {
         setErrorMessage('エラーが発生しました。時間をおいて再度お試しください。');
       }
@@ -135,7 +139,7 @@ export default function AuthPage() {
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={handleKeyDown}
           fullWidth size="medium" disabled={isLoading}
-          helperText={!isLogin ? '6文字以上で設定してください' : ''}
+          helperText={!isLogin ? '12文字以上で設定してください' : ''}
           slotProps={{
             input: {
               endAdornment: (

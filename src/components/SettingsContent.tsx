@@ -258,14 +258,14 @@ export default function SettingsContent() {
   };
 
   const passwordError = (() => {
-    if (newPassword && newPassword.length < 8) return '8文字以上で入力してください';
+    if (newPassword && newPassword.length < 12) return '12文字以上で入力してください';
     if (confirmPassword && newPassword !== confirmPassword) return 'パスワードが一致しません';
     return '';
   })();
 
   const canChangePassword =
     currentPassword.length > 0 &&
-    newPassword.length >= 8 &&
+    newPassword.length >= 12 &&
     newPassword === confirmPassword &&
     !passwordError;
 
@@ -391,7 +391,7 @@ export default function SettingsContent() {
             type={showNew ? 'text' : 'password'}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            fullWidth size="small" helperText="8文字以上"
+            fullWidth size="small" helperText="12文字以上"
             slotProps={{ htmlInput: { autoComplete: 'new-password' }, input: { endAdornment: eyeBtn(showNew, () => setShowNew(v => !v)) } }}
             sx={textFieldSx}
           />
