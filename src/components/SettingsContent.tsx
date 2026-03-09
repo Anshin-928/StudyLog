@@ -382,8 +382,8 @@ export default function SettingsContent() {
             type={showCurrent ? 'text' : 'password'}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            fullWidth size="small" autoComplete="current-password"
-            InputProps={{ endAdornment: eyeBtn(showCurrent, () => setShowCurrent(v => !v)) }}
+            fullWidth size="small"
+            slotProps={{ htmlInput: { autoComplete: 'new-password' }, input: { endAdornment: eyeBtn(showCurrent, () => setShowCurrent(v => !v)) } }}
             sx={textFieldSx}
           />
           <TextField
@@ -391,8 +391,8 @@ export default function SettingsContent() {
             type={showNew ? 'text' : 'password'}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            fullWidth size="small" autoComplete="new-password" helperText="8文字以上"
-            InputProps={{ endAdornment: eyeBtn(showNew, () => setShowNew(v => !v)) }}
+            fullWidth size="small" helperText="8文字以上"
+            slotProps={{ htmlInput: { autoComplete: 'new-password' }, input: { endAdornment: eyeBtn(showNew, () => setShowNew(v => !v)) } }}
             sx={textFieldSx}
           />
           <TextField
@@ -400,10 +400,10 @@ export default function SettingsContent() {
             type={showConfirm ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            fullWidth size="small" autoComplete="new-password"
+            fullWidth size="small"
             error={!!passwordError && confirmPassword.length > 0}
             helperText={confirmPassword.length > 0 ? passwordError : ''}
-            InputProps={{ endAdornment: eyeBtn(showConfirm, () => setShowConfirm(v => !v)) }}
+            slotProps={{ htmlInput: { autoComplete: 'new-password' }, input: { endAdornment: eyeBtn(showConfirm, () => setShowConfirm(v => !v)) } }}
             sx={textFieldSx}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

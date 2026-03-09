@@ -71,8 +71,6 @@ export default function AddMaterial() {
     fetchCategories();
   }, []);
 
-  const RAKUTEN_APP_ID = (import.meta as any).env.VITE_RAKUTEN_APP_ID;
-  const RAKUTEN_ACCESS_KEY = (import.meta as any).env.VITE_RAKUTEN_ACCESS_KEY;
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -158,7 +156,7 @@ export default function AddMaterial() {
     setIsSearching(true);
     try {
       const res = await fetch(
-        `/api/rakuten?format=json&title=${encodeURIComponent(searchQuery)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=20&sort=sales&outOfStockFlag=1`
+        `/api/rakuten?format=json&title=${encodeURIComponent(searchQuery)}&hits=20&sort=sales&outOfStockFlag=1`
       );
       const data = await res.json();
       setSearchResults(data.Items || []);

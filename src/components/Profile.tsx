@@ -79,7 +79,7 @@ function goalCategoryLabel(cat: string | null): string {
 // ==========================================
 // タイムラインアイテム（単一ユーザー用・ヘッダーなし）
 // ==========================================
-function TimelineItem({ entry }: { entry: TimelineEntry }) {
+function TimelineItem({ entry, onImageClick }: { entry: TimelineEntry; onImageClick?: (url: string) => void }) {
   return (
     <Box sx={{
       borderBottom: '1px solid',
@@ -147,7 +147,10 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
       </Box>
 
       {entry.imageUrl && (
-        <Box sx={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '240px', border: '1px solid', borderColor: 'divider' }}>
+        <Box
+          onClick={() => onImageClick?.(entry.imageUrl!)}
+          sx={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '240px', border: '1px solid', borderColor: 'divider', cursor: 'zoom-in' }}
+        >
           <img src={entry.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </Box>
       )}
@@ -295,6 +298,7 @@ export default function Profile() {
   const [userGoals, setUserGoals] = useState<Array<{ id: string; goalGroup: string; goalCategory: string | null }>>([]);
   const [logs, setLogs] = useState<TimelineEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isFollowProcessing, setIsFollowProcessing] = useState(false);
   const [followDialog, setFollowDialog] = useState<{ open: boolean; type: 'following' | 'followers' }>({ open: false, type: 'following' });
 
@@ -460,6 +464,36 @@ export default function Profile() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+
+      {/* ライトボックス */}
+      {lightboxUrl && (
+        <Box
+          onClick={() => setLightboxUrl(null)}
+          sx={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <IconButton
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setLightboxUrl(null); }}
+            sx={{
+              position: 'absolute', top: 16, left: 16,
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              color: '#fff',
+              '&:hover': { backgroundColor: 'rgba(255,255,255,0.3)' },
+            }}
+          >
+            <CloseRoundedIcon />
+          </IconButton>
+          <img
+            src={lightboxUrl}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', borderRadius: '8px' }}
+          />
+        </Box>
+      )}
 
       {targetUserId && (
         <FollowListDialog
@@ -725,7 +759,7 @@ export default function Profile() {
                 <Typography sx={{ fontSize: '14px', color: 'text.disabled' }}>まだ記録がありません</Typography>
               </Box>
             ) : (
-              logs.map(entry => <TimelineItem key={entry.id} entry={entry} />)
+              logs.map(entry => <TimelineItem key={entry.id} entry={entry} onImageClick={setLightboxUrl} />)
             )}
           </Box>
 
