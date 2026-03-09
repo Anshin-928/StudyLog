@@ -879,13 +879,32 @@ function StopwatchTab({
   onStateChange: (elapsed: number, isRunning: boolean) => void;
 }) {
   const theme = useTheme();
-  const [isRunning, setIsRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+
+  const savedIsRunning = localStorage.getItem('studylog_sw_isRunning') === 'true';
+  const savedStartTime = parseInt(localStorage.getItem('studylog_sw_startTime') || '0');
+  const savedAccum = parseInt(localStorage.getItem('studylog_sw_accumulated') || '0');
+
+  const clearSwStorage = () => {
+    localStorage.removeItem('studylog_sw_isRunning');
+    localStorage.removeItem('studylog_sw_startTime');
+    localStorage.removeItem('studylog_sw_accumulated');
+  };
+
+  const [isRunning, setIsRunning] = useState(savedIsRunning);
+  const [elapsed, setElapsed] = useState(() =>
+    savedIsRunning && savedStartTime > 0
+      ? Math.floor((Date.now() - savedStartTime) / 1000) + savedAccum
+      : savedAccum
+  );
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number>(savedIsRunning ? savedStartTime : 0);
+  const accumulatedRef = useRef<number>(savedAccum);
 
   useEffect(() => {
     if (isRunning) {
-      intervalRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+      intervalRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000) + accumulatedRef.current);
+      }, 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
@@ -893,15 +912,28 @@ function StopwatchTab({
   }, [isRunning]);
 
   useEffect(() => {
-    useFnRef.current = () => onUseTime(Math.ceil(elapsed / 60));
-    pauseFnRef.current = () => setIsRunning(false);
+    useFnRef.current = () => {
+      clearSwStorage();
+      onUseTime(Math.ceil(elapsed / 60));
+    };
+    pauseFnRef.current = () => {
+      accumulatedRef.current = elapsed;
+      localStorage.setItem('studylog_sw_isRunning', 'false');
+      localStorage.setItem('studylog_sw_accumulated', String(elapsed));
+      setIsRunning(false);
+    };
   });
 
   useEffect(() => {
     onStateChange(elapsed, isRunning);
   }, [elapsed, isRunning, onStateChange]);
 
-  const handleReset = () => { setIsRunning(false); setElapsed(0); };
+  const handleReset = () => {
+    setIsRunning(false);
+    accumulatedRef.current = 0;
+    setElapsed(0);
+    clearSwStorage();
+  };
 
   const formatTime = (sec: number) => {
     const h = Math.floor(sec / 3600);
@@ -983,7 +1015,19 @@ function StopwatchTab({
             sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', width: 52, height: 52, '&:hover': { backgroundColor: 'action.hover' }, color: 'text.primary' }}>
             <ReplayRoundedIcon />
           </IconButton>
-          <IconButton onClick={() => setIsRunning((r) => !r)} sx={{
+          <IconButton onClick={() => {
+            if (isRunning) {
+              accumulatedRef.current = elapsed;
+              localStorage.setItem('studylog_sw_isRunning', 'false');
+              localStorage.setItem('studylog_sw_accumulated', String(elapsed));
+              setIsRunning(false);
+            } else {
+              startTimeRef.current = Date.now();
+              localStorage.setItem('studylog_sw_isRunning', 'true');
+              localStorage.setItem('studylog_sw_startTime', String(startTimeRef.current));
+              setIsRunning(true);
+            }
+          }} sx={{
             width: 72, height: 72,
             backgroundColor: isRunning ? 'error.main' : 'primary.main', color: 'error.contrastText',
             '&:hover': { backgroundColor: isRunning ? 'error.dark' : 'primary.dark' },
@@ -1004,7 +1048,10 @@ export default function Record() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState(() => {
+    const saved = localStorage.getItem('studylog_record_tab');
+    return saved === '1' ? 1 : 0;
+  });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null | 'none'>(null);
@@ -1073,6 +1120,7 @@ export default function Record() {
       swPauseFnRef.current?.();
     }
     setTabIndex(newValue);
+    localStorage.setItem('studylog_record_tab', String(newValue));
   };
 
   const fetchMaterials = async () => {
@@ -1084,7 +1132,7 @@ export default function Record() {
         .from('materials')
         .select('id, title, image_url, unit, categories ( name, color_code, sort_order )')
         .eq('status', 'active')
-        .eq('user_id', user?.id)
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
       if (data) {
@@ -1113,6 +1161,7 @@ export default function Record() {
     setPresetHours(h > 0 ? String(h) : '');
     setPresetMinutes(String(m));
     setTabIndex(0);
+    localStorage.setItem('studylog_record_tab', '0');
   };
 
   const handleSave = async (
@@ -1283,7 +1332,12 @@ export default function Record() {
 
       <NavigationBlockerDialog
         open={blocker.state === 'blocked'}
-        onProceed={() => blocker.proceed?.()}
+        onProceed={() => {
+          localStorage.removeItem('studylog_sw_isRunning');
+          localStorage.removeItem('studylog_sw_startTime');
+          localStorage.removeItem('studylog_sw_accumulated');
+          blocker.proceed?.();
+        }}
         onCancel={() => blocker.reset?.()}
         message={
           swElapsed > 0 && manualIsDirty

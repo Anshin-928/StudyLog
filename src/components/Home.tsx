@@ -309,8 +309,8 @@ export default function Home() {
         </Box>
       )}
       {/* ページヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 2, color: 'text.primary' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, '& svg': { fontSize: isMobile ? '24px' : '28px' } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 4, color: 'text.primary' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
           <HomeOutlinedIcon />
         </Box>
         <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>ホーム</Typography>
