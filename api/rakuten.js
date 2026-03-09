@@ -11,8 +11,8 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(url, {
       headers: {
-        'Referer': 'https://studylog-seven.vercel.app',
-        'Origin': 'https://studylog-seven.vercel.app',
+        'Referer': 'https://studylog-jp.vercel.app/',
+        'Origin': 'https://studylog-jp.vercel.app/',
       }
     });
     const data = await response.json();
