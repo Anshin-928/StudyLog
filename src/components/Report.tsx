@@ -1,6 +1,6 @@
 // src/components/Report.tsx
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box, Typography, CircularProgress,
   LinearProgress, Chip,
@@ -13,7 +13,7 @@ import {
   Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { supabase } from '../lib/supabase';
+import { useStudyLogs } from '../hooks/useStudyLogs';
 import {
   type Period, type LogEntry, type PieItem,
   formatDuration, formatDurationHoursOnly, formatDurationShort,
@@ -112,39 +112,9 @@ export default function Report() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const period: Period = '7d';
-  const [isLoading, setIsLoading] = useState(true);
-  const [allLogs, setAllLogs] = useState<LogEntry[]>([]);
+  const { allLogs, isLoading } = useStudyLogs();
   const [isTrendDialogOpen, setIsTrendDialogOpen] = useState(false);
   const [isPieDialogOpen, setIsPieDialogOpen] = useState(false);
-
-  const fetchAllLogs = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase
-        .from('study_logs')
-        .select(`id, material_id, study_datetime, duration_minutes, materials ( title, image_url, categories ( name, color_code ) )`)
-        .eq('user_id', user.id)
-        .order('study_datetime', { ascending: true });
-      if (error) throw error;
-      setAllLogs((data ?? []).map((row: any) => ({
-        id: row.id,
-        materialId: row.material_id ?? null,
-        materialName: row.materials?.title ?? null,
-        materialImage: row.materials?.image_url ?? null,
-        colorCode: row.materials?.categories?.color_code ?? null,
-        studyDatetime: row.study_datetime,
-        durationMinutes: row.duration_minutes ?? null,
-      })));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchAllLogs(); }, [fetchAllLogs]);
 
   // allLogs を 1回のループで periodLogs・今日/今月/総計を同時集計
   const { todayMinutes, thisMonthMinutes, grandTotalMinutes, periodLogs } = useMemo(() => {
