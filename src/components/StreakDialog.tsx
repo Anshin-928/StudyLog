@@ -100,6 +100,8 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
   }, [open]);
 
   const streak = useMemo(() => calcStreak(studyDates), [studyDates]);
+  const today = todayStr();
+  const isStudiedToday = studyDates.has(today);
   const cells = useMemo(() => getCalendarCells(viewYear, viewMonth), [viewYear, viewMonth]);
 
   const monthStudyDays = useMemo(() => {
@@ -108,8 +110,6 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
     studyDates.forEach(d => { if (d.startsWith(prefix)) count++; });
     return count;
   }, [studyDates, viewYear, viewMonth]);
-
-  const today = todayStr();
 
   const handlePrevMonth = () => {
     if (viewMonth === 1) { setViewYear(y => y - 1); setViewMonth(12); }
@@ -172,15 +172,15 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography sx={{
-                  fontSize: { xs: '56px', sm: '64px' }, fontWeight: '900', 
-                  color: streak > 0 ? 'streak.main' : 'text.disabled',
+                  fontSize: { xs: '56px', sm: '64px' }, fontWeight: '900',
+                  color: streak > 0 && isStudiedToday ? 'streak.main' : 'text.disabled',
                   lineHeight: 1, letterSpacing: '-2px',
                 }}>
                   {streak}
                 </Typography>
                 <LocalFireDepartmentRoundedIcon sx={{
                   fontSize: { xs: '52px', sm: '56px' },
-                  color: streak > 0 ? 'streak.main' : 'text.disabled',
+                  color: streak > 0 && isStudiedToday ? 'streak.main' : 'text.disabled',
                 }} />
               </Box>
               <Typography sx={{ fontWeight: 'bold', color: 'text.secondary', fontSize: '15px' }}>

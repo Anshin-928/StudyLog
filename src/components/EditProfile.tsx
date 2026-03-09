@@ -230,11 +230,11 @@ export default function EditProfile({ onProfileSaved }: EditProfileProps) {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary', gap: 1 }}>
-          <IconButton onClick={() => navigate('/profile')} sx={{ mr: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary', gap: { xs: 0.5, sm: 1.5 } }}>
+          <IconButton onClick={() => navigate('/profile')} sx={{ ml: { xs: -0.5, sm: 0 } }}>
             <ArrowBackRoundedIcon />
           </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '28px' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', '& svg': { fontSize: isMobile ? '24px' : '28px' } }}>
             <AccountCircleOutlinedIcon />
           </Box>
           <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>プロフィールを編集</Typography>

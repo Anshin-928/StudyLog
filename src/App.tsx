@@ -203,6 +203,7 @@ function AppShell() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [streak, setStreak] = useState(0);
+  const [isStudiedToday, setIsStudiedToday] = useState(false);
   const [isStreakOpen, setIsStreakOpen] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({ display_name: '', avatar_url: null });
 
@@ -219,7 +220,17 @@ function AppShell() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase.from('study_logs').select('study_datetime').eq('user_id', user.id);
-    if (data) setStreak(calcStreakFromDates(data.map((d: { study_datetime: string }) => d.study_datetime)));
+    if (data) {
+      const isoDates = data.map((d: { study_datetime: string }) => d.study_datetime);
+      setStreak(calcStreakFromDates(isoDates));
+      const now = new Date();
+      const offset = now.getTimezoneOffset();
+      const today = new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+      setIsStudiedToday(isoDates.some(iso => {
+        const d = new Date(iso);
+        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) === today;
+      }));
+    }
   }, []);
 
   const fetchProfile = useCallback(async () => {
@@ -295,16 +306,16 @@ function AppShell() {
                 fontWeight: 'bold',
                 fontSize: isMobile ? '13px' : '16px',
                 px: 0.5, py: isMobile ? 1.5 : 2,
-                backgroundColor: streak > 0 ? theme.palette.streak.lighter : theme.palette.action.hover,
-                color: streak > 0 ? theme.palette.streak.main : theme.palette.text.disabled,
-                border: streak > 0 ? `1px solid ${theme.palette.streak.border}` : `1px solid ${theme.palette.divider}`,
+                backgroundColor: streak > 0 && isStudiedToday ? theme.palette.streak.lighter : theme.palette.action.hover,
+                color: streak > 0 && isStudiedToday ? theme.palette.streak.main : theme.palette.text.disabled,
+                border: streak > 0 && isStudiedToday ? `1px solid ${theme.palette.streak.border}` : `1px solid ${theme.palette.divider}`,
                 cursor: 'pointer', transition: '0.2s',
                 '&:hover': {
-                  backgroundColor: streak > 0 ? theme.palette.streak.lighter : theme.palette.action.selected,
+                  backgroundColor: streak > 0 && isStudiedToday ? theme.palette.streak.lighter : theme.palette.action.selected,
                   opacity: 0.8,
                 },
                 '& .MuiChip-icon': {
-                  color: streak > 0 ? `${theme.palette.streak.main} !important` : theme.palette.text.disabled,
+                  color: streak > 0 && isStudiedToday ? `${theme.palette.streak.main} !important` : theme.palette.text.disabled,
                 },
                 mr: 1,
               }}

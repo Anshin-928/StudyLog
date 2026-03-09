@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, TextField, Avatar, Button,
-  CircularProgress, useTheme, alpha, Chip, Divider,
+  CircularProgress, useTheme, alpha, Chip, Divider, useMediaQuery,
 } from '@mui/material';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
@@ -92,6 +92,8 @@ function UserRow({
 }
 
 export default function Users() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const [myId, setMyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,9 +170,13 @@ export default function Users() {
 
   return (
     <Box sx={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, color: 'text.primary' }}>
-        <PeopleOutlinedIcon sx={{ mr: 1.5, fontSize: '28px' }} />
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>ユーザーを探す</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 3, color: 'text.primary' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
+          <PeopleOutlinedIcon />
+        </Box>
+        <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>
+          ユーザーを探す
+        </Typography>
       </Box>
 
       {/* 検索バー */}
