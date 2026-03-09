@@ -14,9 +14,10 @@ interface MaterialCardProps {
   borderColor?: string;
   borderWidth?: number;
   isReorderMode?: boolean;
+  dragHandleProps?: Record<string, unknown>;
 }
 
-export default function MaterialCard({ material, onDelete, onEdit, borderColor = 'divider', borderWidth = 1, isReorderMode }: MaterialCardProps) {
+export default function MaterialCard({ material, onDelete, onEdit, borderColor = 'divider', borderWidth = 1, isReorderMode, dragHandleProps }: MaterialCardProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -43,7 +44,12 @@ return (
         position: 'relative',
         border: `${borderWidth}px solid`,
         borderColor: 'divider',
-        backgroundColor: 'background.paper'
+        backgroundColor: 'background.paper',
+        ...(isReorderMode && {
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none',
+        }),
       }}>
       
       <Box sx={{ 
@@ -72,12 +78,21 @@ return (
 
       {/* メニューボタン */}
       {isReorderMode ? (
-          <IconButton 
-            size="small" 
-            sx={{ position: 'absolute', top: isMobile ? 2 : 8, right: isMobile ? 2 : 8, color: 'text.disabled', cursor: 'grab', pl: isMobile ? 0.5 : 1 }}
+          <Box
+            {...(dragHandleProps ?? {})}
+            onContextMenu={(e) => e.preventDefault()}
+            sx={{
+              position: 'absolute', top: isMobile ? 2 : 8, right: isMobile ? 2 : 8,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 32, height: 32, cursor: 'grab', touchAction: 'none',
+              '&:active': { cursor: 'grabbing' },
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+              userSelect: 'none',
+            }}
           >
-            <DragIndicatorOutlinedIcon sx={{ fontSize: isMobile ? '16px' : '20px' }} />
-          </IconButton>
+            <DragIndicatorOutlinedIcon sx={{ fontSize: isMobile ? '16px' : '20px', color: 'text.disabled' }} />
+          </Box>
         ) : (
           <IconButton 
             size="small" 
