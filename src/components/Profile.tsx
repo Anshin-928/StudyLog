@@ -17,6 +17,7 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined';
+import SearchIcon from '@mui/icons-material/Search';
 
 type FollowStatus = 'none' | 'pending' | 'accepted';
 import { supabase } from '../lib/supabase';
@@ -633,8 +634,9 @@ export default function Profile() {
                 </Box>
 
                 {/* アクションボタン */}
-                <Box sx={{ display: 'flex', justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
                   {isOwn ? (
+                    <>
                     <Button
                       variant="outlined"
                       startIcon={<EditOutlinedIcon />}
@@ -647,6 +649,19 @@ export default function Profile() {
                     >
                       プロフィールを編集
                     </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<SearchIcon />}
+                      onClick={() => navigate('/users')}
+                      sx={{
+                        borderRadius: '20px', fontWeight: 'bold', px: 3,
+                        textTransform: 'none', borderColor: 'divider', color: 'text.primary',
+                        '&:hover': { borderColor: 'primary.main', color: 'primary.main', backgroundColor: alpha(theme.palette.primary.main, 0.04) },
+                      }}
+                    >
+                      ユーザーを探す
+                    </Button>
+                    </>
                   ) : (
                     <Button
                       variant={followStatus === 'none' ? 'contained' : 'outlined'}

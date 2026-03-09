@@ -18,6 +18,7 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 import { supabase } from './lib/supabase';
 import defaultAvatarPng from './assets/defaultAvatarPng.png';
@@ -146,7 +147,7 @@ const bottomNavItems: NavItem[] = [
   { label: '記録する', path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
   { label: 'レポート', path: '/report',    icon: <BarChartOutlinedIcon /> },
   { label: '教材',     path: '/materials', icon: <MenuBookOutlinedIcon /> },
-  { label: 'ユーザー', path: '/users',     icon: <PeopleOutlinedIcon /> },
+  { label: '設定',     path: '/settings',  icon: <SettingsOutlinedIcon /> },
 ];
 
 function BottomNav() {

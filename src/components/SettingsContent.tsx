@@ -12,6 +12,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
@@ -204,6 +206,8 @@ export default function SettingsContent() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [userId, setUserId] = useState('');
 
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
@@ -216,6 +220,8 @@ export default function SettingsContent() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        setEmail(user.email || '');
+        setUserId(user.id);
         const { data } = await supabase
           .from('profiles').select('is_public').eq('id', user.id).single();
         if (data) setIsPublic(data.is_public ?? false);
@@ -227,6 +233,10 @@ export default function SettingsContent() {
     };
     fetchData();
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   const handlePublicToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked;
@@ -406,6 +416,36 @@ export default function SettingsContent() {
               {isChangingPassword
                 ? <CircularProgress size={20} color="inherit" />
                 : 'パスワードを変更する'}
+            </Button>
+          </Box>
+        </SectionCard>
+
+        {/* アカウント情報 */}
+        <SectionCard>
+          <SectionTitle icon={<AccountCircleOutlinedIcon fontSize="small" />} label="アカウント情報" />
+          <Divider />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
+            <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>メールアドレス</Typography>
+            <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 'bold' }}>{email}</Typography>
+          </Box>
+          <Divider />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
+            <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>ユーザーID</Typography>
+            <Typography sx={{ color: 'text.disabled', fontSize: '12px', fontFamily: 'monospace' }}>{userId}</Typography>
+          </Box>
+          <Divider />
+          <Box>
+            <Button
+              variant="outlined"
+              startIcon={<LogoutRoundedIcon />}
+              onClick={handleLogout}
+              sx={{
+                color: dangerColor, borderColor: dangerBorder, borderRadius: '12px',
+                fontWeight: 'bold', px: 3,
+                '&:hover': { backgroundColor: dangerHoverBg, borderColor: dangerColor },
+              }}
+            >
+              ログアウト
             </Button>
           </Box>
         </SectionCard>

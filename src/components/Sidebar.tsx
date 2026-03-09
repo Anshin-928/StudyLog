@@ -12,7 +12,6 @@ import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutl
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 
 interface SidebarItem {
   text: string;
@@ -25,7 +24,6 @@ export const mainMenus: SidebarItem[] = [
   { text: '記録する',      path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
   { text: 'レポート',      path: '/report',    icon: <BarChartOutlinedIcon /> },
   { text: '教材管理',      path: '/materials', icon: <MenuBookOutlinedIcon /> },
-  { text: 'ユーザーを探す', path: '/users',     icon: <PeopleOutlinedIcon /> },
   { text: '設定',          path: '/settings',  icon: <SettingsOutlinedIcon /> },
 ];
 

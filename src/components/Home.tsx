@@ -5,7 +5,6 @@ import {
   Box, Typography, Tabs, Tab, Avatar,
   CircularProgress, useMediaQuery, useTheme, alpha, IconButton,
   Menu, MenuItem, ListItemIcon, ListItemText,
-  Dialog, DialogTitle, DialogContent, DialogActions, Button,
 } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
@@ -20,6 +19,7 @@ import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
 import defaultAvatarPng from '../assets/defaultAvatarPng.png';
 import EditRecordDialog, { EditableEntry } from './EditRecordDialog';
+import ConfirmDialog from './ConfirmDialog';
 
 // ==========================================
 // 型定義
@@ -87,8 +87,6 @@ function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelet
   onDelete?: () => void;
 }) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const avatarLetter = (entry.displayName || '?')[0].toUpperCase();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   return (
@@ -461,21 +459,14 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
       </Box>
 
       {/* 削除確認ダイアログ */}
-      <Dialog
+      <ConfirmDialog
         open={Boolean(deleteConfirmId)}
-        onClose={() => setDeleteConfirmId(null)}
-        PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' }, backgroundImage: 'none' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 'bold', color: 'text.primary' }}>記録を削除</DialogTitle>
-        <DialogContent>
-          <Typography>この記録を削除してもよろしいですか？</Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDeleteConfirmId(null)} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>キャンセル</Button>
-          <Button onClick={handleDelete} color="error" variant="contained" disableElevation
-            sx={{ borderRadius: '8px', fontWeight: 'bold' }}>削除</Button>
-        </DialogActions>
-      </Dialog>
+        title="記録を削除"
+        message="この記録を削除してもよろしいですか？削除したデータは元に戻せません。"
+        confirmLabel="削除"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
 
       {/* 編集ダイアログ */}
       {editEntry && (

@@ -9,8 +9,6 @@ import {
 } from '@mui/material';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import AddIcon from '@mui/icons-material/Add';
@@ -19,7 +17,6 @@ import { useBlocker, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
 import { compressImage } from '../lib/compressImage';
-import SettingsContent from './SettingsContent';
 import {
   GOAL_CATEGORIES,
   GOAL_GROUP_SUGGESTIONS,
@@ -54,7 +51,7 @@ export default function EditProfile({ onProfileSaved }: EditProfileProps) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
-  const [email, setEmail] = useState('');
+
 
   // 目標リスト
   const [goals, setGoals] = useState<UserGoal[]>([]);
@@ -85,9 +82,7 @@ export default function EditProfile({ onProfileSaved }: EditProfileProps) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        setEmail(user.email || '');
-
-        const [{ data }, { data: goalsData }] = await Promise.all([
+const [{ data }, { data: goalsData }] = await Promise.all([
           supabase.from('profiles').select('id, display_name, avatar_url, bio').eq('id', user.id).single(),
           supabase.from('user_goals').select('id, goal_group, goal_category').eq('user_id', user.id).order('created_at', { ascending: true }),
         ]);
@@ -189,10 +184,6 @@ export default function EditProfile({ onProfileSaved }: EditProfileProps) {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
   const isDirty = pendingAvatarFile !== null
     || (profile
       ? displayName !== (profile.display_name || '') || bio !== (profile.bio || '')
@@ -207,9 +198,6 @@ export default function EditProfile({ onProfileSaved }: EditProfileProps) {
 
   const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
   const isDark = theme.palette.mode === 'dark';
-  const dangerColor = theme.palette.error.main;
-  const dangerBorder = alpha(dangerColor, isDark ? 0.3 : 0.25);
-  const dangerHoverBg = alpha(dangerColor, isDark ? 0.2 : 0.08);
 
   const newGoalSuggestions = newGoalCategory ? GOAL_GROUP_SUGGESTIONS[newGoalCategory] : [];
 
@@ -433,45 +421,6 @@ export default function EditProfile({ onProfileSaved }: EditProfileProps) {
               </Box>
             )}
           </Box>
-
-          {/* アカウント情報 */}
-          <Box sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px', p: 4 }}>
-            <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.primary', mb: 1.5 }}>アカウント情報</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-              <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>メールアドレス</Typography>
-              <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 'bold' }}>{email}</Typography>
-            </Box>
-            <Divider />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-              <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>ユーザーID</Typography>
-              <Typography sx={{ color: 'text.disabled', fontSize: '12px', fontFamily: 'monospace' }}>{profile?.id}</Typography>
-            </Box>
-          </Box>
-
-          <Box>
-            <Button
-              variant="outlined"
-              startIcon={<LogoutRoundedIcon />}
-              onClick={handleLogout}
-              sx={{ color: dangerColor, borderColor: dangerBorder, borderRadius: '12px', fontWeight: 'bold', px: 3, '&:hover': { backgroundColor: dangerHoverBg, borderColor: dangerColor } }}
-            >
-              ログアウト
-            </Button>
-          </Box>
-
-          {isMobile && (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
-                <Divider sx={{ flexGrow: 1 }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 0.5 }}>
-                  <SettingsOutlinedIcon sx={{ fontSize: '18px', color: 'text.secondary' }} />
-                  <Typography sx={{ fontSize: '13px', color: 'text.secondary', fontWeight: 600, whiteSpace: 'nowrap' }}>設定</Typography>
-                </Box>
-                <Divider sx={{ flexGrow: 1 }} />
-              </Box>
-              <SettingsContent />
-            </>
-          )}
 
         </Box>
       )}
