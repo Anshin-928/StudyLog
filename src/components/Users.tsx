@@ -151,6 +151,7 @@ export default function Users() {
   }, [searchQuery, myId, fetchUsers]);
 
   const handleToggleFollow = async (targetId: string, currentStatus: FollowStatus) => {
+    if (!myId) return;
     setProcessingIds(prev => new Set(prev).add(targetId));
     try {
       if (currentStatus !== 'none') {

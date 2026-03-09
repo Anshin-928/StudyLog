@@ -1044,7 +1044,7 @@ function StopwatchTab({
 // ==========================================
 // メインコンポーネント
 // ==========================================
-export default function Record() {
+export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -1210,6 +1210,7 @@ export default function Record() {
       setPresetHours('');
       setPresetMinutes('');
       setManualIsDirty(false);
+      onRecordSaved?.();
 
       setSavePopupLabel(label);
       setSavePopupOpen(true);

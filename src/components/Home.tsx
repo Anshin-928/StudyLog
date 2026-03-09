@@ -4,22 +4,29 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Tabs, Tab, Avatar,
   CircularProgress, useMediaQuery, useTheme, alpha, IconButton,
+  Menu, MenuItem, ListItemIcon, ListItemText,
+  Dialog, DialogTitle, DialogContent, DialogActions, Button,
 } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
 import defaultAvatarPng from '../assets/defaultAvatarPng.png';
+import EditRecordDialog, { EditableEntry } from './EditRecordDialog';
 
 // ==========================================
 // 型定義
 // ==========================================
 interface TimelineEntry {
   id: string;
+  materialId: string | null;
   userId: string;
   displayName: string | null;
   avatarUrl: string | null;
@@ -71,10 +78,18 @@ function goalCategoryLabel(cat: string | null): string {
 // ==========================================
 // タイムラインアイテム（Divider区切り形式）
 // ==========================================
-function TimelineItem({ entry, onUserClick, onImageClick }: { entry: TimelineEntry; onUserClick: (userId: string) => void; onImageClick: (url: string) => void }) {
+function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelete }: {
+  entry: TimelineEntry;
+  onUserClick: (userId: string) => void;
+  onImageClick: (url: string) => void;
+  isOwn?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const avatarLetter = (entry.displayName || '?')[0].toUpperCase();
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   return (
     <Box sx={{
@@ -106,10 +121,54 @@ function TimelineItem({ entry, onUserClick, onImageClick }: { entry: TimelineEnt
             </Typography>
           </Box>
         </Box>
-        <Typography sx={{ fontSize: '12px', color: 'text.disabled', fontWeight: 500, pt: 0.5, flexShrink: 0 }}>
-          {formatExactTime(entry.studyDatetime)}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+          <Typography sx={{ fontSize: '12px', color: 'text.secondary', fontWeight: 500, pt: 0.5 }}>
+            {formatExactTime(entry.studyDatetime)}
+          </Typography>
+          {isOwn && (
+            <IconButton size="small" onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setMenuAnchor(e.currentTarget); }}>
+              <MoreHorizIcon sx={{ fontSize: '18px', color: 'text.secondary' }} />
+            </IconButton>
+          )}
+        </Box>
       </Box>
+
+<Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={() => setMenuAnchor(null)}
+        onClick={(e) => e.stopPropagation()}
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: '12px',
+            minWidth: '120px',
+            backgroundImage: 'none',
+            boxShadow: theme.palette.mode === 'dark'
+              ? '0 4px 16px rgba(0,0,0,0.5)'
+              : '0 4px 12px rgba(0,0,0,0.1)',
+          }
+        }}
+      >
+        <MenuItem
+          onClick={() => { setMenuAnchor(null); onEdit?.(); }}
+          sx={{ borderRadius: '8px', mx: 1, mb: 0.5 }}
+        >
+          <ListItemIcon>
+            <EditOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+          </ListItemIcon>
+          <ListItemText>編集</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => { setMenuAnchor(null); onDelete?.(); }}
+          sx={{ borderRadius: '8px', mx: 1 }}
+        >
+          <ListItemIcon>
+            <DeleteOutlineIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <Typography color="error" sx={{ fontWeight: '500' }}>削除</Typography>
+        </MenuItem>
+      </Menu>
 
       {/* メイン: 教材 + 学習時間 */}
       <Box sx={{
@@ -125,7 +184,7 @@ function TimelineItem({ entry, onUserClick, onImageClick }: { entry: TimelineEnt
             />
           ) : (
             <Box sx={{ height: 80, width: 56, borderRadius: '2px', backgroundColor: 'background.default', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderColor: 'divider' }}>
-              <MenuBookOutlinedIcon sx={{ color: 'text.disabled', fontSize: '24px' }} />
+              <MenuBookOutlinedIcon sx={{ color: 'text.secondary', fontSize: '24px' }} />
             </Box>
           )}
         </Box>
@@ -179,10 +238,10 @@ function TimelineItem({ entry, onUserClick, onImageClick }: { entry: TimelineEnt
 
 function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string; }) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10, gap: 2, color: 'text.disabled' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10, gap: 2, color: 'text.secondary' }}>
       <Box sx={{ fontSize: '56px', opacity: 0.4 }}>{icon}</Box>
       <Typography sx={{ fontWeight: 'bold', fontSize: '15px', color: 'text.secondary' }}>{title}</Typography>
-      <Typography variant="body2" sx={{ color: 'text.disabled', textAlign: 'center', maxWidth: '260px', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+      <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', maxWidth: '260px', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
         {description}
       </Typography>
     </Box>
@@ -192,7 +251,7 @@ function EmptyState({ icon, title, description }: { icon: React.ReactNode; title
 // ==========================================
 // メイン
 // ==========================================
-export default function Home() {
+export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void }) {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -206,10 +265,13 @@ export default function Home() {
   const [isLoadingGoal, setIsLoadingGoal] = useState(true);
   const [myId, setMyId] = useState<string | null>(null);
   const [followingCount, setFollowingCount] = useState(0);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editEntry, setEditEntry] = useState<EditableEntry | null>(null);
 
   const mapLogs = useCallback((logs: any[], profileMap: Record<string, any>): TimelineEntry[] => {
     return logs.map(row => ({
       id: row.id,
+      materialId: row.material_id ?? null,
       userId: row.user_id,
       displayName: profileMap[row.user_id]?.displayName ?? null,
       avatarUrl: profileMap[row.user_id]?.avatarUrl ?? null,
@@ -271,6 +333,21 @@ export default function Home() {
     } catch (e) { console.error(e); } finally { setIsLoadingGoal(false); }
   }, [mapLogs]);
 
+  const handleRefresh = useCallback(() => {
+    if (myId) fetchFollowLogs(myId);
+    if (myId && myProfile?.goalGroup) fetchGoalLogs(myId, myProfile.goalGroup);
+  }, [myId, myProfile, fetchFollowLogs, fetchGoalLogs]);
+
+  const handleDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      await supabase.from('study_logs').delete().eq('id', deleteConfirmId);
+      handleRefresh();
+      onRecordDeleted?.();
+    } catch (e) { console.error(e); }
+    setDeleteConfirmId(null);
+  };
+
   useEffect(() => { if (myId) fetchFollowLogs(myId); }, [myId, fetchFollowLogs]);
   useEffect(() => {
     if (myId && myProfile?.goalGroup) fetchGoalLogs(myId, myProfile.goalGroup);
@@ -290,7 +367,7 @@ export default function Home() {
           }}
         >
           <IconButton
-            onClick={(e) => { e.stopPropagation(); setLightboxUrl(null); }}
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setLightboxUrl(null); }}
             sx={{
               position: 'absolute', top: 16, left: 16,
               backgroundColor: 'rgba(255,255,255,0.15)',
@@ -339,7 +416,15 @@ export default function Home() {
           ) : (
             <Box>
               <Box sx={{ mt: 1 }}>
-                {followLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} onImageClick={setLightboxUrl} />)}
+                {followLogs.map(entry => (
+                  <TimelineItem key={entry.id} entry={entry}
+                    onUserClick={(userId) => navigate(`/users/${userId}`)}
+                    onImageClick={setLightboxUrl}
+                    isOwn={entry.userId === myId}
+                    onEdit={() => setEditEntry(entry)}
+                    onDelete={() => setDeleteConfirmId(entry.id)}
+                  />
+                ))}
               </Box>
             </Box>
           )
@@ -360,12 +445,47 @@ export default function Home() {
                 </Box>
               </Box>
               <Box sx={{ mt: 1 }}>
-                {goalLogs.map(entry => <TimelineItem key={entry.id} entry={entry} onUserClick={(userId) => navigate(`/users/${userId}`)} onImageClick={setLightboxUrl} />)}
+                {goalLogs.map(entry => (
+                  <TimelineItem key={entry.id} entry={entry}
+                    onUserClick={(userId) => navigate(`/users/${userId}`)}
+                    onImageClick={setLightboxUrl}
+                    isOwn={entry.userId === myId}
+                    onEdit={() => setEditEntry(entry)}
+                    onDelete={() => setDeleteConfirmId(entry.id)}
+                  />
+                ))}
               </Box>
             </Box>
           )
         )}
       </Box>
+
+      {/* 削除確認ダイアログ */}
+      <Dialog
+        open={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        PaperProps={{ sx: { borderRadius: '20px', p: 1, m: { xs: 2, sm: 'auto' }, backgroundImage: 'none' } }}
+      >
+        <DialogTitle sx={{ fontWeight: 'bold', color: 'text.primary' }}>記録を削除</DialogTitle>
+        <DialogContent>
+          <Typography>この記録を削除してもよろしいですか？</Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteConfirmId(null)} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>キャンセル</Button>
+          <Button onClick={handleDelete} color="error" variant="contained" disableElevation
+            sx={{ borderRadius: '8px', fontWeight: 'bold' }}>削除</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 編集ダイアログ */}
+      {editEntry && (
+        <EditRecordDialog
+          open={Boolean(editEntry)}
+          onClose={() => setEditEntry(null)}
+          entry={editEntry}
+          onSaved={() => { setEditEntry(null); handleRefresh(); }}
+        />
+      )}
     </Box>
   );
 }

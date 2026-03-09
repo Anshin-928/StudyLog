@@ -122,6 +122,11 @@ function RecordPage() {
   return <Record onRecordSaved={onRecordSaved} />;
 }
 
+function HomePage() {
+  const { onRecordSaved } = useContext(AppCallbacksContext);
+  return <Home onRecordDeleted={onRecordSaved} />;
+}
+
 function EditProfilePage() {
   const { onProfileSaved } = useContext(AppCallbacksContext);
   return <EditProfile onProfileSaved={onProfileSaved} />;
@@ -380,7 +385,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/home" replace /> },
       { path: 'login', element: <Navigate to="/home" replace /> },
-      { path: 'home', element: <Home /> },
+      { path: 'home', element: <HomePage /> },
       { path: 'record', element: <RecordPage /> },
       { path: 'report', element: <Report /> },
       { path: 'materials', element: <Materials /> },

@@ -66,8 +66,14 @@ export default function AuthPage() {
         if (error) throw error;
         navigate('/home', { replace: true });
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        if (data.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            display_name: '名称未設定',
+          }, { onConflict: 'id', ignoreDuplicates: true });
+        }
         setSuccessMessage('アカウントを作成しました！ログインしています...');
         navigate('/home', { replace: true });
       }
