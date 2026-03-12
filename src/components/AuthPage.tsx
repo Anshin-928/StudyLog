@@ -3,10 +3,12 @@
 import { useState, useRef } from 'react';
 import {
   Box, Typography, TextField, Button, Divider,
-  Alert, CircularProgress, IconButton,
+  Alert, CircularProgress, InputAdornment, IconButton,
   useTheme, useMediaQuery,
 } from '@mui/material';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
@@ -29,9 +31,17 @@ export default function AuthPage() {
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
 
-  const [step, setStep] = useState<'email' | 'otp'>('email');
+  // ---- ステート ----
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [step, setStep] = useState<'email' | 'password' | 'otp'>('email');
+
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
+
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -41,56 +51,117 @@ export default function AuthPage() {
 
   const clearMessages = () => { setErrorMessage(''); setSuccessMessage(''); };
 
-  // --- OTP 送信 ---
-  const sendOtp = async () => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
-    });
-    if (error) throw error;
+  const goBackToEmail = () => {
+    setStep('email');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setOtp(Array(OTP_LENGTH).fill(''));
+    clearMessages();
   };
 
-  const handleSendOtp = async () => {
-    if (!email) {
-      setErrorMessage('メールアドレスを入力してください。');
+  // ---- Step 1: メール入力 + プロバイダー判定 ----
+  const handleEmailSubmit = async () => {
+    if (!email || !email.includes('@')) {
+      setErrorMessage('有効なメールアドレスを入力してください。');
       return;
     }
     setIsLoading(true);
     clearMessages();
     try {
-      await sendOtp();
-      setStep('otp');
-      setOtp(Array(OTP_LENGTH).fill(''));
-      setSuccessMessage(`${email} に6桁の認証コードを送信しました。`);
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      const { data: provider, error } = await supabase.rpc('check_user_provider', { p_email: email });
+      if (error) throw error;
+
+      if (provider === 'google') {
+        setErrorMessage('このメールアドレスはGoogleで登録されています。上の「Googleで続行」ボタンをご利用ください。');
+        setIsLoading(false);
+      } else {
+        // ステップ遷移時に一瞬待機して連打による誤操作を防ぐ
+        setTimeout(() => {
+          if (provider === 'email') {
+            setMode('login');
+          } else {
+            // 'not_found' — 新規ユーザー
+            setMode('signup');
+          }
+          setStep('password');
+          setIsLoading(false);
+        }, 400);
+      }
+    } catch {
+      setErrorMessage('確認中にエラーが発生しました。時間をおいて再度お試しください。');
+      setIsLoading(false);
+    }
+  };
+
+  // ---- Step 2-A: ログイン ----
+  const handleLogin = async () => {
+    if (!password) {
+      setErrorMessage('パスワードを入力してください。');
+      return;
+    }
+    setIsLoading(true);
+    clearMessages();
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      navigate('/home', { replace: true });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
-      if (msg.includes('rate limit') || msg.includes('too many')) {
-        setErrorMessage('送信回数の上限に達しました。しばらくしてから再度お試しください。');
+      if (msg.includes('Invalid login credentials')) {
+        setErrorMessage('メールアドレスまたはパスワードが正しくありません。');
       } else {
-        setErrorMessage('コードの送信に失敗しました。メールアドレスを確認してください。');
+        setErrorMessage('ログインに失敗しました。時間をおいて再度お試しください。');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResendOtp = async () => {
+  // ---- Step 2-B: 新規登録 ----
+  const handleSignUp = async () => {
+    if (!password || !confirmPassword) {
+      setErrorMessage('パスワードを入力してください。');
+      return;
+    }
+    if (password.length < 12) {
+      setErrorMessage('パスワードは12文字以上で入力してください。');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage('パスワードが一致しません。確認用パスワードを再入力してください。');
+      return;
+    }
     setIsLoading(true);
     clearMessages();
-    setOtp(Array(OTP_LENGTH).fill(''));
     try {
-      await sendOtp();
-      setSuccessMessage('コードを再送信しました。');
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      // identities が空なら既存アカウント（Supabaseの仕様）
+      if (data.user?.identities?.length === 0) {
+        setErrorMessage('このメールアドレスはすでに登録されています。ログインしてください。');
+        return;
+      }
+      setOtp(Array(OTP_LENGTH).fill(''));
+      setStep('otp');
+      setSuccessMessage(`${email} に確認コードを送信しました。`);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    } catch {
-      setErrorMessage('再送信に失敗しました。時間をおいて再度お試しください。');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('User already registered')) {
+        setErrorMessage('このメールアドレスはすでに登録されています。ログインしてください。');
+      } else if (msg.includes('Password should be at least')) {
+        setErrorMessage('パスワードは12文字以上で入力してください。');
+      } else {
+        setErrorMessage('登録に失敗しました。時間をおいて再度お試しください。');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- OTP 検証 ---
+  // ---- Step 3: OTP 検証 ----
   const handleVerifyOtp = async (token: string) => {
     if (token.length < OTP_LENGTH) {
       setErrorMessage('6桁のコードをすべて入力してください。');
@@ -102,7 +173,7 @@ export default function AuthPage() {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token,
-        type: 'email',
+        type: 'signup',
       });
       if (error) throw error;
       if (data.user) {
@@ -115,7 +186,7 @@ export default function AuthPage() {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('expired') || msg.includes('invalid') || msg.includes('Token')) {
-        setErrorMessage('コードが無効または期限切れです。再送信してください。');
+        setErrorMessage('コードが無効または期限切れです。再度確認してください。');
       } else {
         setErrorMessage('認証に失敗しました。コードを確認してください。');
       }
@@ -126,7 +197,7 @@ export default function AuthPage() {
     }
   };
 
-  // --- OTP 入力ハンドラ ---
+  // ---- OTP 入力ハンドラ ----
   const handleOtpChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const digit = e.target.value.replace(/\D/g, '').slice(-1);
     const newOtp = [...otp];
@@ -156,12 +227,11 @@ export default function AuthPage() {
     const newOtp = Array(OTP_LENGTH).fill('');
     paste.split('').forEach((d, i) => { newOtp[i] = d; });
     setOtp(newOtp);
-    const focusIndex = Math.min(paste.length, OTP_LENGTH - 1);
-    otpRefs.current[focusIndex]?.focus();
+    otpRefs.current[Math.min(paste.length, OTP_LENGTH - 1)]?.focus();
     if (paste.length === OTP_LENGTH) handleVerifyOtp(paste);
   };
 
-  // --- Google ログイン ---
+  // ---- Google ログイン ----
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     clearMessages();
@@ -175,16 +245,14 @@ export default function AuthPage() {
     }
   };
 
-  // --- 共通スタイル ---
+  // ---- 共通スタイル ----
   const inputSx = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '14px',
       backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.85)',
       backdropFilter: 'blur(8px)',
       transition: 'box-shadow 0.2s',
-      '& fieldset': {
-        borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.13)',
-      },
+      '& fieldset': { borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.13)' },
       '&:hover fieldset': { borderColor: theme.palette.primary.main },
       '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(66, 133, 244, 0.18)' },
       '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
@@ -217,6 +285,19 @@ export default function AuthPage() {
     },
   };
 
+  const eyeAdornment = (visible: boolean, toggle: () => void) => ({
+    endAdornment: (
+      <InputAdornment position="end">
+        <IconButton onClick={toggle} edge="end" size="small" tabIndex={-1}>
+          {visible
+            ? <VisibilityOffOutlinedIcon fontSize="small" />
+            : <VisibilityOutlinedIcon fontSize="small" />
+          }
+        </IconButton>
+      </InputAdornment>
+    ),
+  });
+
   const googleButton = (
     <Button
       variant="outlined" fullWidth size="large"
@@ -235,10 +316,7 @@ export default function AuthPage() {
         )
       }
       sx={{
-        borderRadius: '14px',
-        fontWeight: 600,
-        fontSize: '15px',
-        py: 1.6,
+        borderRadius: '14px', fontWeight: 600, fontSize: '15px', py: 1.6,
         backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
         borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
         color: 'text.primary',
@@ -252,11 +330,39 @@ export default function AuthPage() {
         '&:active': { transform: 'translateY(0)' },
       }}
     >
-      Google でログイン
+      Google で続行
     </Button>
   );
 
-  // --- Step 1: メールアドレス入力 ---
+  // ---- 入力済みメールアドレス表示バー ----
+  const emailBar = (
+    <Box sx={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      px: 2, py: 1.2,
+      borderRadius: '12px',
+      border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+      mb: 3,
+    }}>
+      <Typography sx={{ fontSize: '14px', color: 'text.primary', fontWeight: 500 }}>
+        {email}
+      </Typography>
+      <Button
+        size="small" variant="text"
+        onClick={goBackToEmail}
+        disabled={isLoading}
+        startIcon={<ArrowBackOutlinedIcon sx={{ fontSize: '14px !important' }} />}
+        sx={{
+          fontSize: '12px', color: 'text.secondary', minWidth: 'unset', px: 1,
+          '&:hover': { color: 'primary.main', backgroundColor: 'transparent' },
+        }}
+      >
+        編集
+      </Button>
+    </Box>
+  );
+
+  // ---- Step 1: メールアドレス入力 ----
   const emailStepContent = (
     <>
       {googleButton}
@@ -267,58 +373,94 @@ export default function AuthPage() {
         </Typography>
       </Divider>
 
+
       <TextField
-        label="メールアドレス"
-        type="email"
-        value={email}
+        label="メールアドレス" type="email" value={email}
         onChange={(e) => setEmail(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-        fullWidth size="medium"
-        disabled={isLoading || isGoogleLoading}
+        onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
+        fullWidth size="medium" disabled={isLoading || isGoogleLoading}
         sx={{ mb: 2.5, ...inputSx }}
       />
 
       <Button
         variant="contained" fullWidth size="large"
-        onClick={handleSendOtp}
+        onClick={handleEmailSubmit}
         disabled={isLoading || isGoogleLoading}
-        disableElevation
-        sx={primaryButtonSx}
+        disableElevation sx={primaryButtonSx}
       >
-        {isLoading ? <CircularProgress size={24} color="inherit" /> : '続行'}
+        続行
       </Button>
     </>
   );
 
-  // --- Step 2: OTP 入力 ---
+  // ---- Step 2: パスワード入力 ----
+  const passwordStepContent = (
+    <>
+      {emailBar}
+
+      {mode === 'login' ? (
+        // ---- 分岐A: ログイン ----
+        <>
+          <TextField
+            label="パスワード"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+            fullWidth size="medium" disabled={isLoading}
+            slotProps={{ input: eyeAdornment(showPassword, () => setShowPassword(v => !v)) }}
+            sx={{ mb: 3, ...inputSx }}
+          />
+          <Button
+            variant="contained" fullWidth size="large"
+            onClick={handleLogin} disabled={isLoading}
+            disableElevation sx={primaryButtonSx}
+          >
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'ログイン'}
+          </Button>
+        </>
+      ) : (
+        // ---- 分岐B: 新規登録 ----
+        <>
+          <TextField
+            label="パスワード"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
+            fullWidth size="medium" disabled={isLoading}
+            helperText="12文字以上で設定してください"
+            slotProps={{ input: eyeAdornment(showPassword, () => setShowPassword(v => !v)) }}
+            sx={{ mb: 2.5, ...inputSx }}
+          />
+          <TextField
+            label="パスワード（確認用）"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
+            fullWidth size="medium" disabled={isLoading}
+            slotProps={{ input: eyeAdornment(showConfirmPassword, () => setShowConfirmPassword(v => !v)) }}
+            sx={{ mb: 3, ...inputSx }}
+          />
+          <Button
+            variant="contained" fullWidth size="large"
+            onClick={handleSignUp} disabled={isLoading}
+            disableElevation sx={primaryButtonSx}
+          >
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'アカウントを作成'}
+          </Button>
+        </>
+      )}
+    </>
+  );
+
+  // ---- Step 3: OTP 入力 ----
   const otpStepContent = (
     <>
-      {/* 戻る + 送信先メール表示 */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 3.5 }}>
-        <IconButton
-          size="small"
-          onClick={() => { setStep('email'); clearMessages(); setOtp(Array(OTP_LENGTH).fill('')); }}
-          disabled={isLoading}
-          sx={{
-            mt: '-2px', color: 'text.secondary',
-            '&:hover': { color: 'text.primary', backgroundColor: 'action.hover' },
-          }}
-        >
-          <ArrowBackOutlinedIcon fontSize="small" />
-        </IconButton>
-        <Box>
-          <Typography sx={{ fontSize: '13px', color: 'text.secondary', lineHeight: 1.6 }}>
-            <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{email}</Box>
-            {' '}に送信した6桁のコードを入力してください。
-          </Typography>
-        </Box>
-      </Box>
+      {emailBar}
 
-      {/* OTP ボックス */}
-      <Box
-        sx={{ display: 'flex', gap: { xs: 1, sm: 1.5 }, justifyContent: 'center', mb: 3.5 }}
-        onPaste={handleOtpPaste}
-      >
+      <Box sx={{ display: 'flex', gap: { xs: 1, sm: 1.5 }, justifyContent: 'center', mb: 3.5 }} onPaste={handleOtpPaste}>
         {otp.map((digit, index) => (
           <Box
             key={index}
@@ -342,15 +484,12 @@ export default function AuthPage() {
               backgroundColor: digit
                 ? (isDark ? 'rgba(66,133,244,0.12)' : 'rgba(66,133,244,0.06)')
                 : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.85)'),
-              fontSize: '26px',
-              fontWeight: 700,
-              textAlign: 'center',
+              fontSize: '26px', fontWeight: 700, textAlign: 'center',
               color: theme.palette.text.primary,
-              outline: 'none',
-              transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
-              fontFamily: 'inherit',
+              outline: 'none', fontFamily: 'inherit',
               cursor: isLoading ? 'not-allowed' : 'text',
               opacity: isLoading ? 0.6 : 1,
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
               '&:focus': {
                 borderColor: theme.palette.primary.main,
                 boxShadow: '0 0 0 3px rgba(66,133,244,0.22)',
@@ -365,42 +504,38 @@ export default function AuthPage() {
         variant="contained" fullWidth size="large"
         onClick={() => handleVerifyOtp(otp.join(''))}
         disabled={isLoading || otp.some(d => !d)}
-        disableElevation
-        sx={primaryButtonSx}
+        disableElevation sx={primaryButtonSx}
       >
         {isLoading ? <CircularProgress size={24} color="inherit" /> : '確認する'}
-      </Button>
-
-      <Button
-        variant="text" fullWidth size="small"
-        onClick={handleResendOtp}
-        disabled={isLoading}
-        sx={{
-          mt: 1.5, color: 'text.secondary', fontSize: '13px',
-          '&:hover': { color: 'primary.main', backgroundColor: 'transparent' },
-        }}
-      >
-        コードを再送信する
       </Button>
     </>
   );
 
-  // --- フォームパネル ---
+  // ---- フォームパネル ----
+  const pcTitle = step === 'otp'
+    ? 'メールを確認してください'
+    : step === 'password'
+      ? (mode === 'login' ? 'おかえりなさい' : 'アカウントを作成')
+      : 'ログイン / 登録';
+
+  const subtitle = step === 'otp'
+    ? 'メールに届いた6桁のコードを入力してください'
+    : step === 'password'
+      ? (mode === 'login' ? 'パスワードを入力してください' : 'パスワードを設定してください')
+      : 'メールアドレスまたはGoogleで続行してください';
+
   const formPanel = (
     <Box
       sx={isMobile ? {
         backgroundColor: 'background.paper',
         borderRadius: '24px',
         p: { xs: 3.5, sm: 5 },
-        width: '100%',
-        maxWidth: '420px',
+        width: '100%', maxWidth: '420px',
         boxShadow: theme.customShadows.lg,
       } : {
-        width: '100%',
-        maxWidth: '400px',
+        width: '100%', maxWidth: '400px',
       }}
     >
-      {/* ヘッダー */}
       {isMobile ? (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 1 }}>
           <img src={isDark ? studyLogLogoDark : studyLogLogo} alt="StudyLog" style={{ height: '30px' }} />
@@ -410,18 +545,12 @@ export default function AuthPage() {
         </Box>
       ) : (
         <Typography sx={{ fontWeight: 900, fontSize: '28px', letterSpacing: '-0.8px', color: 'text.primary', mb: 0.5 }}>
-          {step === 'email' ? 'ログイン / 登録' : '認証コードを入力'}
+          {pcTitle}
         </Typography>
       )}
 
-      <Typography sx={{
-        textAlign: isMobile ? 'center' : 'left',
-        color: 'text.secondary', mb: 3.5, fontSize: '13px',
-      }}>
-        {step === 'email'
-          ? 'メールアドレスまたはGoogleで続行してください'
-          : 'メールに届いたコードを入力してください'
-        }
+      <Typography sx={{ textAlign: isMobile ? 'center' : 'left', color: 'text.secondary', mb: 3.5, fontSize: '13px' }}>
+        {subtitle}
       </Typography>
 
       {errorMessage && (
@@ -431,43 +560,23 @@ export default function AuthPage() {
         <Alert severity="success" sx={{ mb: 2.5, borderRadius: '12px', fontSize: '13px' }}>{successMessage}</Alert>
       )}
 
-      {step === 'email' ? emailStepContent : otpStepContent}
+      {step === 'email'    && emailStepContent}
+      {step === 'password' && passwordStepContent}
+      {step === 'otp'      && otpStepContent}
     </Box>
   );
 
-  // --- ヒーローエリア (PC左側) ---
+  // ---- ヒーローエリア (PC 左側) ----
   const heroSection = (
-    <Box
-      sx={{
-        flex: '0 0 52%',
-        position: 'relative',
-        overflow: 'hidden',
-        background: 'linear-gradient(145deg, #0f172a 0%, #1e3a5f 45%, #2563eb 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        px: { md: 6, lg: 8 },
-        py: 8,
-      }}
-    >
-      <Box sx={{
-        position: 'absolute', top: '-100px', right: '-100px',
-        width: '400px', height: '400px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(66,133,244,0.4) 0%, transparent 70%)',
-        filter: 'blur(50px)', pointerEvents: 'none',
-      }} />
-      <Box sx={{
-        position: 'absolute', bottom: '-80px', left: '-80px',
-        width: '320px', height: '320px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)',
-        filter: 'blur(40px)', pointerEvents: 'none',
-      }} />
-      <Box sx={{
-        position: 'absolute', top: '45%', left: '55%',
-        width: '220px', height: '220px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)',
-        filter: 'blur(35px)', pointerEvents: 'none',
-      }} />
+    <Box sx={{
+      flex: '0 0 52%', position: 'relative', overflow: 'hidden',
+      background: 'linear-gradient(145deg, #0f172a 0%, #1e3a5f 45%, #2563eb 100%)',
+      display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      px: { md: 6, lg: 8 }, py: 8,
+    }}>
+      <Box sx={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(66,133,244,0.4) 0%, transparent 70%)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', bottom: '-80px', left: '-80px', width: '320px', height: '320px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', top: '45%', left: '55%', width: '220px', height: '220px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)', filter: 'blur(35px)', pointerEvents: 'none' }} />
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 7 }}>
         <img src={studyLogLogoDark} alt="StudyLog" style={{ height: '40px' }} />
@@ -475,28 +584,16 @@ export default function AuthPage() {
           StudyLog
         </Typography>
       </Box>
-
-      <Typography sx={{
-        fontSize: { md: '36px', lg: '44px' },
-        fontWeight: 900, color: '#fff',
-        lineHeight: 1.2, letterSpacing: '-1px', mb: 2.5,
-      }}>
+      <Typography sx={{ fontSize: { md: '36px', lg: '44px' }, fontWeight: 900, color: '#fff', lineHeight: 1.2, letterSpacing: '-1px', mb: 2.5 }}>
         学習を、<br />習慣に変える。
       </Typography>
       <Typography sx={{ fontSize: '20px', color: 'rgba(255,255,255,0.6)', mb: 7, lineHeight: 1.8, maxWidth: '320px' }}>
         学習記録をもっと、楽しく。
       </Typography>
-
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         {FEATURES.map(({ Icon, text }) => (
           <Box key={text} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{
-              width: 42, height: 42, borderRadius: '11px', flexShrink: 0,
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              backdropFilter: 'blur(8px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: '11px', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon sx={{ color: 'rgba(255,255,255,0.9)', fontSize: 20 }} />
             </Box>
             <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '15px', fontWeight: 500 }}>
@@ -508,7 +605,7 @@ export default function AuthPage() {
     </Box>
   );
 
-  // --- モバイルレイアウト ---
+  // ---- モバイルレイアウト ----
   if (isMobile) {
     return (
       <Box sx={{
@@ -519,38 +616,18 @@ export default function AuthPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         p: 2, position: 'relative', overflow: 'hidden',
       }}>
-        <Box sx={{
-          position: 'absolute', top: '-120px', right: '-120px',
-          width: '380px', height: '380px', borderRadius: '50%',
-          background: isDark
-            ? 'radial-gradient(circle, rgba(66,133,244,0.2) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%)',
-          filter: 'blur(50px)', pointerEvents: 'none',
-        }} />
-        <Box sx={{
-          position: 'absolute', bottom: '-80px', left: '-80px',
-          width: '300px', height: '300px', borderRadius: '50%',
-          background: isDark
-            ? 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)',
-          filter: 'blur(40px)', pointerEvents: 'none',
-        }} />
+        <Box sx={{ position: 'absolute', top: '-120px', right: '-120px', width: '380px', height: '380px', borderRadius: '50%', background: isDark ? 'radial-gradient(circle, rgba(66,133,244,0.2) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+        <Box sx={{ position: 'absolute', bottom: '-80px', left: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: isDark ? 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
         {formPanel}
       </Box>
     );
   }
 
-  // --- PC レイアウト ---
+  // ---- PC レイアウト ----
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       {heroSection}
-      <Box sx={{
-        flex: 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: 'background.default',
-        px: { md: 5, lg: 8 },
-        overflowY: 'auto',
-      }}>
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'background.default', px: { md: 5, lg: 8 }, overflowY: 'auto' }}>
         {formPanel}
       </Box>
     </Box>
