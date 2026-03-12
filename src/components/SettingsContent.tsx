@@ -363,13 +363,16 @@ export default function SettingsContent() {
                   : 'あなたのアカウントは現在、非公開です。\n承認したフォロワーのみが学習記録を見ることができます。'}
               </Typography>
             </Box>
-            <Switch
-              checked={isPublic}
-              onChange={handlePublicToggle}
-              disabled={isPublicLoading || isPublicSaving}
-              color="primary"
-              sx={{ flexShrink: 0 }}
-            />
+            {isPublicLoading
+              ? <CircularProgress size={20} sx={{ flexShrink: 0, mr: 1 }} />
+              : <Switch
+                  checked={isPublic}
+                  onChange={handlePublicToggle}
+                  disabled={isPublicSaving}
+                  color="primary"
+                  sx={{ flexShrink: 0 }}
+                />
+            }
           </Box>
         </SectionCard>
 
