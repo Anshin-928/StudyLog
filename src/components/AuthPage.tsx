@@ -14,7 +14,7 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
 import studyLogLogo from '../assets/studyLogLogo.svg';
 import studyLogLogoDark from '../assets/studyLogLogo_dark.svg';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const OTP_LENGTH = 6;
@@ -445,6 +445,18 @@ export default function AuthPage() {
       >
         {isLoading ? <CircularProgress size={24} color="inherit" /> : 'メールで続ける'}
       </Button>
+
+      <Typography sx={{ fontSize: '11px', color: 'text.disabled', textAlign: 'center', mt: 2, lineHeight: 1.8 }}>
+        続行することで、
+        <Link to="/terms" style={{ color: 'inherit', textDecorationColor: 'currentColor' }}>
+          利用規約
+        </Link>
+        および
+        <Link to="/privacy" style={{ color: 'inherit', textDecorationColor: 'currentColor' }}>
+          プライバシーポリシー
+        </Link>
+        に同意したものとみなします。
+      </Typography>
     </>
   );
 

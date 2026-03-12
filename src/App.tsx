@@ -35,6 +35,8 @@ import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
 import Users from './components/Users';
 import ResetPasswordPage from './components/ResetPasswordPage';
+import TermsOfServicePage from './components/TermsOfServicePage';
+import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 
 // ==========================================
 // MUI テーマ型拡張
@@ -382,6 +384,8 @@ function AppShell() {
 const router = createBrowserRouter([
   { path: '/login', element: <AuthPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/terms', element: <TermsOfServicePage /> },
+  { path: '/privacy', element: <PrivacyPolicyPage /> },
   {
     path: '/',
     element: <AppShell />,
@@ -407,7 +411,9 @@ const router = createBrowserRouter([
 // ==========================================
 export default function App() {
   const [mode, setMode] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'light';
+    const stored = localStorage.getItem(THEME_KEY) as 'light' | 'dark' | null;
+    if (stored) return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
   const colorMode = useMemo<ColorModeContextType>(() => ({
