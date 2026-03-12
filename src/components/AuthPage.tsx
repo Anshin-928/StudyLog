@@ -87,7 +87,7 @@ export default function AuthPage() {
       if (error) throw error;
 
       if (provider === 'google') {
-        setErrorMessage('このメールアドレスはGoogleで登録されています。上の「Googleで続行」ボタンをご利用ください。');
+        setErrorMessage('このメールアドレスはGoogleで登録されています。上の「Googleで続ける」ボタンをご利用ください。');
         setIsLoading(false);
       } else {
         // ステップ遷移時に一瞬待機して連打による誤操作を防ぐ
@@ -375,7 +375,7 @@ export default function AuthPage() {
         borderRadius: '14px', fontWeight: 600, fontSize: '15px', py: 1.6,
         backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
         borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
-        color: 'text.primary',
+        color: 'text.primary', textTransform: 'none',
         transition: 'all 0.2s ease',
         '&:hover': {
           backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f5f8ff',
@@ -386,7 +386,7 @@ export default function AuthPage() {
         '&:active': { transform: 'translateY(0)' },
       }}
     >
-      Google で続行
+      Google で続ける
     </Button>
   );
 
@@ -430,7 +430,7 @@ export default function AuthPage() {
       </Divider>
 
       <TextField
-        label="メールアドレス" type="email" value={email}
+        label="メールアドレスを入力" type="email" value={email}
         onChange={(e) => { setEmail(e.target.value); clearMessages(); }}
         onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
         fullWidth size="medium" disabled={isLoading || isGoogleLoading}
@@ -443,7 +443,7 @@ export default function AuthPage() {
         disabled={isLoading || isGoogleLoading}
         disableElevation sx={primaryButtonSx}
       >
-        {isLoading ? <CircularProgress size={24} color="inherit" /> : '続行'}
+        {isLoading ? <CircularProgress size={24} color="inherit" /> : 'メールで続ける'}
       </Button>
     </>
   );
@@ -596,7 +596,7 @@ export default function AuthPage() {
     ? 'メールを確認してください'
     : step === 'password'
       ? (mode === 'login' ? 'おかえりなさい' : 'アカウントを作成')
-      : 'ログイン / 登録';
+      : 'ログイン / 新規登録';
 
   const subtitle = step === 'otp'
     ? 'メールに届いた6桁のコードを入力してください'
