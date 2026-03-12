@@ -34,6 +34,7 @@ import StreakDialog from './components/StreakDialog';
 import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
 import Users from './components/Users';
+import ResetPasswordPage from './components/ResetPasswordPage';
 
 // ==========================================
 // MUI テーマ型拡張
@@ -60,8 +61,8 @@ declare module '@mui/material/styles' {
     lighter?: string;
   }
   interface TypeBackground {
-    subtle?: string;
-    overlay?: string;
+    subtle: string;
+    overlay: string;
   }
 }
 
@@ -380,6 +381,7 @@ function AppShell() {
 // ==========================================
 const router = createBrowserRouter([
   { path: '/login', element: <AuthPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/',
     element: <AppShell />,

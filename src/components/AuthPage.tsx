@@ -1,6 +1,6 @@
 // src/components/AuthPage.tsx
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Box, Typography, TextField, Button, Divider,
   Alert, CircularProgress, InputAdornment, IconButton,
@@ -46,10 +46,23 @@ export default function AuthPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [otpResendCooldown, setOtpResendCooldown] = useState(0);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>(Array(OTP_LENGTH).fill(null));
 
   const clearMessages = () => { setErrorMessage(''); setSuccessMessage(''); };
+
+  // OTP ステップ突入時にリセンドのクールダウンを開始
+  useEffect(() => {
+    if (step === 'otp') setOtpResendCooldown(60);
+  }, [step]);
+
+  // クールダウンのカウントダウン
+  useEffect(() => {
+    if (otpResendCooldown <= 0) return;
+    const timer = setTimeout(() => setOtpResendCooldown(v => v - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpResendCooldown]);
 
   const goBackToEmail = () => {
     setStep('email');
@@ -119,6 +132,23 @@ export default function AuthPage() {
     }
   };
 
+  // ---- パスワードリセット ----
+  const handleForgotPassword = async () => {
+    setIsLoading(true);
+    clearMessages();
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password',
+      });
+      if (error) throw error;
+      setSuccessMessage('パスワードリセット用のメールを送信しました。メールボックスをご確認ください。');
+    } catch {
+      setErrorMessage('メールの送信に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ---- Step 2-B: 新規登録 ----
   const handleSignUp = async () => {
     if (!password || !confirmPassword) {
@@ -177,16 +207,19 @@ export default function AuthPage() {
       });
       if (error) throw error;
       if (data.user) {
+        // upsert 失敗はログインを妨げないためエラーを握りつぶす
         await supabase.from('profiles').upsert(
           { id: data.user.id, display_name: '名称未設定' },
           { onConflict: 'id', ignoreDuplicates: true },
-        );
+        ).then(({ error: upsertError }) => {
+          if (upsertError) console.error('[AuthPage] profiles upsert failed:', upsertError);
+        });
       }
       navigate('/home', { replace: true });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('expired') || msg.includes('invalid') || msg.includes('Token')) {
-        setErrorMessage('コードが無効または期限切れです。再度確認してください。');
+        setErrorMessage('コードが無効または期限切れです。再度確認するか、コードを再送信してください。');
       } else {
         setErrorMessage('認証に失敗しました。コードを確認してください。');
       }
@@ -197,9 +230,29 @@ export default function AuthPage() {
     }
   };
 
+  // ---- OTP 再送信 ----
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    clearMessages();
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) throw error;
+      setSuccessMessage('確認コードを再送信しました。');
+      setOtpResendCooldown(60);
+    } catch {
+      setErrorMessage('再送信に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ---- OTP 入力ハンドラ ----
   const handleOtpChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const digit = e.target.value.replace(/\D/g, '').slice(-1);
+    // 全角数字を半角に変換してから数字のみ抽出
+    const digit = e.target.value
+      .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+      .replace(/\D/g, '')
+      .slice(-1);
     const newOtp = [...otp];
     newOtp[index] = digit;
     setOtp(newOtp);
@@ -222,7 +275,10 @@ export default function AuthPage() {
 
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    const paste = e.clipboardData.getData('text')
+      .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+      .replace(/\D/g, '')
+      .slice(0, OTP_LENGTH);
     if (!paste) return;
     const newOtp = Array(OTP_LENGTH).fill('');
     paste.split('').forEach((d, i) => { newOtp[i] = d; });
@@ -373,10 +429,9 @@ export default function AuthPage() {
         </Typography>
       </Divider>
 
-
       <TextField
         label="メールアドレス" type="email" value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => { setEmail(e.target.value); clearMessages(); }}
         onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
         fullWidth size="medium" disabled={isLoading || isGoogleLoading}
         sx={{ mb: 2.5, ...inputSx }}
@@ -388,7 +443,7 @@ export default function AuthPage() {
         disabled={isLoading || isGoogleLoading}
         disableElevation sx={primaryButtonSx}
       >
-        続行
+        {isLoading ? <CircularProgress size={24} color="inherit" /> : '続行'}
       </Button>
     </>
   );
@@ -405,12 +460,22 @@ export default function AuthPage() {
             label="パスワード"
             type={showPassword ? 'text' : 'password'}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => { setPassword(e.target.value); clearMessages(); }}
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             fullWidth size="medium" disabled={isLoading}
             slotProps={{ input: eyeAdornment(showPassword, () => setShowPassword(v => !v)) }}
-            sx={{ mb: 3, ...inputSx }}
+            sx={{ mb: 1.5, ...inputSx }}
           />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              size="small" variant="text"
+              onClick={handleForgotPassword}
+              disabled={isLoading}
+              sx={{ fontSize: '12px', color: 'text.secondary', p: 0, minWidth: 'unset', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
+            >
+              パスワードを忘れた方はこちら
+            </Button>
+          </Box>
           <Button
             variant="contained" fullWidth size="large"
             onClick={handleLogin} disabled={isLoading}
@@ -426,7 +491,7 @@ export default function AuthPage() {
             label="パスワード"
             type={showPassword ? 'text' : 'password'}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => { setPassword(e.target.value); clearMessages(); }}
             onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
             fullWidth size="medium" disabled={isLoading}
             helperText="12文字以上で設定してください"
@@ -437,7 +502,7 @@ export default function AuthPage() {
             label="パスワード（確認用）"
             type={showConfirmPassword ? 'text' : 'password'}
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => { setConfirmPassword(e.target.value); clearMessages(); }}
             onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
             fullWidth size="medium" disabled={isLoading}
             slotProps={{ input: eyeAdornment(showConfirmPassword, () => setShowConfirmPassword(v => !v)) }}
@@ -468,6 +533,7 @@ export default function AuthPage() {
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
+            autoComplete={index === 0 ? 'one-time-code' : 'off'}
             value={digit}
             ref={(el: HTMLInputElement | null) => { otpRefs.current[index] = el; }}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleOtpChange(index, e)}
@@ -508,6 +574,20 @@ export default function AuthPage() {
       >
         {isLoading ? <CircularProgress size={24} color="inherit" /> : '確認する'}
       </Button>
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Button
+          size="small" variant="text"
+          onClick={handleResendOtp}
+          disabled={isLoading || otpResendCooldown > 0}
+          sx={{ fontSize: '13px', color: 'text.secondary', '&:hover': { color: 'primary.main', backgroundColor: 'transparent' } }}
+        >
+          {otpResendCooldown > 0
+            ? `コードを再送信する（${otpResendCooldown}秒後）`
+            : 'コードを再送信する'
+          }
+        </Button>
+      </Box>
     </>
   );
 
