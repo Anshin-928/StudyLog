@@ -112,9 +112,23 @@ const [{ data }, { data: goalsData }] = await Promise.all([
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setSnackbar({ open: true, message: 'JPG・PNG・WebP・GIF形式のみ対応しています', severity: 'error' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setSnackbar({ open: true, message: 'ファイルサイズは10MB以下にしてください', severity: 'error' });
+      return;
+    }
+
     const compressed = await compressImage(file);
     setPendingAvatarFile(compressed);
-    setPreviewAvatarUrl(URL.createObjectURL(compressed));
+    setPreviewAvatarUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(compressed);
+    });
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 

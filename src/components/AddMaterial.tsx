@@ -155,8 +155,14 @@ export default function AddMaterial() {
     if (!searchQuery) return;
     setIsSearching(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(
-        `/api/rakuten?format=json&title=${encodeURIComponent(searchQuery)}&hits=20&sort=sales&outOfStockFlag=1`
+        `/api/rakuten?format=json&title=${encodeURIComponent(searchQuery)}&hits=20&sort=sales&outOfStockFlag=1`,
+        {
+          headers: session?.access_token
+            ? { 'Authorization': `Bearer ${session.access_token}` }
+            : {},
+        }
       );
       const data = await res.json();
       setSearchResults(data.Items || []);
@@ -215,11 +221,24 @@ export default function AddMaterial() {
 
   // オリジナルタブ
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      setOriginalImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      showSnackbar('JPG・PNG・WebP・GIF形式のみ対応しています', 'error');
+      return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      showSnackbar('ファイルサイズは10MB以下にしてください', 'error');
+      return;
+    }
+
+    setOriginalImage(file);
+    setPreviewUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
   };
 
   const handleAddOriginal = async () => {
