@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => navigate('/home', { replace: true }), 2000);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
-      if (msg.includes('same password')) {
+      if (msg.includes('different from the old password')) {
         setErrorMessage('現在のパスワードと同じです。別のパスワードを設定してください。');
       } else {
         setErrorMessage('パスワードの更新に失敗しました。リンクが期限切れの可能性があります。');
