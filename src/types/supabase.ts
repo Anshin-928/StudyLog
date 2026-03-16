@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      exam_events: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          event_date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          event_date: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          event_date?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color_code: string | null
