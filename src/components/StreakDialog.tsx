@@ -162,7 +162,6 @@ function DatePickerButton({ value, onChange, minDate }: {
         onClose={() => setOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        disablePortal
         PaperProps={{
           sx: {
             mt: 0.5, p: 2, borderRadius: '16px',
