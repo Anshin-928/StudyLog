@@ -202,18 +202,8 @@ export default function Materials() {
     const activeMat = materials.find(m => m.id === activeId);
     if (!activeMat) return;
 
-    // 空カテゴリへのドロップ
-    if (overId.startsWith('cat-drop-')) {
-      const overCategoryName = overId.replace('cat-drop-', '');
-      if (activeMat.categoryName === overCategoryName) return;
-      const catInfo = allCategories.find(c => c.name === overCategoryName);
-      if (!catInfo) return;
-      setMaterials(prev => prev.map(m => m.id === activeId
-        ? { ...m, categoryId: catInfo.id, categoryName: catInfo.name, colorCode: catInfo.colorCode, categorySortOrder: catInfo.sortOrder }
-        : m
-      ));
-      return;
-    }
+    // 空カテゴリへのドロップはドラッグ中に状態更新しない（handleDragEnd で処理）
+    if (overId.startsWith('cat-drop-')) return;
 
     const overMat = materials.find(m => m.id === overId);
     if (!overMat) return;
@@ -243,7 +233,28 @@ export default function Materials() {
     }
   };
 
-  const handleDragEnd = (_event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    // 空カテゴリへのドロップ処理（dragOver では行わず、ここで確定させる）
+    if (over) {
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      if (overId.startsWith('cat-drop-')) {
+        const overCategoryName = overId.replace('cat-drop-', '');
+        const activeMat = materials.find(m => m.id === activeId);
+        if (activeMat && activeMat.categoryName !== overCategoryName) {
+          const catInfo = allCategories.find(c => c.name === overCategoryName);
+          if (catInfo) {
+            setMaterials(prev => prev.map(m => m.id === activeId
+              ? { ...m, categoryId: catInfo.id, categoryName: catInfo.name, colorCode: catInfo.colorCode, categorySortOrder: catInfo.sortOrder }
+              : m
+            ));
+          }
+        }
+      }
+    }
+
     setActiveDragId(null);
     setOverDropId(null);
   };
