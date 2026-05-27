@@ -463,7 +463,7 @@ export default function Profile() {
   const avatarLetter = (profile?.display_name || '?')[0]?.toUpperCase();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%', flexGrow: 1 }}>
 
       {/* ライトボックス */}
       {lightboxUrl && (
@@ -521,7 +521,7 @@ export default function Profile() {
       </Box>
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
           <CircularProgress />
         </Box>
       ) : (

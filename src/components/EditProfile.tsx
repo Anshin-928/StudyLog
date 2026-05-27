@@ -229,7 +229,7 @@ const [{ data }, { data: goalsData }] = await Promise.all([
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%', flexGrow: 1 }}>
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary', gap: { xs: 0.5, sm: 1.5 } }}>
@@ -254,7 +254,7 @@ const [{ data }, { data: goalsData }] = await Promise.all([
       </Box>
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
           <CircularProgress />
         </Box>
       ) : (

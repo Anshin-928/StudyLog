@@ -405,10 +405,10 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
       </Box>
 
       {/* タイムライン */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {tabIndex === 0 ? (
           isLoadingFollow ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}><CircularProgress /></Box>
           ) : followLogs.length === 0 ? (
             <EmptyState icon={<PeopleOutlinedIcon sx={{ fontSize: 'inherit' }} />} title={followingCount === 0 ? "フォロー中のユーザーがいません" : "記録がまだありません"} description="ユーザー検索から他のユーザーをフォローすると&#10;ここに記録が流れてきます" />
           ) : (
@@ -428,7 +428,7 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
           )
         ) : (
           isLoadingGoal ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}><CircularProgress /></Box>
           ) : !myProfile?.goalGroup ? (
             <EmptyState icon={<OutlinedFlagOutlinedIcon sx={{ fontSize: 'inherit' }} />} title="目標が設定されていません" description="プロフィール画面から目標を設定すると&#10;同じ目標を持つ人の記録が表示されます" />
           ) : goalLogs.length === 0 ? (
