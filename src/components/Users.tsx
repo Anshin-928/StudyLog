@@ -170,7 +170,7 @@ export default function Users() {
   };
 
   return (
-    <Box sx={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+    <Box sx={{ maxWidth: '1100px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 3, color: 'text.primary' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
           <PeopleOutlinedIcon />
@@ -190,9 +190,9 @@ export default function Users() {
         slotProps={{ input: { startAdornment: <SearchRoundedIcon sx={{ mr: 1, color: 'text.disabled' }} /> } }}
       />
 
-      <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
         {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}><CircularProgress /></Box>
         ) : (
           users.map(user => (
             <React.Fragment key={user.id}>

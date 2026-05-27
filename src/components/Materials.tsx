@@ -309,7 +309,7 @@ export default function Materials() {
   // レンダリング
   // ==========================================
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1 }}>
 
       {/* ヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 4, color: 'text.primary', justifyContent: 'space-between' }}>
