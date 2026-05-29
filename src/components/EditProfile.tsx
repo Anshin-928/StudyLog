@@ -384,10 +384,18 @@ const [{ data }, { data: goalsData }] = await Promise.all([
                     value={newGoalGroup}
                     onInputChange={(_, v) => setNewGoalGroup(v)}
                     onChange={(_, v) => setNewGoalGroup(v || '')}
+                    filterOptions={(options, state) => {
+                      const input = state.inputValue.trim();
+                      if (!input) return [];
+                      return options.filter((opt) =>
+                        opt.toLowerCase().includes(input.toLowerCase())
+                      ).slice(0, 20);
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
                         label={
+                          newGoalCategory === 'high_school' ? '志望校を入力' :
                           newGoalCategory === 'university' ? '志望校を入力' :
                           newGoalCategory === 'qualification' ? '資格名を入力' :
                           newGoalCategory === 'language' ? '目標スコアを入力' : '目標を入力'
