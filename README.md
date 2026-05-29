@@ -35,6 +35,7 @@
 
 ### ユーザー機能
 - プロフィール・自己紹介・目標の設定
+- 志望校の検索・登録（全国の高校 5,093校 / 大学 834校に対応）
 - フォロー / フォロワー管理・フォロー申請の承認
 - ユーザー検索
 - アカウントの公開 / 非公開切り替え
@@ -60,7 +61,8 @@
 | ドラッグ&ドロップ | dnd-kit |
 | バックエンド / DB | Supabase (PostgreSQL) |
 | 認証 | Supabase Auth, Google OAuth 2.0 |
-| 外部 API | 楽天ブックス API |
+| 外部 API | 楽天ブックス API, 学校コード検索 API (edu-data.jp) |
+| CI/CD | GitHub Actions (学校データ月次自動更新) |
 | デプロイ | Vercel |
 
 ---
@@ -69,21 +71,27 @@
 
 ```
 StudyLog/
+├── .github/workflows/
+│   └── sync-school-data.yml  # 学校データ月次自動更新ワークフロー
 ├── api/
-│   └── rakuten.js          # 楽天 API のサーバーサイドハンドラー (Vercel Functions)
+│   └── rakuten.js            # 楽天 API のサーバーサイドハンドラー (Vercel Functions)
+├── scripts/
+│   └── fetch-school-data.mjs # edu-data.jp API からの学校データ取得スクリプト
 ├── public/
-│   └── images/templates/   # 教材カバー画像テンプレート
+│   └── images/templates/     # 教材カバー画像テンプレート
 ├── src/
-│   ├── components/         # ページ・UIコンポーネント
-│   ├── hooks/              # カスタムフック
-│   ├── lib/                # Supabase クライアント・ユーティリティ
-│   ├── constants/          # 目標グループ・カテゴリ定数
-│   ├── types/              # TypeScript 型定義
-│   ├── assets/             # ロゴ・デフォルト画像
-│   ├── App.tsx             # ルーティング・テーマ管理
-│   └── main.tsx            # エントリーポイント
-├── vercel.json             # Vercel デプロイ設定
-└── vite.config.ts          # Vite 設定
+│   ├── components/           # ページ・UIコンポーネント
+│   ├── data/
+│   │   └── schools.json      # 高校・大学データ（自動更新）
+│   ├── hooks/                # カスタムフック
+│   ├── lib/                  # Supabase クライアント・ユーティリティ
+│   ├── constants/            # 目標グループ・カテゴリ定数
+│   ├── types/                # TypeScript 型定義
+│   ├── assets/               # ロゴ・デフォルト画像
+│   ├── App.tsx               # ルーティング・テーマ管理
+│   └── main.tsx              # エントリーポイント
+├── vercel.json               # Vercel デプロイ設定
+└── vite.config.ts            # Vite 設定
 ```
 
 ---
@@ -143,6 +151,7 @@ npm run dev
 | `npm run build` | 本番用ビルドを生成 |
 | `npm run preview` | ビルド結果をローカルでプレビュー |
 | `npm run lint` | ESLint によるコード検査 |
+| `EDU_DATA_TOKEN=<token> node scripts/fetch-school-data.mjs` | 学校データを手動更新 |
 
 ---
 
