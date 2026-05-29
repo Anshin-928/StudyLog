@@ -1,8 +1,11 @@
 // src/constants/goalGroups.ts
 
-export type GoalCategory = 'university' | 'qualification' | 'language' | 'other';
+import schoolData from '../data/schools.json';
+
+export type GoalCategory = 'high_school' | 'university' | 'qualification' | 'language' | 'other';
 
 export const GOAL_CATEGORIES: { id: GoalCategory; label: string }[] = [
+  { id: 'high_school',   label: '高校受験' },
   { id: 'university',    label: '大学受験' },
   { id: 'qualification', label: '資格・検定' },
   { id: 'language',      label: '語学' },
@@ -11,26 +14,9 @@ export const GOAL_CATEGORIES: { id: GoalCategory; label: string }[] = [
 
 // カテゴリごとのサジェスト候補
 export const GOAL_GROUP_SUGGESTIONS: Record<GoalCategory, string[]> = {
+  high_school: schoolData.highSchools.map((s) => s.name),
   university: [
-    // 旧帝大・難関国立
-    '東京大学', '京都大学', '一橋大学', '東京科学大学', '大阪大学',
-    '東北大学', '名古屋大学', '九州大学', '北海道大学', '神戸大学',
-    '筑波大学', '横浜国立大学', '千葉大学', '広島大学', '岡山大学',
-    '金沢大学',
-    // 早慶上理
-    '早稲田大学', '慶應義塾大学', '上智大学', '東京理科大学',
-    // MARCH
-    '明治大学', '青山学院大学', '立教大学', '中央大学', '法政大学',
-    // 関関同立
-    '関西大学', '関西学院大学', '同志社大学', '立命館大学',
-    // 日東駒専
-    '日本大学', '東洋大学', '駒澤大学', '専修大学',
-    // 産近甲龍
-    '京都産業大学', '近畿大学', '甲南大学', '龍谷大学',
-    // その他主要私立
-    '学習院大学', '成蹊大学', '成城大学', '武蔵大学',
-    '南山大学', '西南学院大学', '福岡大学',
-    // 医学部系
+    ...schoolData.universities.map((s) => s.name),
     '医学部医学科',
   ],
   qualification: [
