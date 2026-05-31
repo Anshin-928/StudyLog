@@ -24,6 +24,7 @@ import { supabase } from './lib/supabase';
 import defaultAvatarPng from './assets/defaultAvatarPng.png';
 import Sidebar from './components/Sidebar';
 import AuthPage from './components/AuthPage';
+import LandingPage from './components/LandingPage';
 import Home from './components/Home';
 import Record from './components/Record';
 import Report from './components/Report';
@@ -270,7 +271,7 @@ function AppShell() {
     );
   }
 
-  if (session === null) return <Navigate to="/login" replace />;
+  if (session === null) return <LandingPage />;
 
   return (
     <AppCallbacksContext.Provider value={callbacks}>
