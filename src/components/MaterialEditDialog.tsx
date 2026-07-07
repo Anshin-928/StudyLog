@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import { supabase } from '../lib/supabase';
+import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 import { TEMPLATES, isTemplateUrl } from '../constants/materialTemplates';
 import {
   CategoryOption,
@@ -111,6 +112,12 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        showSnackbar(validationError);
+        e.target.value = '';
+        return;
+      }
       setUploadedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -157,8 +164,12 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
 
       let finalImageUrl: string;
       if (uploadedImage) {
-        const fileExt = uploadedImage.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const validationError = validateImageFile(uploadedImage);
+        if (validationError) {
+          showSnackbar(validationError);
+          return;
+        }
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${safeImageExt(uploadedImage)}`;
         const filePath = `public/${fileName}`;
 
         const { error: uploadError } = await supabase.storage

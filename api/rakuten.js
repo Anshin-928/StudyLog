@@ -52,6 +52,16 @@ export default async function handler(req, res) {
     }
   }
 
+  // 数値パラメータは範囲内に丸める（外部APIへの過大リクエストを防ぐ）
+  if (params.has('hits')) {
+    const hits = parseInt(params.get('hits'), 10);
+    params.set('hits', String(Number.isInteger(hits) ? Math.min(Math.max(hits, 1), 30) : 20));
+  }
+  if (params.has('page')) {
+    const page = parseInt(params.get('page'), 10);
+    params.set('page', String(Number.isInteger(page) ? Math.min(Math.max(page, 1), 100) : 1));
+  }
+
   if (!params.get('title') && !params.get('author')) {
     return res.status(400).json({ error: 'title or author is required' });
   }

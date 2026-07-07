@@ -14,6 +14,7 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import CloseIcon from '@mui/icons-material/Close';
 import { supabase } from '../lib/supabase';
+import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 
 // ==========================================
 // 型定義
@@ -438,6 +439,7 @@ export default function EditRecordDialog({ open, onClose, entry, onSaved }: {
   const [memo, setMemo] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -515,6 +517,12 @@ export default function EditRecordDialog({ open, onClose, entry, onSaved }: {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       const file = e.target.files[0];
+      const validationError = validateImageFile(file);
+      setImageError(validationError);
+      if (validationError) {
+        e.target.value = '';
+        return;
+      }
       setImage(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -528,8 +536,8 @@ export default function EditRecordDialog({ open, onClose, entry, onSaved }: {
 
       let imageUrl = existingImageUrl;
       if (image) {
-        const fileExt = image.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}.${fileExt}`;
+        if (validateImageFile(image)) return;
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}.${safeImageExt(image)}`;
         const { error: uploadError } = await supabase.storage
           .from('study-logs').upload(`public/${fileName}`, image);
         if (uploadError) throw uploadError;
@@ -652,6 +660,11 @@ export default function EditRecordDialog({ open, onClose, entry, onSaved }: {
 
           {/* 画像 */}
           <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImageChange} />
+          {imageError && (
+            <Typography variant="caption" sx={{ color: 'error.main', mb: 1, display: 'block' }}>
+              {imageError}
+            </Typography>
+          )}
           {image && previewUrl ? (
             <Box onClick={() => fileInputRef.current?.click()} sx={{
               display: 'flex', alignItems: 'center', gap: 2,
