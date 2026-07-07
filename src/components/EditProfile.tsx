@@ -17,6 +17,7 @@ import { useBlocker, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
 import { compressImage } from '../lib/compressImage';
+import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 import {
   GOAL_CATEGORIES,
   GOAL_GROUP_SUGGESTIONS,
@@ -113,13 +114,9 @@ const [{ data }, { data: goalsData }] = await Promise.all([
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      setSnackbar({ open: true, message: 'JPG・PNG・WebP・GIF形式のみ対応しています', severity: 'error' });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setSnackbar({ open: true, message: 'ファイルサイズは10MB以下にしてください', severity: 'error' });
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setSnackbar({ open: true, message: validationError, severity: 'error' });
       return;
     }
 
@@ -156,8 +153,12 @@ const [{ data }, { data: goalsData }] = await Promise.all([
 
       let newAvatarUrl: string | undefined;
       if (pendingAvatarFile) {
-        const fileExt = pendingAvatarFile.name.split('.').pop();
-        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const validationError = validateImageFile(pendingAvatarFile);
+        if (validationError) {
+          setSnackbar({ open: true, message: validationError, severity: 'error' });
+          return;
+        }
+        const fileName = `${user.id}_${Date.now()}.${safeImageExt(pendingAvatarFile)}`;
         const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, pendingAvatarFile);
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);

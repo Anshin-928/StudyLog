@@ -14,6 +14,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 
 import { supabase } from '../lib/supabase';
+import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
 import { MATERIAL_UNITS, MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
 import UnitSelector from './UnitSelector';
@@ -224,13 +225,9 @@ export default function AddMaterial() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      showSnackbar('JPG・PNG・WebP・GIF形式のみ対応しています', 'error');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      showSnackbar('ファイルサイズは10MB以下にしてください', 'error');
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      showSnackbar(validationError, 'error');
       return;
     }
 
@@ -259,8 +256,12 @@ export default function AddMaterial() {
       let finalImageUrl = selectedTemplate;
 
       if (originalImage) {
-        const fileExt = originalImage.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const validationError = validateImageFile(originalImage);
+        if (validationError) {
+          showSnackbar(validationError, 'error');
+          return;
+        }
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${safeImageExt(originalImage)}`;
         const filePath = `public/${fileName}`;
 
         const { error: uploadError } = await supabase.storage

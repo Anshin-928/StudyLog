@@ -24,6 +24,7 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
 import { useBlocker, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
 
 interface Material {
@@ -657,6 +658,7 @@ function ManualInputTab({
   const [memo, setMemo] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const [isDateDialogOpen, setIsDateDialogOpen] = useState(false);
   const [isDurationDialogOpen, setIsDurationDialogOpen] = useState(false);
@@ -718,6 +720,12 @@ function ManualInputTab({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const validationError = validateImageFile(file);
+      setImageError(validationError);
+      if (validationError) {
+        e.target.value = '';
+        return;
+      }
       setImage(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -815,6 +823,11 @@ function ManualInputTab({
         type="file" accept="image/*" ref={fileInputRef}
         style={{ display: 'none' }} onChange={handleImageChange}
       />
+      {imageError && (
+        <Typography variant="caption" sx={{ color: 'error.main', mb: 1, display: 'block' }}>
+          {imageError}
+        </Typography>
+      )}
       {image && previewUrl ? (
         <Box
           onClick={() => fileInputRef.current?.click()}
@@ -1179,8 +1192,12 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
 
       let imageUrl: string | null = null;
       if (image) {
-        const fileExt = image.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}.${fileExt}`;
+        const validationError = validateImageFile(image);
+        if (validationError) {
+          showSnackbar(validationError, 'error');
+          return;
+        }
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}.${safeImageExt(image)}`;
         const { error: uploadError } = await supabase.storage
           .from('study-logs').upload(`public/${fileName}`, image);
         if (uploadError) throw uploadError;

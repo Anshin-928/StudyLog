@@ -110,10 +110,12 @@ export default function Users() {
     if (!myId) return;
     setIsLoading(true);
     try {
+      // ilike のワイルドカード（% _ \）をエスケープしてパターン注入を防ぐ
+      const escapedQuery = query.replace(/[\\%_]/g, '\\$&');
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, display_name, avatar_url, goal_group, is_public')
-        .ilike('display_name', `%${query}%`)
+        .ilike('display_name', `%${escapedQuery}%`)
         .limit(20);
 
       const ids = (profiles || []).map(p => p.id);
