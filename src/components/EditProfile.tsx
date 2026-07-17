@@ -23,7 +23,7 @@ import {
   getGoalSuggestions,
   GoalCategory,
 } from '../constants/goalGroups';
-import defaultAvatarPng from '../assets/defaultAvatarPng.png';
+import defaultAvatar from '../assets/defaultAvatar.webp';
 
 interface ProfileData {
   id: string;
@@ -278,7 +278,7 @@ const [{ data }, { data: goalsData }] = await Promise.all([
               <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ position: 'relative', width: 96, height: 96 }}>
                   <Avatar
-                    src={avatarSrc || defaultAvatarPng}
+                    src={avatarSrc || defaultAvatar}
                     sx={{ width: 96, height: 96, fontSize: '36px', backgroundColor: 'primary.main', color: (t) => t.palette.common.white }}
                   />
                   <Box

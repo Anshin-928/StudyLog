@@ -21,7 +21,7 @@ import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 import { supabase } from './lib/supabase';
-import defaultAvatarPng from './assets/defaultAvatarPng.png';
+import defaultAvatar from './assets/defaultAvatar.webp';
 import Sidebar from './components/Sidebar';
 import StreakDialog from './components/StreakDialog';
 
@@ -351,7 +351,7 @@ function AppShell() {
 
             <IconButton component={Link} to="/profile" sx={{ p: 0.5 }}>
               <Avatar
-                src={profileData.avatar_url || defaultAvatarPng}
+                src={profileData.avatar_url || defaultAvatar}
                 sx={{
                   width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
                   backgroundColor: theme.palette.primary.main,

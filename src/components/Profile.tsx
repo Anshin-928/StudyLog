@@ -22,7 +22,7 @@ import SearchIcon from '@mui/icons-material/Search';
 type FollowStatus = 'none' | 'pending' | 'accepted';
 import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
-import defaultAvatarPng from '../assets/defaultAvatarPng.png';
+import defaultAvatar from '../assets/defaultAvatar.webp';
 
 // ==========================================
 // 型定義
@@ -255,7 +255,7 @@ function FollowListDialog({
                   sx={{ px: 2.5, py: 1.5, pr: isOwnProfile && type === 'followers' ? 7 : 2.5 }}
                 >
                   <ListItemAvatar>
-                    <Avatar src={user.avatar_url || defaultAvatarPng} sx={{ width: 44, height: 44 }} />
+                    <Avatar src={user.avatar_url || defaultAvatar} sx={{ width: 44, height: 44 }} />
                   </ListItemAvatar>
                   <ListItemText
                     primary={
@@ -544,7 +544,7 @@ export default function Profile() {
                   <ListItem key={user.id} disablePadding sx={{ borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none' } }}>
                     <ListItemButton onClick={() => navigate(`/users/${user.id}`)} sx={{ px: { xs: 2, sm: 3 }, py: 1.5, pr: 14 }}>
                       <ListItemAvatar>
-                        <Avatar src={user.avatar_url || defaultAvatarPng} sx={{ width: 40, height: 40 }} />
+                        <Avatar src={user.avatar_url || defaultAvatar} sx={{ width: 40, height: 40 }} />
                       </ListItemAvatar>
                       <ListItemText
                         primary={
@@ -592,7 +592,7 @@ export default function Profile() {
 
               {/* アバター */}
               <Avatar
-                src={profile?.avatar_url || defaultAvatarPng}
+                src={profile?.avatar_url || defaultAvatar}
                 sx={{
                   width: { xs: 80, sm: 96 },
                   height: { xs: 80, sm: 96 },

@@ -10,7 +10,7 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import defaultAvatarPng from '../assets/defaultAvatarPng.png';
+import defaultAvatar from '../assets/defaultAvatar.webp';
 
 type FollowStatus = 'none' | 'pending' | 'accepted';
 
@@ -44,7 +44,7 @@ function UserRow({
         onClick={() => onUserClick(user.id)}
       >
         <Avatar
-          src={user.avatar_url || defaultAvatarPng}
+          src={user.avatar_url || defaultAvatar}
           sx={{ width: 48, height: 48, fontSize: '18px', backgroundColor: 'primary.main', color: 'white', flexShrink: 0 }}
         />
 

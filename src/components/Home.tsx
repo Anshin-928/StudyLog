@@ -17,7 +17,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
-import defaultAvatarPng from '../assets/defaultAvatarPng.png';
+import defaultAvatar from '../assets/defaultAvatar.webp';
 import EditRecordDialog, { EditableEntry } from './EditRecordDialog';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -109,7 +109,7 @@ function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelet
           onClick={() => onUserClick(entry.userId)}
         >
           <Avatar
-            src={entry.avatarUrl || defaultAvatarPng}
+            src={entry.avatarUrl || defaultAvatar}
             sx={{ width: 40, height: 40, fontSize: '16px', backgroundColor: 'primary.main', color: t => t.palette.common.white, flexShrink: 0 }}
           >
           </Avatar>
