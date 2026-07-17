@@ -2,6 +2,9 @@
 // カテゴリ関連の型・定数・ユーティリティ。AddMaterial / MaterialEditDialog で共用。
 
 import { supabase } from './supabase';
+import type { Database } from '../types/supabase';
+
+type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
 
 // ==========================================
 // 型・定数
@@ -56,7 +59,10 @@ export const resolveCategory = async (
 
   if (existing) return existing.id;
 
-  const insertData: Record<string, string> = { name };
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const insertData: CategoryInsert = { name, user_id: user.id };
   // 「カテゴリなし」はデフォルトでグレー、または呼び出し元が colorCode を指定できる
   if (colorCode) {
     insertData.color_code = colorCode;
@@ -66,7 +72,7 @@ export const resolveCategory = async (
 
   const { data: created, error } = await supabase
     .from('categories')
-    .insert([insertData])
+    .insert(insertData)
     .select()
     .single();
 

@@ -187,7 +187,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase.from('categories').select('*').eq('user_id', user.id).order('sort_order', { ascending: true });
       if (error) throw error;
-      setCategories(data || []);
+      setCategories((data ?? []).map(c => ({ ...c, color_code: c.color_code ?? '#9E9E9E' })));
     } catch (error) {
       console.error("カテゴリ取得エラー:", error);
     } finally {
