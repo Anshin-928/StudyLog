@@ -10,9 +10,10 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { follow, unfollow } from '../lib/followsApi';
+import type { FollowStatus } from '../lib/followsApi';
+import { useCurrentUserId } from '../hooks/useCurrentUser';
 import defaultAvatar from '../assets/defaultAvatar.webp';
-
-type FollowStatus = 'none' | 'pending' | 'accepted';
 
 // ==========================================
 // ユーザー行コンポーネント
@@ -95,16 +96,12 @@ export default function Users() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
-  const [myId, setMyId] = useState<string | null>(null);
+  const myId = useCurrentUserId();
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const debounceRef = useRef<any>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setMyId(user?.id || null));
-  }, []);
 
   const fetchUsers = useCallback(async (query: string) => {
     if (!myId) return;
@@ -157,15 +154,14 @@ export default function Users() {
     setProcessingIds(prev => new Set(prev).add(targetId));
     try {
       if (currentStatus !== 'none') {
-        // フォロー中 or 申請中 → 解除・キャンセル
-        await supabase.from('follows').delete().eq('follower_id', myId).eq('following_id', targetId);
+        await unfollow(myId, targetId);
       } else {
-        // 新規フォロー：相手が非公開なら pending
         const target = users.find(u => u.id === targetId);
-        const newStatus = target?.is_public ? 'accepted' : 'pending';
-        await supabase.from('follows').insert({ follower_id: myId, following_id: targetId, status: newStatus });
+        await follow(myId, targetId, Boolean(target?.is_public));
       }
       fetchUsers(searchQuery);
+    } catch (e) {
+      console.error(e);
     } finally {
       setProcessingIds(prev => { const n = new Set(prev); n.delete(targetId); return n; });
     }
