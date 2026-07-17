@@ -73,7 +73,7 @@ async function main() {
   const outPath = path.join(
     path.dirname(new URL(import.meta.url).pathname),
     "..",
-    "src",
+    "public",
     "data",
     "schools.json"
   );

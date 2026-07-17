@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext, Suspense, lazy } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import studyLogLogo from './assets/studyLogLogo.svg';
@@ -23,21 +23,39 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { supabase } from './lib/supabase';
 import defaultAvatarPng from './assets/defaultAvatarPng.png';
 import Sidebar from './components/Sidebar';
-import AuthPage from './components/AuthPage';
-import LandingPage from './components/LandingPage';
-import Home from './components/Home';
-import Record from './components/Record';
-import Report from './components/Report';
-import Materials from './components/Materials';
-import Settings from './components/Settings';
-import AddMaterial from './components/AddMaterial';
 import StreakDialog from './components/StreakDialog';
-import Profile from './components/Profile';
-import EditProfile from './components/EditProfile';
-import Users from './components/Users';
-import ResetPasswordPage from './components/ResetPasswordPage';
-import TermsOfServicePage from './components/TermsOfServicePage';
-import PrivacyPolicyPage from './components/PrivacyPolicyPage';
+
+// 各画面はルート単位でコード分割し、初回ロードのバンドルを軽くする
+const AuthPage = lazy(() => import('./components/AuthPage'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const Home = lazy(() => import('./components/Home'));
+const Record = lazy(() => import('./components/Record'));
+const Report = lazy(() => import('./components/Report'));
+const Materials = lazy(() => import('./components/Materials'));
+const Settings = lazy(() => import('./components/Settings'));
+const AddMaterial = lazy(() => import('./components/AddMaterial'));
+const Profile = lazy(() => import('./components/Profile'));
+const EditProfile = lazy(() => import('./components/EditProfile'));
+const Users = lazy(() => import('./components/Users'));
+const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
+const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'));
+const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'));
+
+function FullScreenLoader() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: 'background.default' }}>
+      <CircularProgress />
+    </Box>
+  );
+}
+
+function PageLoader() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, minHeight: '40vh' }}>
+      <CircularProgress />
+    </Box>
+  );
+}
 
 // ==========================================
 // MUI テーマ型拡張
@@ -263,15 +281,15 @@ function AppShell() {
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
-  if (session === undefined) {
+  if (session === undefined) return <FullScreenLoader />;
+
+  if (session === null) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: theme.palette.background.default }}>
-        <CircularProgress />
-      </Box>
+      <Suspense fallback={<FullScreenLoader />}>
+        <LandingPage />
+      </Suspense>
     );
   }
-
-  if (session === null) return <LandingPage />;
 
   return (
     <AppCallbacksContext.Provider value={callbacks}>
@@ -368,7 +386,9 @@ function AppShell() {
             pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 4,
             position: 'relative',
           }}>
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </Box>
         </Box>
 
@@ -383,10 +403,10 @@ function AppShell() {
 // ルーター定義
 // ==========================================
 const router = createBrowserRouter([
-  { path: '/login', element: <AuthPage /> },
-  { path: '/reset-password', element: <ResetPasswordPage /> },
-  { path: '/terms', element: <TermsOfServicePage /> },
-  { path: '/privacy', element: <PrivacyPolicyPage /> },
+  { path: '/login', element: <Suspense fallback={<FullScreenLoader />}><AuthPage /></Suspense> },
+  { path: '/reset-password', element: <Suspense fallback={<FullScreenLoader />}><ResetPasswordPage /></Suspense> },
+  { path: '/terms', element: <Suspense fallback={<FullScreenLoader />}><TermsOfServicePage /></Suspense> },
+  { path: '/privacy', element: <Suspense fallback={<FullScreenLoader />}><PrivacyPolicyPage /></Suspense> },
   {
     path: '/',
     element: <AppShell />,

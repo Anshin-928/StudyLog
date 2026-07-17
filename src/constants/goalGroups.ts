@@ -1,7 +1,5 @@
 // src/constants/goalGroups.ts
 
-import schoolData from '../data/schools.json';
-
 export type GoalCategory = 'high_school' | 'university' | 'qualification' | 'language' | 'other';
 
 export const GOAL_CATEGORIES: { id: GoalCategory; label: string }[] = [
@@ -12,13 +10,49 @@ export const GOAL_CATEGORIES: { id: GoalCategory; label: string }[] = [
   { id: 'other',         label: 'その他' },
 ];
 
-// カテゴリごとのサジェスト候補
+// 学校データ（約1MB）はバンドルに含めず、必要になったときに /data/schools.json から取得する
+interface School {
+  code: string;
+  name: string;
+  prefecture: string;
+  address: string;
+}
+interface SchoolData {
+  updatedAt: string;
+  highSchools: School[];
+  universities: School[];
+}
+
+let schoolDataPromise: Promise<SchoolData> | null = null;
+
+function fetchSchoolData(): Promise<SchoolData> {
+  if (!schoolDataPromise) {
+    schoolDataPromise = fetch('/data/schools.json').then((res) => {
+      if (!res.ok) throw new Error(`Failed to load school data: ${res.status}`);
+      return res.json();
+    });
+    // 失敗したら次回また取得できるようにキャッシュを捨てる
+    schoolDataPromise.catch(() => { schoolDataPromise = null; });
+  }
+  return schoolDataPromise;
+}
+
+// カテゴリごとのサジェスト候補（学校系は取得後にマージされる）
+export async function getGoalSuggestions(category: GoalCategory): Promise<string[]> {
+  if (category === 'high_school') {
+    const data = await fetchSchoolData();
+    return data.highSchools.map((s) => s.name);
+  }
+  if (category === 'university') {
+    const data = await fetchSchoolData();
+    return [...data.universities.map((s) => s.name), '医学部医学科'];
+  }
+  return GOAL_GROUP_SUGGESTIONS[category];
+}
+
 export const GOAL_GROUP_SUGGESTIONS: Record<GoalCategory, string[]> = {
-  high_school: schoolData.highSchools.map((s) => s.name),
-  university: [
-    ...schoolData.universities.map((s) => s.name),
-    '医学部医学科',
-  ],
+  high_school: [],
+  university: ['医学部医学科'],
   qualification: [
     // 法律・会計
     '司法試験', '司法書士', '行政書士', '公認会計士', '税理士',

@@ -20,7 +20,7 @@ import { compressImage } from '../lib/compressImage';
 import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 import {
   GOAL_CATEGORIES,
-  GOAL_GROUP_SUGGESTIONS,
+  getGoalSuggestions,
   GoalCategory,
 } from '../constants/goalGroups';
 import defaultAvatarPng from '../assets/defaultAvatarPng.png';
@@ -214,7 +214,18 @@ const [{ data }, { data: goalsData }] = await Promise.all([
   const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
   const isDark = theme.palette.mode === 'dark';
 
-  const newGoalSuggestions = newGoalCategory ? GOAL_GROUP_SUGGESTIONS[newGoalCategory] : [];
+  const [newGoalSuggestions, setNewGoalSuggestions] = useState<string[]>([]);
+  useEffect(() => {
+    if (!newGoalCategory) {
+      setNewGoalSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    getGoalSuggestions(newGoalCategory)
+      .then((suggestions) => { if (!cancelled) setNewGoalSuggestions(suggestions); })
+      .catch(() => { if (!cancelled) setNewGoalSuggestions([]); });
+    return () => { cancelled = true; };
+  }, [newGoalCategory]);
 
   const textFieldSx = {
     '& .MuiOutlinedInput-root': {
