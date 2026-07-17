@@ -1,420 +1,31 @@
 // src/components/Home.tsx
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Tabs, Tab, Avatar,
+  Box, Typography, Tabs, Tab,
   CircularProgress, useMediaQuery, useTheme, alpha, IconButton,
-  Menu, MenuItem, ListItemIcon, ListItemText,
-  Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemAvatar,
 } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
-import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import CloseIcon from '@mui/icons-material/Close';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { GOAL_CATEGORIES } from '../constants/goalGroups';
-import defaultAvatar from '../assets/defaultAvatar.webp';
+import { goalCategoryLabel } from '../constants/goalGroups';
+import { fetchLikes, useLikeToggle } from '../hooks/useLikes';
 import EditRecordDialog, { EditableEntry } from './EditRecordDialog';
 import ConfirmDialog from './ConfirmDialog';
+import TimelineItem from './TimelineItem';
+import type { TimelineEntry } from './TimelineItem';
+import LikersDialog from './LikersDialog';
 
 // ==========================================
 // 型定義
 // ==========================================
-interface TimelineEntry {
-  id: string;
-  materialId: string | null;
-  userId: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  goalGroup: string | null;
-  goalCategory: string | null;
-  materialName: string | null;
-  materialImage: string | null;
-  durationMinutes: number | null;
-  pages: number | null;
-  unit: string | null;
-  memo: string | null;
-  imageUrl: string | null;
-  studyDatetime: string;
-  likeCount: number;
-  likedByMe: boolean;
-}
-
 interface MyProfile {
   id: string;
   goalGroup: string | null;
   goalCategory: string | null;
-}
-
-// ==========================================
-// ユーティリティ
-// ==========================================
-function formatDuration(mins: number | null): string {
-  if (!mins || mins <= 0) return '';
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h === 0) return `${m}分`;
-  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
-}
-
-function formatExactTime(isoStr: string): string {
-  const d = new Date(isoStr);
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const days = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayStr = days[d.getDay()];
-  const h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${month}月${day}日 ${dayStr}曜日 ${h}:${m}`;
-}
-
-function goalCategoryLabel(cat: string | null): string {
-  if (!cat) return '';
-  return GOAL_CATEGORIES.find(c => c.id === cat)?.label ?? '';
-}
-
-// ==========================================
-// タイムラインアイテム（Divider区切り形式）
-// ==========================================
-function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelete, onToggleLike, onShowLikers }: {
-  entry: TimelineEntry;
-  onUserClick: (userId: string) => void;
-  onImageClick: (url: string) => void;
-  isOwn?: boolean;
-  onEdit?: () => void;
-  onDelete?: () => void;
-  onToggleLike: (entry: TimelineEntry) => void;
-  onShowLikers: (logId: string) => void;
-}) {
-  const theme = useTheme();
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [particles, setParticles] = useState<{ id: number; tx: number; ty: number; size: number; color: string; delay: number }[]>([]);
-  const [justLiked, setJustLiked] = useState(false);
-  const particleId = useRef(0);
-
-  const handleLikeClick = () => {
-    if (!entry.likedByMe) {
-      // Twitter風: 7方向に等間隔、各方向に色違いの丸を2個ずつ
-      const colors = [
-        '#66d9a6', '#b39ddb', '#ffb74d', '#f06292', '#64b5f6', '#aed581', '#ff8a80',
-        '#9575cd', '#4dd0e1', '#ffd54f', '#81c784', '#f48fb1', '#7986cb', '#ffab91',
-      ];
-      const spokes = 7;
-      setParticles(Array.from({ length: spokes }, (_, i) => {
-        const base = (360 / spokes) * i - 90;
-        const toXY = (deg: number, dist: number) => {
-          const rad = deg * (Math.PI / 180);
-          return { tx: Math.cos(rad) * dist, ty: Math.sin(rad) * dist };
-        };
-        return [
-          { id: particleId.current++, ...toXY(base - 9, 26), size: 3.5, color: colors[(2 * i) % colors.length], delay: 0 },
-          { id: particleId.current++, ...toXY(base + 9, 20), size: 2.5, color: colors[(2 * i + 1) % colors.length], delay: 50 },
-        ];
-      }).flat());
-      setJustLiked(true);
-    }
-    onToggleLike(entry);
-  };
-
-  return (
-    <Box sx={{
-      backgroundColor: 'background.paper',
-      borderRadius: '8px',
-      borderBottom: '1px solid',
-      borderColor: 'divider',
-      p: { xs: 2, sm: 2.5 },
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 1.5,
-      transition: 'background-color 0.2s',
-      '&:hover': { backgroundColor: 'action.hover' },
-    }}>
-      {/* ヘッダー */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
-          onClick={() => onUserClick(entry.userId)}
-        >
-          <Avatar
-            src={entry.avatarUrl || defaultAvatar}
-            sx={{ width: 40, height: 40, fontSize: '16px', backgroundColor: 'primary.main', color: t => t.palette.common.white, flexShrink: 0 }}
-          >
-          </Avatar>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 'bold', fontSize: '16px', color: 'text.primary', mb: 0.2 }}>
-              {entry.displayName || 'ユーザー'}
-            </Typography>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-          <Typography sx={{ fontSize: '12px', color: 'text.secondary', fontWeight: 500, pt: 0.5 }}>
-            {formatExactTime(entry.studyDatetime)}
-          </Typography>
-          {isOwn && (
-            <IconButton size="small" onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setMenuAnchor(e.currentTarget); }}>
-              <MoreHorizIcon sx={{ fontSize: '18px', color: 'text.secondary' }} />
-            </IconButton>
-          )}
-        </Box>
-      </Box>
-
-<Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={() => setMenuAnchor(null)}
-        onClick={(e) => e.stopPropagation()}
-        sx={{
-          '& .MuiPaper-root': {
-            borderRadius: '12px',
-            minWidth: '120px',
-            backgroundImage: 'none',
-            boxShadow: theme.palette.mode === 'dark'
-              ? '0 4px 16px rgba(0,0,0,0.5)'
-              : '0 4px 12px rgba(0,0,0,0.1)',
-          }
-        }}
-      >
-        <MenuItem
-          onClick={() => { setMenuAnchor(null); onEdit?.(); }}
-          sx={{ borderRadius: '8px', mx: 1, mb: 0.5 }}
-        >
-          <ListItemIcon>
-            <EditOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-          </ListItemIcon>
-          <ListItemText>編集</ListItemText>
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => { setMenuAnchor(null); onDelete?.(); }}
-          sx={{ borderRadius: '8px', mx: 1 }}
-        >
-          <ListItemIcon>
-            <DeleteOutlineIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <Typography color="error" sx={{ fontWeight: '500' }}>削除</Typography>
-        </MenuItem>
-      </Menu>
-
-      {/* メイン: 教材 + 学習時間 */}
-      <Box sx={{
-        display: 'flex', gap: 2, p: 1.8,
-        backgroundColor: 'background.subtle', borderRadius: '12px', border: '1px solid', borderColor: 'divider'
-      }}>
-        <Box sx={{ height: 80, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {entry.materialImage ? (
-            <img 
-              src={entry.materialImage} 
-              alt="" 
-              style={{ height: '100%', width: 'auto', objectFit: 'contain', borderRadius: '2px' }} 
-            />
-          ) : (
-            <Box sx={{ height: 80, width: 56, borderRadius: '2px', backgroundColor: 'background.default', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderColor: 'divider' }}>
-              <MenuBookOutlinedIcon sx={{ color: 'text.secondary', fontSize: '24px' }} />
-            </Box>
-          )}
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, minWidth: 0 }}>
-          <Typography sx={{ fontSize: '13.5px', fontWeight: 'bold', color: 'text.primary', mb: 1, lineHeight: 1.3 }}>
-            {entry.materialName || '教材なし'}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.8 }}>
-            {entry.durationMinutes != null && entry.durationMinutes > 0 && (
-              <Typography sx={{ fontSize: '22px', fontWeight: 900, color: 'text.primary', lineHeight: 1 }}>
-                {formatDuration(entry.durationMinutes)}
-              </Typography>
-            )}
-
-            {entry.pages != null && entry.pages > 0 && (
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                {entry.durationMinutes != null && entry.durationMinutes > 0 && (
-                  <Typography sx={{ fontSize: '20px', fontWeight: 'bold', color: 'text.secondary', mx: 0.2 }}>/</Typography>
-                )}
-                <Typography sx={{ fontSize: '22px', fontWeight: 900, color: 'text.primary', lineHeight: 1 }}>
-                  {entry.pages}
-                </Typography>
-                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', color: 'text.secondary' }}>
-                  {entry.unit || 'ページ'}
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Box>
-
-      {entry.imageUrl && (
-        <Box
-          onClick={() => onImageClick(entry.imageUrl!)}
-          sx={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '240px', border: '1px solid', borderColor: 'divider', mt: 0.5, cursor: 'zoom-in' }}
-        >
-          <img src={entry.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </Box>
-      )}
-
-      {entry.memo && (
-        <Typography sx={{ fontSize: '14px', color: 'text.primary', lineHeight: 1.6, whiteSpace: 'pre-wrap', mt: 0.5 }}>
-          {entry.memo}
-        </Typography>
-      )}
-
-      {/* いいね */}
-      <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 0.3,
-        '@keyframes like-burst': {
-          '0%': { opacity: 1, transform: 'translate(-50%, -50%) scale(0.5)' },
-          '55%': { opacity: 1, transform: 'translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1)' },
-          '100%': { opacity: 0, transform: 'translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.3)' },
-        },
-        '@keyframes like-pop': {
-          '0%': { transform: 'scale(0)' },
-          '45%': { transform: 'scale(1.35)' },
-          '70%': { transform: 'scale(0.9)' },
-          '100%': { transform: 'scale(1)' },
-        },
-      }}>
-        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-          <IconButton
-            size="small"
-            onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleLikeClick(); }}
-            sx={{ color: entry.likedByMe ? 'error.main' : 'text.secondary' }}
-          >
-            {entry.likedByMe
-              ? <FavoriteIcon
-                  onAnimationEnd={() => setJustLiked(false)}
-                  sx={{ fontSize: '20px', animation: justLiked ? 'like-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}
-                />
-              : <FavoriteBorderIcon sx={{ fontSize: '20px' }} />}
-          </IconButton>
-          {particles.map(p => (
-            <Box
-              key={p.id}
-              onAnimationEnd={() => setParticles(cur => cur.filter(c => c.id !== p.id))}
-              style={{ '--tx': `${p.tx}px`, '--ty': `${p.ty}px` } as React.CSSProperties}
-              sx={{
-                position: 'absolute', top: '50%', left: '50%',
-                width: p.size, height: p.size, borderRadius: '50%',
-                backgroundColor: p.color, pointerEvents: 'none', opacity: 0,
-                animation: `like-burst 700ms cubic-bezier(0.16, 1, 0.3, 1) ${p.delay}ms forwards`,
-              }}
-            />
-          ))}
-        </Box>
-        {entry.likeCount > 0 && (
-          <Typography
-            onClick={(e: React.MouseEvent) => { e.stopPropagation(); onShowLikers(entry.id); }}
-            sx={{
-              fontSize: '13px', fontWeight: 500,
-              color: entry.likedByMe ? 'error.main' : 'text.secondary',
-              cursor: 'pointer', px: 0.5, py: 0.3,
-              '&:hover': { textDecoration: 'underline' },
-            }}
-          >
-            {entry.likeCount}
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  );
-}
-
-// ==========================================
-// いいねしたユーザー一覧ダイアログ
-// ==========================================
-function LikersDialog({ logId, onClose, onUserClick }: {
-  logId: string | null;
-  onClose: () => void;
-  onUserClick: (userId: string) => void;
-}) {
-  const theme = useTheme();
-  const [likers, setLikers] = useState<{ userId: string; displayName: string | null; avatarUrl: string | null }[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (!logId) return;
-    let cancelled = false;
-    const fetchLikers = async () => {
-      setIsLoading(true);
-      try {
-        const { data } = await supabase
-          .from('likes')
-          .select('user_id, created_at, profiles(display_name, avatar_url)')
-          .eq('study_log_id', logId)
-          .order('created_at', { ascending: false });
-        if (!cancelled) {
-          setLikers((data ?? []).map((l: any) => ({
-            userId: l.user_id,
-            displayName: l.profiles?.display_name ?? null,
-            avatarUrl: l.profiles?.avatar_url ?? null,
-          })));
-        }
-      } catch (e) { console.error(e); } finally { if (!cancelled) setIsLoading(false); }
-    };
-    fetchLikers();
-    return () => { cancelled = true; };
-  }, [logId]);
-
-  return (
-    <Dialog
-      open={Boolean(logId)}
-      onClose={onClose}
-      fullWidth
-      maxWidth="xs"
-      PaperProps={{
-        sx: {
-          borderRadius: '16px',
-          backgroundImage: 'none',
-          boxShadow: theme.palette.mode === 'dark'
-            ? '0 4px 16px rgba(0,0,0,0.5)'
-            : '0 4px 12px rgba(0,0,0,0.1)',
-        }
-      }}
-    >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', pb: 1 }}>
-        いいねしたユーザー
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon sx={{ fontSize: '20px' }} />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent sx={{ px: 1.5, pb: 2 }}>
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={28} /></Box>
-        ) : likers.length === 0 ? (
-          <Typography sx={{ textAlign: 'center', py: 4, fontSize: '14px', color: 'text.secondary' }}>
-            まだいいねがありません
-          </Typography>
-        ) : (
-          <List disablePadding>
-            {likers.map(liker => (
-              <ListItemButton
-                key={liker.userId}
-                onClick={() => { onClose(); onUserClick(liker.userId); }}
-                sx={{ borderRadius: '10px', px: 1.5 }}
-              >
-                <ListItemAvatar sx={{ minWidth: 48 }}>
-                  <Avatar
-                    src={liker.avatarUrl || defaultAvatar}
-                    sx={{ width: 36, height: 36, backgroundColor: 'primary.main', color: t => t.palette.common.white }}
-                  />
-                </ListItemAvatar>
-                <ListItemText
-                  primary={liker.displayName || 'ユーザー'}
-                  primaryTypographyProps={{ sx: { fontWeight: 'bold', fontSize: '14px' } }}
-                />
-              </ListItemButton>
-            ))}
-          </List>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string; }) {
@@ -449,19 +60,6 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<EditableEntry | null>(null);
   const [likersLogId, setLikersLogId] = useState<string | null>(null);
-  const likeProcessing = useRef<Set<string>>(new Set());
-
-  const fetchLikes = useCallback(async (logIds: string[], userId: string) => {
-    const countMap: Record<string, number> = {};
-    const mySet = new Set<string>();
-    if (logIds.length === 0) return { countMap, mySet };
-    const { data: likes } = await supabase.from('likes').select('study_log_id, user_id').in('study_log_id', logIds);
-    (likes ?? []).forEach((l: any) => {
-      countMap[l.study_log_id] = (countMap[l.study_log_id] ?? 0) + 1;
-      if (l.user_id === userId) mySet.add(l.study_log_id);
-    });
-    return { countMap, mySet };
-  }, []);
 
   const mapLogs = useCallback((logs: any[], profileMap: Record<string, any>, likeCountMap: Record<string, number>, myLikedSet: Set<string>): TimelineEntry[] => {
     return logs.map(row => ({
@@ -516,7 +114,7 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
       const { countMap, mySet } = await fetchLikes((logs ?? []).map((l: any) => l.id), userId);
       setFollowLogs(mapLogs(logs ?? [], profileMap, countMap, mySet));
     } catch (e) { console.error(e); } finally { setIsLoadingFollow(false); }
-  }, [mapLogs, fetchLikes]);
+  }, [mapLogs]);
 
   const fetchGoalLogs = useCallback(async (userId: string, goalGroup: string) => {
     setIsLoadingGoal(true);
@@ -530,34 +128,17 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
       const { countMap, mySet } = await fetchLikes((logs ?? []).map((l: any) => l.id), userId);
       setGoalLogs(mapLogs(logs ?? [], profileMap, countMap, mySet));
     } catch (e) { console.error(e); } finally { setIsLoadingGoal(false); }
-  }, [mapLogs, fetchLikes]);
+  }, [mapLogs]);
 
-  const handleToggleLike = useCallback(async (entry: TimelineEntry) => {
-    if (!myId || likeProcessing.current.has(entry.id)) return;
-    likeProcessing.current.add(entry.id);
-    const liked = entry.likedByMe;
-    const apply = (delta: number, likedByMe: boolean) => {
-      const update = (list: TimelineEntry[]) => list.map(e => e.id === entry.id ? { ...e, likeCount: Math.max(0, e.likeCount + delta), likedByMe } : e);
-      setFollowLogs(update);
-      setGoalLogs(update);
-    };
-    apply(liked ? -1 : 1, !liked);
-    try {
-      if (liked) {
-        const { error } = await supabase.from('likes').delete().eq('user_id', myId).eq('study_log_id', entry.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('likes').insert({ user_id: myId, study_log_id: entry.id });
-        // 23505 = 重複（すでにいいね済み）は成功扱い
-        if (error && error.code !== '23505') throw error;
-      }
-    } catch (e) {
-      console.error(e);
-      apply(liked ? 1 : -1, liked);
-    } finally {
-      likeProcessing.current.delete(entry.id);
-    }
-  }, [myId]);
+  const applyLikeUpdate = useCallback((logId: string, delta: number, likedByMe: boolean) => {
+    const update = (list: TimelineEntry[]) => list.map(e => e.id === logId ? { ...e, likeCount: Math.max(0, e.likeCount + delta), likedByMe } : e);
+    setFollowLogs(update);
+    setGoalLogs(update);
+  }, []);
+  const toggleLike = useLikeToggle(myId, applyLikeUpdate);
+  const handleToggleLike = useCallback((entry: TimelineEntry) => {
+    toggleLike(entry.id, entry.likedByMe);
+  }, [toggleLike]);
 
   const handleRefresh = useCallback(() => {
     if (myId) fetchFollowLogs(myId);
