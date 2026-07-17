@@ -95,6 +95,33 @@ function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelet
 }) {
   const theme = useTheme();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [particles, setParticles] = useState<{ id: number; tx: number; ty: number; size: number; color: string; delay: number }[]>([]);
+  const [justLiked, setJustLiked] = useState(false);
+  const particleId = useRef(0);
+
+  const handleLikeClick = () => {
+    if (!entry.likedByMe) {
+      // Twitter風: 7方向に等間隔、各方向に色違いの丸を2個ずつ
+      const colors = [
+        '#66d9a6', '#b39ddb', '#ffb74d', '#f06292', '#64b5f6', '#aed581', '#ff8a80',
+        '#9575cd', '#4dd0e1', '#ffd54f', '#81c784', '#f48fb1', '#7986cb', '#ffab91',
+      ];
+      const spokes = 7;
+      setParticles(Array.from({ length: spokes }, (_, i) => {
+        const base = (360 / spokes) * i - 90;
+        const toXY = (deg: number, dist: number) => {
+          const rad = deg * (Math.PI / 180);
+          return { tx: Math.cos(rad) * dist, ty: Math.sin(rad) * dist };
+        };
+        return [
+          { id: particleId.current++, ...toXY(base - 9, 26), size: 3.5, color: colors[(2 * i) % colors.length], delay: 0 },
+          { id: particleId.current++, ...toXY(base + 9, 20), size: 2.5, color: colors[(2 * i + 1) % colors.length], delay: 50 },
+        ];
+      }).flat());
+      setJustLiked(true);
+    }
+    onToggleLike(entry);
+  };
 
   return (
     <Box sx={{
@@ -239,16 +266,47 @@ function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelet
       )}
 
       {/* いいね */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-        <IconButton
-          size="small"
-          onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); onToggleLike(entry); }}
-          sx={{ color: entry.likedByMe ? 'error.main' : 'text.secondary' }}
-        >
-          {entry.likedByMe
-            ? <FavoriteIcon sx={{ fontSize: '20px' }} />
-            : <FavoriteBorderIcon sx={{ fontSize: '20px' }} />}
-        </IconButton>
+      <Box sx={{
+        display: 'flex', alignItems: 'center', gap: 0.3,
+        '@keyframes like-burst': {
+          '0%': { opacity: 1, transform: 'translate(-50%, -50%) scale(0.5)' },
+          '55%': { opacity: 1, transform: 'translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1)' },
+          '100%': { opacity: 0, transform: 'translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.3)' },
+        },
+        '@keyframes like-pop': {
+          '0%': { transform: 'scale(0)' },
+          '45%': { transform: 'scale(1.35)' },
+          '70%': { transform: 'scale(0.9)' },
+          '100%': { transform: 'scale(1)' },
+        },
+      }}>
+        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+          <IconButton
+            size="small"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleLikeClick(); }}
+            sx={{ color: entry.likedByMe ? 'error.main' : 'text.secondary' }}
+          >
+            {entry.likedByMe
+              ? <FavoriteIcon
+                  onAnimationEnd={() => setJustLiked(false)}
+                  sx={{ fontSize: '20px', animation: justLiked ? 'like-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}
+                />
+              : <FavoriteBorderIcon sx={{ fontSize: '20px' }} />}
+          </IconButton>
+          {particles.map(p => (
+            <Box
+              key={p.id}
+              onAnimationEnd={() => setParticles(cur => cur.filter(c => c.id !== p.id))}
+              style={{ '--tx': `${p.tx}px`, '--ty': `${p.ty}px` } as React.CSSProperties}
+              sx={{
+                position: 'absolute', top: '50%', left: '50%',
+                width: p.size, height: p.size, borderRadius: '50%',
+                backgroundColor: p.color, pointerEvents: 'none', opacity: 0,
+                animation: `like-burst 700ms cubic-bezier(0.16, 1, 0.3, 1) ${p.delay}ms forwards`,
+              }}
+            />
+          ))}
+        </Box>
         {entry.likeCount > 0 && (
           <Typography
             onClick={(e: React.MouseEvent) => { e.stopPropagation(); onShowLikers(entry.id); }}
