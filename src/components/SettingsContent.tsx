@@ -6,7 +6,7 @@ import {
   Box, Typography, Switch, Divider, Button,
   TextField, CircularProgress, Snackbar, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  InputAdornment, IconButton, useTheme, alpha
+  InputAdornment, IconButton, useTheme, alpha, MenuItem
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
@@ -14,6 +14,7 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
@@ -205,6 +206,10 @@ export default function SettingsContent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
+  const [contactCategory, setContactCategory] = useState('bug');
+  const [contactMessage, setContactMessage] = useState('');
+  const [isSendingContact, setIsSendingContact] = useState(false);
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState('');
@@ -293,6 +298,35 @@ export default function SettingsContent() {
       showSnackbar('パスワードの変更に失敗しました', 'error');
     } finally {
       setIsChangingPassword(false);
+    }
+  };
+
+  const handleSendContact = async () => {
+    const message = contactMessage.trim();
+    if (!message || isSendingContact) return;
+    setIsSendingContact(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not logged in');
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ category: contactCategory, message }),
+      });
+      if (res.status === 429) {
+        showSnackbar('送信回数の上限に達しました。時間をおいて再試行してください', 'error');
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setContactMessage('');
+      showSnackbar('お問い合わせを送信しました');
+    } catch {
+      showSnackbar('お問い合わせの送信に失敗しました', 'error');
+    } finally {
+      setIsSendingContact(false);
     }
   };
 
@@ -449,6 +483,49 @@ export default function SettingsContent() {
               }}
             >
               ログアウト
+            </Button>
+          </Box>
+        </SectionCard>
+
+        {/* お問い合わせ */}
+        <SectionCard>
+          <SectionTitle icon={<SupportAgentOutlinedIcon fontSize="small" />} label="お問い合わせ" />
+          <Divider />
+          <Typography sx={{ fontSize: '13px', color: 'text.secondary', lineHeight: 1.6 }}>
+            不具合の報告やご要望など、運営へのお問い合わせはこちらから送信できます。
+          </Typography>
+          <TextField
+            select
+            label="カテゴリ"
+            value={contactCategory}
+            onChange={(e) => setContactCategory(e.target.value)}
+            fullWidth size="small"
+            sx={textFieldSx}
+          >
+            <MenuItem value="bug">不具合の報告</MenuItem>
+            <MenuItem value="feature">機能の要望</MenuItem>
+            <MenuItem value="privacy">個人情報について</MenuItem>
+            <MenuItem value="other">その他</MenuItem>
+          </TextField>
+          <TextField
+            label="お問い合わせ内容"
+            value={contactMessage}
+            onChange={(e) => setContactMessage(e.target.value)}
+            fullWidth multiline minRows={4}
+            slotProps={{ htmlInput: { maxLength: 2000 } }}
+            helperText={`${contactMessage.length} / 2000`}
+            sx={textFieldSx}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="contained" disableElevation
+              disabled={!contactMessage.trim() || isSendingContact}
+              onClick={handleSendContact}
+              sx={{ borderRadius: '8px', fontWeight: 'bold', px: 3 }}
+            >
+              {isSendingContact
+                ? <CircularProgress size={20} color="inherit" />
+                : '送信する'}
             </Button>
           </Box>
         </SectionCard>

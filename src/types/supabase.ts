@@ -117,6 +117,41 @@ export type Database = {
           },
         ]
       }
+      inquiries: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          message: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           category_id: string | null
