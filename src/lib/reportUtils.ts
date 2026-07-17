@@ -1,6 +1,8 @@
 // src/lib/reportUtils.ts
 // Report画面で使う型定義・ユーティリティ・データ加工関数
 
+import { formatDuration as formatDurationBase } from './datetimeUtils';
+
 // ==========================================
 // 型定義
 // ==========================================
@@ -36,11 +38,7 @@ export const PERIOD_LABELS: Record<Period, string> = {
 // 時間フォーマット
 // ==========================================
 export function formatDuration(mins: number): string {
-  if (mins <= 0) return '0分';
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h === 0) return `${m}分`;
-  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
+  return formatDurationBase(mins) || '0分';
 }
 
 export function formatDurationHoursOnly(mins: number): string {

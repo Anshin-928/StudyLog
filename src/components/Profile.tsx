@@ -19,9 +19,11 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 
-type FollowStatus = 'none' | 'pending' | 'accepted';
 import { supabase } from '../lib/supabase';
-import { GOAL_CATEGORIES } from '../constants/goalGroups';
+import { follow, unfollow } from '../lib/followsApi';
+import type { FollowStatus } from '../lib/followsApi';
+import { goalCategoryLabel } from '../constants/goalGroups';
+import { formatDuration, formatExactTime } from '../lib/datetimeUtils';
 import defaultAvatar from '../assets/defaultAvatar.webp';
 
 // ==========================================
@@ -47,33 +49,6 @@ interface TimelineEntry {
   memo: string | null;
   imageUrl: string | null;
   studyDatetime: string;
-}
-
-// ==========================================
-// ユーティリティ
-// ==========================================
-function formatDuration(mins: number | null): string {
-  if (!mins || mins <= 0) return '';
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h === 0) return `${m}分`;
-  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
-}
-
-function formatExactTime(isoStr: string): string {
-  const d = new Date(isoStr);
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const days = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayStr = days[d.getDay()];
-  const h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${month}月${day}日 ${dayStr}曜日 ${h}:${m}`;
-}
-
-function goalCategoryLabel(cat: string | null): string {
-  if (!cat) return '';
-  return GOAL_CATEGORIES.find(c => c.id === cat)?.label ?? '';
 }
 
 // ==========================================
@@ -398,21 +373,20 @@ export default function Profile() {
     setIsFollowProcessing(true);
     try {
       if (followStatus !== 'none') {
-        // フォロー中 or 申請中 → 解除・キャンセル
-        await supabase.from('follows').delete().eq('follower_id', myId).eq('following_id', targetUserId);
+        await unfollow(myId, targetUserId);
         if (followStatus === 'accepted') {
           setFollowCounts(prev => ({ ...prev, followers: prev.followers - 1 }));
         }
         setFollowStatus('none');
       } else {
-        // 新規フォロー：相手が非公開なら pending
-        const newStatus: FollowStatus = profile?.is_public ? 'accepted' : 'pending';
-        await supabase.from('follows').insert({ follower_id: myId, following_id: targetUserId, status: newStatus });
+        const newStatus = await follow(myId, targetUserId, Boolean(profile?.is_public));
         setFollowStatus(newStatus);
         if (newStatus === 'accepted') {
           setFollowCounts(prev => ({ ...prev, followers: prev.followers + 1 }));
         }
       }
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsFollowProcessing(false);
     }

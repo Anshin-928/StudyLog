@@ -10,6 +10,12 @@ export const GOAL_CATEGORIES: { id: GoalCategory; label: string }[] = [
   { id: 'other',         label: 'その他' },
 ];
 
+/** カテゴリIDを表示ラベルに変換（未設定・不明は空文字） */
+export function goalCategoryLabel(cat: string | null): string {
+  if (!cat) return '';
+  return GOAL_CATEGORIES.find(c => c.id === cat)?.label ?? '';
+}
+
 // 学校データ（約1MB）はバンドルに含めず、必要になったときに /data/schools.json から取得する
 interface School {
   code: string;
