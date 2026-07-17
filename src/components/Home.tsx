@@ -1,10 +1,11 @@
 // src/components/Home.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Tabs, Tab, Avatar,
   CircularProgress, useMediaQuery, useTheme, alpha, IconButton,
   Menu, MenuItem, ListItemIcon, ListItemText,
+  Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemAvatar,
 } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
@@ -14,6 +15,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GOAL_CATEGORIES } from '../constants/goalGroups';
@@ -40,6 +43,8 @@ interface TimelineEntry {
   memo: string | null;
   imageUrl: string | null;
   studyDatetime: string;
+  likeCount: number;
+  likedByMe: boolean;
 }
 
 interface MyProfile {
@@ -78,13 +83,15 @@ function goalCategoryLabel(cat: string | null): string {
 // ==========================================
 // タイムラインアイテム（Divider区切り形式）
 // ==========================================
-function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelete }: {
+function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelete, onToggleLike, onShowLikers }: {
   entry: TimelineEntry;
   onUserClick: (userId: string) => void;
   onImageClick: (url: string) => void;
   isOwn?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  onToggleLike: (entry: TimelineEntry) => void;
+  onShowLikers: (logId: string) => void;
 }) {
   const theme = useTheme();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -230,7 +237,125 @@ function TimelineItem({ entry, onUserClick, onImageClick, isOwn, onEdit, onDelet
           {entry.memo}
         </Typography>
       )}
+
+      {/* いいね */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+        <IconButton
+          size="small"
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); onToggleLike(entry); }}
+          sx={{ color: entry.likedByMe ? 'error.main' : 'text.secondary' }}
+        >
+          {entry.likedByMe
+            ? <FavoriteIcon sx={{ fontSize: '20px' }} />
+            : <FavoriteBorderIcon sx={{ fontSize: '20px' }} />}
+        </IconButton>
+        {entry.likeCount > 0 && (
+          <Typography
+            onClick={(e: React.MouseEvent) => { e.stopPropagation(); onShowLikers(entry.id); }}
+            sx={{
+              fontSize: '13px', fontWeight: 500,
+              color: entry.likedByMe ? 'error.main' : 'text.secondary',
+              cursor: 'pointer', px: 0.5, py: 0.3,
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            {entry.likeCount}
+          </Typography>
+        )}
+      </Box>
     </Box>
+  );
+}
+
+// ==========================================
+// いいねしたユーザー一覧ダイアログ
+// ==========================================
+function LikersDialog({ logId, onClose, onUserClick }: {
+  logId: string | null;
+  onClose: () => void;
+  onUserClick: (userId: string) => void;
+}) {
+  const theme = useTheme();
+  const [likers, setLikers] = useState<{ userId: string; displayName: string | null; avatarUrl: string | null }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!logId) return;
+    let cancelled = false;
+    const fetchLikers = async () => {
+      setIsLoading(true);
+      try {
+        const { data } = await supabase
+          .from('likes')
+          .select('user_id, created_at, profiles(display_name, avatar_url)')
+          .eq('study_log_id', logId)
+          .order('created_at', { ascending: false });
+        if (!cancelled) {
+          setLikers((data ?? []).map((l: any) => ({
+            userId: l.user_id,
+            displayName: l.profiles?.display_name ?? null,
+            avatarUrl: l.profiles?.avatar_url ?? null,
+          })));
+        }
+      } catch (e) { console.error(e); } finally { if (!cancelled) setIsLoading(false); }
+    };
+    fetchLikers();
+    return () => { cancelled = true; };
+  }, [logId]);
+
+  return (
+    <Dialog
+      open={Boolean(logId)}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          backgroundImage: 'none',
+          boxShadow: theme.palette.mode === 'dark'
+            ? '0 4px 16px rgba(0,0,0,0.5)'
+            : '0 4px 12px rgba(0,0,0,0.1)',
+        }
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', pb: 1 }}>
+        いいねしたユーザー
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon sx={{ fontSize: '20px' }} />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ px: 1.5, pb: 2 }}>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={28} /></Box>
+        ) : likers.length === 0 ? (
+          <Typography sx={{ textAlign: 'center', py: 4, fontSize: '14px', color: 'text.secondary' }}>
+            まだいいねがありません
+          </Typography>
+        ) : (
+          <List disablePadding>
+            {likers.map(liker => (
+              <ListItemButton
+                key={liker.userId}
+                onClick={() => { onClose(); onUserClick(liker.userId); }}
+                sx={{ borderRadius: '10px', px: 1.5 }}
+              >
+                <ListItemAvatar sx={{ minWidth: 48 }}>
+                  <Avatar
+                    src={liker.avatarUrl || defaultAvatar}
+                    sx={{ width: 36, height: 36, backgroundColor: 'primary.main', color: t => t.palette.common.white }}
+                  />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={liker.displayName || 'ユーザー'}
+                  primaryTypographyProps={{ sx: { fontWeight: 'bold', fontSize: '14px' } }}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -265,8 +390,22 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
   const [followingCount, setFollowingCount] = useState(0);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<EditableEntry | null>(null);
+  const [likersLogId, setLikersLogId] = useState<string | null>(null);
+  const likeProcessing = useRef<Set<string>>(new Set());
 
-  const mapLogs = useCallback((logs: any[], profileMap: Record<string, any>): TimelineEntry[] => {
+  const fetchLikes = useCallback(async (logIds: string[], userId: string) => {
+    const countMap: Record<string, number> = {};
+    const mySet = new Set<string>();
+    if (logIds.length === 0) return { countMap, mySet };
+    const { data: likes } = await supabase.from('likes').select('study_log_id, user_id').in('study_log_id', logIds);
+    (likes ?? []).forEach((l: any) => {
+      countMap[l.study_log_id] = (countMap[l.study_log_id] ?? 0) + 1;
+      if (l.user_id === userId) mySet.add(l.study_log_id);
+    });
+    return { countMap, mySet };
+  }, []);
+
+  const mapLogs = useCallback((logs: any[], profileMap: Record<string, any>, likeCountMap: Record<string, number>, myLikedSet: Set<string>): TimelineEntry[] => {
     return logs.map(row => ({
       id: row.id,
       materialId: row.material_id ?? null,
@@ -283,6 +422,8 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
       memo: row.memo ?? null,
       imageUrl: row.image_url ?? null,
       studyDatetime: row.study_datetime,
+      likeCount: likeCountMap[row.id] ?? 0,
+      likedByMe: myLikedSet.has(row.id),
     }));
   }, []);
 
@@ -314,9 +455,10 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
       });
 
       const { data: logs } = await supabase.from('study_logs').select('id, user_id, material_id, study_datetime, duration_minutes, pages, memo, image_url, materials(title, image_url, unit)').in('user_id', targetIds).order('study_datetime', { ascending: false }).limit(40);
-      setFollowLogs(mapLogs(logs ?? [], profileMap));
+      const { countMap, mySet } = await fetchLikes((logs ?? []).map((l: any) => l.id), userId);
+      setFollowLogs(mapLogs(logs ?? [], profileMap, countMap, mySet));
     } catch (e) { console.error(e); } finally { setIsLoadingFollow(false); }
-  }, [mapLogs]);
+  }, [mapLogs, fetchLikes]);
 
   const fetchGoalLogs = useCallback(async (userId: string, goalGroup: string) => {
     setIsLoadingGoal(true);
@@ -327,9 +469,37 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
       eligible.forEach(p => { profileMap[p.id] = { displayName: p.display_name, avatarUrl: p.avatar_url, goalGroup: p.goal_group, goalCategory: p.goal_category }; });
       const eligibleIds = eligible.map(p => p.id);
       const { data: logs } = await supabase.from('study_logs').select('id, user_id, material_id, study_datetime, duration_minutes, pages, memo, image_url, materials(title, image_url, unit)').in('user_id', eligibleIds).order('study_datetime', { ascending: false }).limit(50);
-      setGoalLogs(mapLogs(logs ?? [], profileMap));
+      const { countMap, mySet } = await fetchLikes((logs ?? []).map((l: any) => l.id), userId);
+      setGoalLogs(mapLogs(logs ?? [], profileMap, countMap, mySet));
     } catch (e) { console.error(e); } finally { setIsLoadingGoal(false); }
-  }, [mapLogs]);
+  }, [mapLogs, fetchLikes]);
+
+  const handleToggleLike = useCallback(async (entry: TimelineEntry) => {
+    if (!myId || likeProcessing.current.has(entry.id)) return;
+    likeProcessing.current.add(entry.id);
+    const liked = entry.likedByMe;
+    const apply = (delta: number, likedByMe: boolean) => {
+      const update = (list: TimelineEntry[]) => list.map(e => e.id === entry.id ? { ...e, likeCount: Math.max(0, e.likeCount + delta), likedByMe } : e);
+      setFollowLogs(update);
+      setGoalLogs(update);
+    };
+    apply(liked ? -1 : 1, !liked);
+    try {
+      if (liked) {
+        const { error } = await supabase.from('likes').delete().eq('user_id', myId).eq('study_log_id', entry.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('likes').insert({ user_id: myId, study_log_id: entry.id });
+        // 23505 = 重複（すでにいいね済み）は成功扱い
+        if (error && error.code !== '23505') throw error;
+      }
+    } catch (e) {
+      console.error(e);
+      apply(liked ? 1 : -1, liked);
+    } finally {
+      likeProcessing.current.delete(entry.id);
+    }
+  }, [myId]);
 
   const handleRefresh = useCallback(() => {
     if (myId) fetchFollowLogs(myId);
@@ -421,6 +591,8 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
                     isOwn={entry.userId === myId}
                     onEdit={() => setEditEntry(entry)}
                     onDelete={() => setDeleteConfirmId(entry.id)}
+                    onToggleLike={handleToggleLike}
+                    onShowLikers={setLikersLogId}
                   />
                 ))}
               </Box>
@@ -450,6 +622,8 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
                     isOwn={entry.userId === myId}
                     onEdit={() => setEditEntry(entry)}
                     onDelete={() => setDeleteConfirmId(entry.id)}
+                    onToggleLike={handleToggleLike}
+                    onShowLikers={setLikersLogId}
                   />
                 ))}
               </Box>
@@ -457,6 +631,13 @@ export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void
           )
         )}
       </Box>
+
+      {/* いいねしたユーザー一覧 */}
+      <LikersDialog
+        logId={likersLogId}
+        onClose={() => setLikersLogId(null)}
+        onUserClick={(userId) => navigate(`/users/${userId}`)}
+      />
 
       {/* 削除確認ダイアログ */}
       <ConfirmDialog
