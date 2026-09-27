@@ -58,6 +58,7 @@ e2e/
     record/               学習記録の追加・編集・削除
     follows/              フォロー（非公開アカウントの承認制などRLSの検証を含む）
     storage/              画像アップロードの権限
+    app/                  アプリ全体（起動前の準備など）
   helpers/                テスト作成でよく使うもの
     fixtures.ts           test / expect の拡張（specはここからimportする）
     auth.ts               ログイン操作

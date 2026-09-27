@@ -29,6 +29,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Service Worker が Supabase の API 応答をキャッシュしていないこと（個人データが端末に残り、別のユーザーに返るため）
+      - name: Assert service worker does not cache API responses
+        run: |
+          # 画面遷移用の NavigationRoute（index.html を返す）は正当なので、キャッシュ戦略と supabase の有無で判定する
+          if grep -qE "NetworkFirst|CacheFirst|StaleWhileRevalidate|supabase" dist/sw.js; then
+            echo "dist/sw.js に実行時キャッシュの設定があります。vite.config.ts の runtimeCaching を確認してください。"
+            exit 1
+          fi
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
