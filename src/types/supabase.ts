@@ -361,10 +361,6 @@ export type Database = {
     }
     Functions: {
       delete_user: { Args: never; Returns: undefined }
-      check_user_provider: {
-        Args: { p_email: string }
-        Returns: 'google' | 'email' | 'not_found'
-      }
     }
     Enums: {
       [_ in never]: never

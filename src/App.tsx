@@ -25,6 +25,7 @@ import { calcStreakFromDates } from './lib/streak';
 import defaultAvatar from './assets/defaultAvatar.webp';
 import Sidebar from './components/Sidebar';
 import StreakDialog from './components/StreakDialog';
+import UpdatePrompt from './components/UpdatePrompt';
 
 // 各画面はルート単位でコード分割し、初回ロードのバンドルを軽くする
 const AuthPage = lazy(() => import('./components/AuthPage'));
@@ -484,6 +485,7 @@ export default function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <RouterProvider router={router} />
+        <UpdatePrompt />
       </ThemeProvider>
     </ColorModeContext.Provider>
   );

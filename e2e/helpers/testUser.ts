@@ -9,6 +9,9 @@
 // - 中断などで残ったユーザーは「記録されたプロセスが既に終了している」ものだけを回収する。
 //   実行中のプロセスのユーザーは、どれだけ長時間の実行（UIモード等）でも回収しない
 //   （ローカルSupabase限定のため、プロセスの生死はテストを実行するマシン上で判定できる）
+// - 画面の新規登録で作るユーザーは app_metadata を付けられないため、代わりにメールアドレスへ実行IDとプロセスIDを
+//   埋め込む（signUpEmailForCurrentRun）。アドレスは登録の送信前に決まるので、どの時点で中断しても回収できる。
+//   予約ドメイン example.com かつ厳密な形式に一致するものだけを対象にするため、e2e以外のユーザーには一致しない
 import { randomUUID } from 'node:crypto';
 import type { User } from '@supabase/supabase-js';
 import { requiredEnv } from './env';
@@ -17,6 +20,9 @@ import { createSupabaseAdmin } from './supabaseAdmin';
 const RUN_ID_KEY = 'e2e_run_id';
 const RUN_PID_KEY = 'e2e_run_pid';
 const TEST_PASSWORD = 'e2e-test-password-123';
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+// e2e-signup.<実行ID>.<プロセスID>.<ランダムID>@example.com（e2e/scripts/assert-clean.sh も同じ形式で判定している）
+const SIGNUP_EMAIL_PATTERN = new RegExp(`^e2e-signup\\.(${UUID})\\.(\\d+)\\.${UUID}@example\\.com$`);
 
 export type TestUser = {
   id: string;
@@ -51,6 +57,18 @@ export async function createTestUser(): Promise<TestUser> {
   return { id: data.user.id, email, password: TEST_PASSWORD };
 }
 
+// 画面から新規登録するときに使うメールアドレス。この実行の所有として、削除漏れや中断時も回収される
+export function signUpEmailForCurrentRun(): string {
+  const { runId, runPid } = currentRun();
+  return `e2e-signup.${runId}.${runPid}.${randomUUID()}@example.com`;
+}
+
+// 画面の新規登録で作られたユーザーを削除する（登録に至らず存在しない場合は何もしない）
+export async function deleteSignedUpUser(email: string): Promise<void> {
+  const user = (await listE2eUsers()).find((u) => u.email === email);
+  if (user) await deleteTestUser(user.id);
+}
+
 export async function deleteTestUser(userId: string): Promise<void> {
   const admin = createSupabaseAdmin();
   const { error } = await admin.auth.admin.deleteUser(userId);
@@ -60,7 +78,7 @@ export async function deleteTestUser(userId: string): Promise<void> {
 // この実行が作成し、まだ残っているユーザーを削除する。削除後に1件も残っていないことまで検証し、削除した件数を返す
 export async function deleteUsersOfCurrentRun(): Promise<number> {
   const { runId } = currentRun();
-  const isCurrentRun = (user: User) => user.app_metadata[RUN_ID_KEY] === runId;
+  const isCurrentRun = (user: User) => runOwner(user)?.runId === runId;
 
   const deleted = await deleteE2eUsersWhere(isCurrentRun);
   const remaining = (await listE2eUsers()).filter(isCurrentRun);
@@ -72,7 +90,16 @@ export async function deleteUsersOfCurrentRun(): Promise<number> {
 
 // 既に終了した過去の実行が残したユーザーを削除する。実行中の別の実行のユーザーには触れない。削除した件数を返す
 export async function deleteUsersOfFinishedRuns(): Promise<number> {
-  return deleteE2eUsersWhere((user) => !isProcessAlive(Number(user.app_metadata[RUN_PID_KEY])));
+  return deleteE2eUsersWhere((user) => !isProcessAlive(runOwner(user)?.runPid ?? NaN));
+}
+
+// e2eが作成したユーザーなら、その実行ID・プロセスIDを返す（e2eのユーザーでなければ null）
+function runOwner(user: User): { runId: string; runPid: number } | null {
+  if (typeof user.app_metadata[RUN_ID_KEY] === 'string') {
+    return { runId: user.app_metadata[RUN_ID_KEY], runPid: Number(user.app_metadata[RUN_PID_KEY]) };
+  }
+  const match = user.email?.match(SIGNUP_EMAIL_PATTERN);
+  return match ? { runId: match[1], runPid: Number(match[2]) } : null;
 }
 
 function isProcessAlive(pid: number): boolean {
@@ -87,16 +114,20 @@ function isProcessAlive(pid: number): boolean {
   }
 }
 
-async function listE2eUsers(): Promise<User[]> {
+async function listAllUsers(): Promise<User[]> {
   const admin = createSupabaseAdmin();
   const users: User[] = [];
   for (let page = 1; ; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
     if (error) throw new Error(`ユーザー一覧の取得に失敗しました: ${error.message}`);
-    users.push(...data.users.filter((user) => typeof user.app_metadata[RUN_ID_KEY] === 'string'));
+    users.push(...data.users);
     if (data.users.length < 1000) break;
   }
   return users;
+}
+
+async function listE2eUsers(): Promise<User[]> {
+  return (await listAllUsers()).filter((user) => runOwner(user) !== null);
 }
 
 async function deleteE2eUsersWhere(predicate: (user: User) => boolean): Promise<number> {
