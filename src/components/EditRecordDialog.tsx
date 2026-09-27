@@ -133,7 +133,7 @@ export default function EditRecordDialog({ open, onClose, entry, onSaved }: {
       let imageUrl = existingImageUrl;
       if (image) {
         if (validateImageFile(image)) return;
-        imageUrl = await uploadStudyLogImage(image);
+        imageUrl = await uploadStudyLogImage(user.id, image);
       }
 
       const materialId = selectedMaterial === null ? entry.materialId

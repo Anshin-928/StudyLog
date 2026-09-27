@@ -74,38 +74,24 @@ export default function AuthPage() {
     clearMessages();
   };
 
-  // ---- Step 1: メール入力 + プロバイダー判定 ----
-  const handleEmailSubmit = async () => {
+  // ---- Step 1: メール入力 ----
+  // メールアドレスが登録済みかどうかは判定しない（第三者に登録の有無を調べられないようにするため）。
+  // ログインから始め、初めての方は画面内のリンクで新規登録に切り替える
+  const handleEmailSubmit = () => {
     if (!email || !email.includes('@')) {
       setErrorMessage('有効なメールアドレスを入力してください。');
       return;
     }
-    setIsLoading(true);
     clearMessages();
-    try {
-      const { data: provider, error } = await supabase.rpc('check_user_provider', { p_email: email });
-      if (error) throw error;
+    setMode('login');
+    setStep('password');
+  };
 
-      if (provider === 'google') {
-        setErrorMessage('このメールアドレスはGoogleで登録されています。上の「Googleで続ける」ボタンをご利用ください。');
-        setIsLoading(false);
-      } else {
-        // ステップ遷移時に一瞬待機して連打による誤操作を防ぐ
-        setTimeout(() => {
-          if (provider === 'email') {
-            setMode('login');
-          } else {
-            // 'not_found' — 新規ユーザー
-            setMode('signup');
-          }
-          setStep('password');
-          setIsLoading(false);
-        }, 400);
-      }
-    } catch {
-      setErrorMessage('確認中にエラーが発生しました。時間をおいて再度お試しください。');
-      setIsLoading(false);
-    }
+  const switchMode = (next: 'login' | 'signup') => {
+    setMode(next);
+    setPassword('');
+    setConfirmPassword('');
+    clearMessages();
   };
 
   // ---- Step 2-A: ログイン ----
@@ -123,7 +109,7 @@ export default function AuthPage() {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('Invalid login credentials')) {
-        setErrorMessage('メールアドレスまたはパスワードが正しくありません。');
+        setErrorMessage('メールアドレスまたはパスワードが正しくありません。Googleで登録した場合は、戻って「Google で続ける」からログインしてください。');
       } else {
         setErrorMessage('ログインに失敗しました。時間をおいて再度お試しください。');
       }
@@ -166,22 +152,18 @@ export default function AuthPage() {
     setIsLoading(true);
     clearMessages();
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      // identities が空なら既存アカウント（Supabaseの仕様）
-      if (data.user?.identities?.length === 0) {
-        setErrorMessage('このメールアドレスはすでに登録されています。ログインしてください。');
-        return;
-      }
+      // 登録済みのメールアドレスに対する応答はSupabaseの設定で変わる
+      // （メール確認が有効なら成功扱いでコードは送られず、無効なら User already registered エラー）。
+      // 登録の有無を明かさないよう、どちらの場合も未登録時と同じ確認コード入力画面に進める
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error && !error.message.includes('User already registered')) throw error;
       setOtp(Array(OTP_LENGTH).fill(''));
       setStep('otp');
       setSuccessMessage(`${email} に確認コードを送信しました。`);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
-      if (msg.includes('User already registered')) {
-        setErrorMessage('このメールアドレスはすでに登録されています。ログインしてください。');
-      } else if (msg.includes('Password should be at least')) {
+      if (msg.includes('Password should be at least')) {
         setErrorMessage('パスワードは12文字以上で入力してください。');
       } else {
         setErrorMessage('登録に失敗しました。時間をおいて再度お試しください。');
@@ -460,6 +442,21 @@ export default function AuthPage() {
     </>
   );
 
+  // ---- ログイン / 新規登録の切り替えリンク ----
+  const modeSwitch = (lead: string, label: string, next: 'login' | 'signup') => (
+    <Typography sx={{ fontSize: '13px', color: 'text.secondary', textAlign: 'center', mt: 2.5 }}>
+      {lead}
+      <Button
+        size="small" variant="text"
+        onClick={() => switchMode(next)}
+        disabled={isLoading}
+        sx={{ fontSize: '13px', fontWeight: 'bold', p: 0, ml: 0.5, minWidth: 'unset', verticalAlign: 'baseline', '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' } }}
+      >
+        {label}
+      </Button>
+    </Typography>
+  );
+
   // ---- Step 2: パスワード入力 ----
   const passwordStepContent = (
     <>
@@ -495,6 +492,7 @@ export default function AuthPage() {
           >
             {isLoading ? <CircularProgress size={24} color="inherit" /> : 'ログイン'}
           </Button>
+          {modeSwitch('初めての方は', '新規登録', 'signup')}
         </>
       ) : (
         // ---- 分岐B: 新規登録 ----
@@ -527,6 +525,7 @@ export default function AuthPage() {
           >
             {isLoading ? <CircularProgress size={24} color="inherit" /> : 'アカウントを作成'}
           </Button>
+          {modeSwitch('アカウントをお持ちの方は', 'ログイン画面へ', 'login')}
         </>
       )}
     </>
@@ -600,6 +599,18 @@ export default function AuthPage() {
           }
         </Button>
       </Box>
+
+      <Typography sx={{ fontSize: '12px', color: 'text.disabled', textAlign: 'center', mt: 1.5, lineHeight: 1.8 }}>
+        コードが届かない場合、このメールアドレスはすでに登録済みの可能性があります。
+        <Button
+          size="small" variant="text"
+          onClick={() => { switchMode('login'); setStep('password'); }}
+          disabled={isLoading}
+          sx={{ fontSize: '12px', p: 0, minWidth: 'unset', verticalAlign: 'baseline', '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' } }}
+        >
+          ログインする
+        </Button>
+      </Typography>
     </>
   );
 
@@ -607,13 +618,13 @@ export default function AuthPage() {
   const pcTitle = step === 'otp'
     ? 'メールを確認してください'
     : step === 'password'
-      ? (mode === 'login' ? 'おかえりなさい' : 'アカウントを作成')
+      ? (mode === 'login' ? 'ログイン' : 'アカウントを作成')
       : 'ログイン / 新規登録';
 
   const subtitle = step === 'otp'
     ? 'メールに届いた6桁のコードを入力してください'
     : step === 'password'
-      ? (mode === 'login' ? 'パスワードを入力してください' : 'パスワードを設定してください')
+      ? (mode === 'login' ? 'パスワードを入力してください' : '新しいアカウントのパスワードを設定してください')
       : 'メールアドレスまたはGoogleで続行してください';
 
   const formPanel = (

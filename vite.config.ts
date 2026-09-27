@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // 新しいService Workerは待機させずにすぐ有効にする（再読み込みすれば必ず新版になる）。
+      // 'prompt' にすると、旧版のタブをすべて閉じるまで新版が有効にならず、再読み込みしても旧版が表示され続ける
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon_dark.svg'],
       manifest: {

@@ -56,11 +56,14 @@ e2e/
   tests/                  specファイル。機能ごとにフォルダを分ける
     auth/                 ログイン・サインアップ・パスワードリセット
     record/               学習記録の追加・編集・削除
+    follows/              フォロー（非公開アカウントの承認制などRLSの検証を含む）
+    storage/              画像アップロードの権限
   helpers/                テスト作成でよく使うもの
     fixtures.ts           test / expect の拡張（specはここからimportする）
     auth.ts               ログイン操作
     testUser.ts           テストユーザーの作成・削除
     supabaseAdmin.ts      service roleのSupabaseクライアント（テストデータの直接操作用）
+    userClient.ts         指定ユーザーとしてログインしたanon keyのクライアント（RLSの検証用）
     env.ts                環境変数・ローカル接続の確認
   scripts/
     assert-clean.sh       実行後にテストデータが残っていないことの検証

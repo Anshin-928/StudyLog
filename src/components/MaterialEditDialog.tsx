@@ -170,7 +170,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
           return;
         }
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${safeImageExt(uploadedImage)}`;
-        const filePath = `public/${fileName}`;
+        const filePath = `${user.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('material-images')

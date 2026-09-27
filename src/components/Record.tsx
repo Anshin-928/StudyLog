@@ -572,7 +572,7 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
           showSnackbar(validationError, 'error');
           return;
         }
-        imageUrl = await uploadStudyLogImage(image);
+        imageUrl = await uploadStudyLogImage(user.id, image);
       }
 
       const materialId = selectedMaterial !== 'none'
