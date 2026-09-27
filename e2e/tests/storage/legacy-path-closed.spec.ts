@@ -1,6 +1,5 @@
-// 移行期間中（20260926120000_harden_rls.sql 適用後、20260926120100_after_frontend_deploy.sql 適用前）の検証
-// 旧フロントエンドは public/ にアップロードするため、ログイン済みなら引き続き書き込めること（切り替え中の失敗を防ぐ）
-// 後半のマイグレーションを追加するPRで、このファイルは legacy-path-closed.spec.ts に置き換える
+// 移行完了後（20260926120100_after_frontend_deploy.sql 適用後）の検証
+// 旧パス public/ は閉じられ、`<ユーザーID>/` 以外には書き込めないこと
 import { test, expect } from '../../helpers/fixtures';
 import { createSupabaseAdmin } from '../../helpers/supabaseAdmin';
 import { createUserClient } from '../../helpers/userClient';
@@ -20,13 +19,13 @@ for (const bucket of BUCKETS) {
       if (error) throw new Error(`テスト画像の削除に失敗しました: ${error.message}`);
     });
 
-    test('ログイン済みなら旧パスにアップロードできる', async ({ testUser }) => {
+    test('ログイン済みでも旧パスにはアップロードできない', async ({ testUser }) => {
       const client = await createUserClient(testUser);
       const path = `public/${testUser.id}-${Date.now()}.png`;
       const { error } = await client.storage.from(bucket).upload(path, PNG, upload);
       if (!error) uploaded.push(path);
 
-      expect(error).toBeNull();
+      expect(error).not.toBeNull();
     });
   });
 }
