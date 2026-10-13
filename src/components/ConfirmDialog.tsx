@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Typography, Box, useTheme
+  Button, Typography, Box
 } from '@mui/material';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
@@ -26,7 +26,6 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const theme = useTheme();
 
   const touchHandledRef = useRef(false);
 

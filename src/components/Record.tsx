@@ -53,7 +53,6 @@ function ManualInputTab({
   onTotalMinutesChange: (n: number) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const theme = useTheme();
   const [recordDatetime, setRecordDatetime] = useState(nowDatetimeLocal);
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
@@ -285,7 +284,6 @@ function StopwatchTab({
   pauseFnRef: React.MutableRefObject<(() => void) | null>;
   onStateChange: (elapsed: number, isRunning: boolean) => void;
 }) {
-  const theme = useTheme();
 
   const savedIsRunning = localStorage.getItem('studylog_sw_isRunning') === 'true';
   const savedStartTime = parseInt(localStorage.getItem('studylog_sw_startTime') || '0');
@@ -507,7 +505,7 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
     }
   };
 
-  const handleTotalMinutesChange = useCallback((n: number) => {
+  const handleTotalMinutesChange = useCallback(() => {
     // manualTotalMinutes is removed as it's not used in parent
   }, []);
 

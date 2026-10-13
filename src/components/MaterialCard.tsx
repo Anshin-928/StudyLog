@@ -17,7 +17,7 @@ interface MaterialCardProps {
   dragHandleProps?: Record<string, unknown>;
 }
 
-export default function MaterialCard({ material, onDelete, onEdit, borderColor = 'divider', borderWidth = 1, isReorderMode, dragHandleProps }: MaterialCardProps) {
+export default function MaterialCard({ material, onDelete, onEdit, borderWidth = 1, isReorderMode, dragHandleProps }: MaterialCardProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

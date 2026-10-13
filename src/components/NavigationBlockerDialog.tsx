@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Typography, Box, useMediaQuery, useTheme
+  Button, Typography
 } from '@mui/material';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
@@ -21,8 +21,6 @@ export default function NavigationBlockerDialog({
   message = '変更内容が保存されていません。\nこのページを離れると、変更が破棄されます。',
 }: NavigationBlockerDialogProps) {
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const touchHandledRef = useRef(false);
 

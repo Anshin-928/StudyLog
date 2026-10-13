@@ -13,7 +13,6 @@ import { TEMPLATES, isTemplateUrl } from '../constants/materialTemplates';
 import {
   CategoryOption,
   buildCategoryOptions,
-  resolveCategory,
 } from '../lib/categoryUtils';
 import { MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
 import UnitSelector from './UnitSelector';

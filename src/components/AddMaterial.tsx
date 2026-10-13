@@ -16,7 +16,7 @@ import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import { supabase } from '../lib/supabase';
 import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 import NavigationBlockerDialog from './NavigationBlockerDialog';
-import { MATERIAL_UNITS, MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
+import { MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
 import UnitSelector from './UnitSelector';
 
 const TEMPLATES = [

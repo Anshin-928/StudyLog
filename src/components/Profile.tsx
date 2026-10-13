@@ -22,7 +22,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import { supabase } from '../lib/supabase';
 import { follow, unfollow } from '../lib/followsApi';
 import type { FollowStatus } from '../lib/followsApi';
-import { goalCategoryLabel } from '../constants/goalGroups';
 import { formatDuration, formatExactTime } from '../lib/datetimeUtils';
 import defaultAvatar from '../assets/defaultAvatar.webp';
 
@@ -434,7 +433,6 @@ export default function Profile() {
 
   const isOwn = myId !== null && targetUserId === myId;
   const isPrivateAndRestricted = profile !== null && !profile.is_public && !isOwn && followStatus !== 'accepted';
-  const avatarLetter = (profile?.display_name || '?')[0]?.toUpperCase();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxWidth: '1100px', margin: '0 auto', width: '100%', flexGrow: 1 }}>

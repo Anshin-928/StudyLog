@@ -60,7 +60,6 @@ interface DeleteAccountDialogProps {
 }
 
 export function DeleteAccountDialog({ open, onClose, onDeleted }: DeleteAccountDialogProps) {
-  const theme = useTheme();
   const [confirmText, setConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');

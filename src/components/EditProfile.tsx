@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Avatar, TextField, Button,
-  CircularProgress, Snackbar, Alert, Divider,
+  CircularProgress, Snackbar, Alert,
   useMediaQuery, useTheme, alpha, Chip,
   Autocomplete, IconButton,
 } from '@mui/material';
@@ -212,7 +212,6 @@ const [{ data }, { data: goalsData }] = await Promise.all([
   );
 
   const avatarSrc = previewAvatarUrl || profile?.avatar_url || undefined;
-  const isDark = theme.palette.mode === 'dark';
 
   const [newGoalSuggestions, setNewGoalSuggestions] = useState<string[]>([]);
   useEffect(() => {
