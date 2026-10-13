@@ -34,7 +34,10 @@ test.describe('メールアドレスの登録有無を明かさない', () => {
     await expect(page.getByRole('button', { name: 'ログイン', exact: true })).toBeVisible();
   });
 
-  test('登録済みと未登録のメールアドレスで、新規登録の結果が同じ表示になる', async ({ page, testUser }) => {
+  test('登録済みと未登録のメールアドレスで、新規登録の結果が同じ表示になる', async ({
+    page,
+    testUser,
+  }) => {
     const registered = await trySignUp(page, testUser.email);
 
     const newEmail = signUpEmailForCurrentRun();

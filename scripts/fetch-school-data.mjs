@@ -7,21 +7,21 @@
  * トークン取得: https://api.edu-data.jp/token
  */
 
-const API_BASE = "https://api.edu-data.jp/api/v1/school";
+const API_BASE = 'https://api.edu-data.jp/api/v1/school';
 
 const SCHOOL_TYPES = [
-  { code: "D1", label: "高等学校" },
-  { code: "F1", label: "大学" },
+  { code: 'D1', label: '高等学校' },
+  { code: 'F1', label: '大学' },
 ];
 
 const token = process.env.EDU_DATA_TOKEN;
 if (!token) {
-  console.error("EDU_DATA_TOKEN 環境変数を設定してください");
+  console.error('EDU_DATA_TOKEN 環境変数を設定してください');
   process.exit(1);
 }
 
 async function main() {
-  console.log("学校データの取得を開始...");
+  console.log('学校データの取得を開始...');
 
   const results = {};
 
@@ -38,7 +38,7 @@ async function main() {
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: "application/json",
+          Accept: 'application/json',
         },
       });
       if (!res.ok) {
@@ -63,29 +63,27 @@ async function main() {
   }
 
   const output = {
-    updatedAt: new Date().toISOString().split("T")[0],
-    highSchools: results["D1"],
-    universities: results["F1"],
+    updatedAt: new Date().toISOString().split('T')[0],
+    highSchools: results['D1'],
+    universities: results['F1'],
   };
 
-  const fs = await import("node:fs");
-  const path = await import("node:path");
+  const fs = await import('node:fs');
+  const path = await import('node:path');
   const outPath = path.join(
     path.dirname(new URL(import.meta.url).pathname),
-    "..",
-    "public",
-    "data",
-    "schools.json"
+    '..',
+    'public',
+    'data',
+    'schools.json',
   );
 
-  fs.writeFileSync(outPath, JSON.stringify(output, null, 2) + "\n", "utf-8");
+  fs.writeFileSync(outPath, JSON.stringify(output, null, 2) + '\n', 'utf-8');
   console.log(`保存完了: ${outPath}`);
-  console.log(
-    `高校: ${output.highSchools.length} 件 / 大学: ${output.universities.length} 件`
-  );
+  console.log(`高校: ${output.highSchools.length} 件 / 大学: ${output.universities.length} 件`);
 }
 
 main().catch((err) => {
-  console.error("エラー:", err.message);
+  console.error('エラー:', err.message);
   process.exit(1);
 });

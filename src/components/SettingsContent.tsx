@@ -3,10 +3,24 @@
 
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
-  Box, Typography, Switch, Divider, Button,
-  TextField, CircularProgress, Snackbar, Alert,
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  InputAdornment, IconButton, useTheme, alpha, MenuItem
+  Box,
+  Typography,
+  Switch,
+  Divider,
+  Button,
+  TextField,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  InputAdornment,
+  IconButton,
+  useTheme,
+  alpha,
+  MenuItem,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
@@ -26,16 +40,18 @@ import { ColorModeContext } from '../App';
 // ==========================================
 export function SectionCard({ children }: { children: React.ReactNode }) {
   return (
-    <Box sx={{
-      backgroundColor: 'background.default',
-      border: '1px solid',
-      borderColor: 'divider',
-      borderRadius: '16px',
-      p: { xs: 2.5, sm: 3 },
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 2,
-    }}>
+    <Box
+      sx={{
+        backgroundColor: 'background.default',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: '16px',
+        p: { xs: 2.5, sm: 3 },
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+      }}
+    >
       {children}
     </Box>
   );
@@ -72,13 +88,18 @@ export function DeleteAccountDialog({ open, onClose, onDeleted }: DeleteAccountD
   const handleTouchEnd = (e: React.TouchEvent, action: () => void) => {
     if (isDeleting) return;
     touchHandledRef.current = true;
-    setTimeout(() => { touchHandledRef.current = false; }, 500);
+    setTimeout(() => {
+      touchHandledRef.current = false;
+    }, 500);
     const touch = e.changedTouches[0];
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     if (
-      touch.clientX >= rect.left && touch.clientX <= rect.right &&
-      touch.clientY >= rect.top  && touch.clientY <= rect.bottom
-    ) action();
+      touch.clientX >= rect.left &&
+      touch.clientX <= rect.right &&
+      touch.clientY >= rect.top &&
+      touch.clientY <= rect.bottom
+    )
+      action();
   };
 
   const handleClick = (e: React.MouseEvent, action: () => void) => {
@@ -118,7 +139,10 @@ export function DeleteAccountDialog({ open, onClose, onDeleted }: DeleteAccountD
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
         <WarningAmberRoundedIcon sx={{ color: 'error.main', fontSize: '28px' }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+        <Typography
+          variant="h6"
+          sx={{ fontWeight: 'bold', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
+        >
           アカウントを削除しますか？
         </Typography>
       </DialogTitle>
@@ -128,7 +152,15 @@ export function DeleteAccountDialog({ open, onClose, onDeleted }: DeleteAccountD
           アカウントを削除すると、すべての学習記録・教材・プロフィールが
           <strong>完全に削除</strong>され、元に戻すことはできません。
         </Typography>
-        <Box sx={{ backgroundColor: 'error.lighter', border: '1px solid', borderColor: 'divider', borderRadius: '10px', p: 2 }}>
+        <Box
+          sx={{
+            backgroundColor: 'error.lighter',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '10px',
+            p: 2,
+          }}
+        >
           <Typography variant="body2" sx={{ color: 'error.main', mb: 1.2, fontWeight: 500 }}>
             確認のため「<strong>{CONFIRM_WORD}</strong>」と入力してください
           </Typography>
@@ -160,18 +192,32 @@ export function DeleteAccountDialog({ open, onClose, onDeleted }: DeleteAccountD
           onClick={(e) => handleClick(e, handleClose)}
           disabled={isDeleting}
           variant="outlined"
-          sx={{ color: 'text.secondary', fontWeight: 'bold', flex: 1, borderRadius: '8px', py: 1, borderColor: 'divider' }}
+          sx={{
+            color: 'text.secondary',
+            fontWeight: 'bold',
+            flex: 1,
+            borderRadius: '8px',
+            py: 1,
+            borderColor: 'divider',
+          }}
         >
           キャンセル
         </Button>
         <Button
-          onTouchEnd={(e) => { if (isMatch) handleTouchEnd(e, handleDelete); }}
-          onClick={(e) => { if (isMatch) handleClick(e, handleDelete); }}
+          onTouchEnd={(e) => {
+            if (isMatch) handleTouchEnd(e, handleDelete);
+          }}
+          onClick={(e) => {
+            if (isMatch) handleClick(e, handleDelete);
+          }}
           disabled={!isMatch || isDeleting}
           variant="contained"
           disableElevation
           sx={{
-            flex: 1, fontWeight: 'bold', borderRadius: '8px', py: 1,
+            flex: 1,
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            py: 1,
             backgroundColor: 'error.main',
             color: 'error.contrastText',
             '&:hover': { backgroundColor: 'error.dark' },
@@ -213,8 +259,14 @@ export default function SettingsContent() {
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState('');
 
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false, message: '', severity: 'success',
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
   });
   const showSnackbar = (message: string, severity: 'success' | 'error' = 'success') =>
     setSnackbar({ open: true, message, severity });
@@ -222,12 +274,17 @@ export default function SettingsContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
         setEmail(user.email || '');
         setUserId(user.id);
         const { data } = await supabase
-          .from('profiles').select('is_public').eq('id', user.id).single();
+          .from('profiles')
+          .select('is_public')
+          .eq('id', user.id)
+          .single();
         if (data) setIsPublic(data.is_public ?? false);
       } catch (e) {
         console.error(e);
@@ -247,10 +304,14 @@ export default function SettingsContent() {
     setIsPublic(newValue);
     setIsPublicSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not logged in');
       const { error } = await supabase
-        .from('profiles').update({ is_public: newValue }).eq('id', user.id);
+        .from('profiles')
+        .update({ is_public: newValue })
+        .eq('id', user.id);
       if (error) throw error;
       showSnackbar(newValue ? 'アカウントを公開しました' : 'アカウントを非公開にしました');
     } catch {
@@ -277,7 +338,9 @@ export default function SettingsContent() {
     if (!canChangePassword) return;
     setIsChangingPassword(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user?.email) throw new Error('No email');
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
@@ -305,13 +368,15 @@ export default function SettingsContent() {
     if (!message || isSendingContact) return;
     setIsSendingContact(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('Not logged in');
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ category: contactCategory, message }),
       });
@@ -358,12 +423,13 @@ export default function SettingsContent() {
   return (
     <>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-
         {/* ダークモード */}
         <SectionCard>
           <SectionTitle icon={<DarkModeOutlinedIcon fontSize="small" />} label="テーマ" />
           <Divider />
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+          >
             <Box>
               <Typography sx={{ fontSize: '14px', fontWeight: 600, mb: 0.4 }}>
                 ダークモード
@@ -383,29 +449,42 @@ export default function SettingsContent() {
 
         {/* アカウント公開設定 */}
         <SectionCard>
-          <SectionTitle icon={<PublicOutlinedIcon fontSize="small" />} label="アカウントの公開設定" />
+          <SectionTitle
+            icon={<PublicOutlinedIcon fontSize="small" />}
+            label="アカウントの公開設定"
+          />
           <Divider />
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+          >
             <Box>
               <Typography sx={{ fontSize: '14px', fontWeight: 600, mb: 0.4 }}>
                 アカウントを公開する
               </Typography>
-              <Typography sx={{ fontSize: '13px', color: 'text.secondary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  color: 'text.secondary',
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
                 {isPublic
                   ? 'すべてのユーザーがあなたの学習記録を見ることができます。'
                   : 'あなたのアカウントは現在、非公開です。\n承認したフォロワーのみが学習記録を見ることができます。'}
               </Typography>
             </Box>
-            {isPublicLoading
-              ? <CircularProgress size={20} sx={{ flexShrink: 0, mr: 1 }} />
-              : <Switch
-                  checked={isPublic}
-                  onChange={handlePublicToggle}
-                  disabled={isPublicSaving}
-                  color="primary"
-                  sx={{ flexShrink: 0 }}
-                />
-            }
+            {isPublicLoading ? (
+              <CircularProgress size={20} sx={{ flexShrink: 0, mr: 1 }} />
+            ) : (
+              <Switch
+                checked={isPublic}
+                onChange={handlePublicToggle}
+                disabled={isPublicSaving}
+                color="primary"
+                sx={{ flexShrink: 0 }}
+              />
+            )}
           </Box>
         </SectionCard>
 
@@ -418,8 +497,12 @@ export default function SettingsContent() {
             type={showCurrent ? 'text' : 'password'}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            fullWidth size="small"
-            slotProps={{ htmlInput: { autoComplete: 'new-password' }, input: { endAdornment: eyeBtn(showCurrent, () => setShowCurrent(v => !v)) } }}
+            fullWidth
+            size="small"
+            slotProps={{
+              htmlInput: { autoComplete: 'new-password' },
+              input: { endAdornment: eyeBtn(showCurrent, () => setShowCurrent((v) => !v)) },
+            }}
             sx={textFieldSx}
           />
           <TextField
@@ -427,8 +510,13 @@ export default function SettingsContent() {
             type={showNew ? 'text' : 'password'}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            fullWidth size="small" helperText="12文字以上"
-            slotProps={{ htmlInput: { autoComplete: 'new-password' }, input: { endAdornment: eyeBtn(showNew, () => setShowNew(v => !v)) } }}
+            fullWidth
+            size="small"
+            helperText="12文字以上"
+            slotProps={{
+              htmlInput: { autoComplete: 'new-password' },
+              input: { endAdornment: eyeBtn(showNew, () => setShowNew((v) => !v)) },
+            }}
             sx={textFieldSx}
           />
           <TextField
@@ -436,38 +524,58 @@ export default function SettingsContent() {
             type={showConfirm ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            fullWidth size="small"
+            fullWidth
+            size="small"
             error={!!passwordError && confirmPassword.length > 0}
             helperText={confirmPassword.length > 0 ? passwordError : ''}
-            slotProps={{ htmlInput: { autoComplete: 'new-password' }, input: { endAdornment: eyeBtn(showConfirm, () => setShowConfirm(v => !v)) } }}
+            slotProps={{
+              htmlInput: { autoComplete: 'new-password' },
+              input: { endAdornment: eyeBtn(showConfirm, () => setShowConfirm((v) => !v)) },
+            }}
             sx={textFieldSx}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button
-              variant="contained" disableElevation
+              variant="contained"
+              disableElevation
               disabled={!canChangePassword || isChangingPassword}
               onClick={handleChangePassword}
               sx={{ borderRadius: '8px', fontWeight: 'bold', px: 3 }}
             >
-              {isChangingPassword
-                ? <CircularProgress size={20} color="inherit" />
-                : 'パスワードを変更する'}
+              {isChangingPassword ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                'パスワードを変更する'
+              )}
             </Button>
           </Box>
         </SectionCard>
 
         {/* アカウント情報 */}
         <SectionCard>
-          <SectionTitle icon={<AccountCircleOutlinedIcon fontSize="small" />} label="アカウント情報" />
+          <SectionTitle
+            icon={<AccountCircleOutlinedIcon fontSize="small" />}
+            label="アカウント情報"
+          />
           <Divider />
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
-            <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>メールアドレス</Typography>
-            <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 'bold' }}>{email}</Typography>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}
+          >
+            <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>
+              メールアドレス
+            </Typography>
+            <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 'bold' }}>
+              {email}
+            </Typography>
           </Box>
           <Divider />
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}
+          >
             <Typography sx={{ color: 'text.secondary', fontSize: '14px' }}>ユーザーID</Typography>
-            <Typography sx={{ color: 'text.disabled', fontSize: '12px', fontFamily: 'monospace' }}>{userId}</Typography>
+            <Typography sx={{ color: 'text.disabled', fontSize: '12px', fontFamily: 'monospace' }}>
+              {userId}
+            </Typography>
           </Box>
           <Divider />
           <Box>
@@ -476,8 +584,11 @@ export default function SettingsContent() {
               startIcon={<LogoutRoundedIcon />}
               onClick={handleLogout}
               sx={{
-                color: dangerColor, borderColor: dangerBorder, borderRadius: '12px',
-                fontWeight: 'bold', px: 3,
+                color: dangerColor,
+                borderColor: dangerBorder,
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                px: 3,
                 '&:hover': { backgroundColor: dangerHoverBg, borderColor: dangerColor },
               }}
             >
@@ -498,7 +609,8 @@ export default function SettingsContent() {
             label="カテゴリ"
             value={contactCategory}
             onChange={(e) => setContactCategory(e.target.value)}
-            fullWidth size="small"
+            fullWidth
+            size="small"
             sx={textFieldSx}
           >
             <MenuItem value="bug">不具合の報告</MenuItem>
@@ -510,48 +622,61 @@ export default function SettingsContent() {
             label="お問い合わせ内容"
             value={contactMessage}
             onChange={(e) => setContactMessage(e.target.value)}
-            fullWidth multiline minRows={4}
+            fullWidth
+            multiline
+            minRows={4}
             slotProps={{ htmlInput: { maxLength: 2000 } }}
             helperText={`${contactMessage.length} / 2000`}
             sx={textFieldSx}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button
-              variant="contained" disableElevation
+              variant="contained"
+              disableElevation
               disabled={!contactMessage.trim() || isSendingContact}
               onClick={handleSendContact}
               sx={{ borderRadius: '8px', fontWeight: 'bold', px: 3 }}
             >
-              {isSendingContact
-                ? <CircularProgress size={20} color="inherit" />
-                : '送信する'}
+              {isSendingContact ? <CircularProgress size={20} color="inherit" /> : '送信する'}
             </Button>
           </Box>
         </SectionCard>
 
         {/* 危険ゾーン */}
-        <Box sx={{
-          backgroundColor: dangerBg,
-          border: '1px solid',
-          borderColor: dangerBorder,
-          borderRadius: '16px',
-          p: { xs: 2.5, sm: 3 },
-          display: 'flex', flexDirection: 'column', gap: 2,
-        }}>
+        <Box
+          sx={{
+            backgroundColor: dangerBg,
+            border: '1px solid',
+            borderColor: dangerBorder,
+            borderRadius: '16px',
+            p: { xs: 2.5, sm: 3 },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+          }}
+        >
           <SectionTitle
-            icon={<DeleteForeverOutlinedIcon fontSize="small" sx={{ color: `${dangerColor} !important` }} />}
+            icon={
+              <DeleteForeverOutlinedIcon
+                fontSize="small"
+                sx={{ color: `${dangerColor} !important` }}
+              />
+            }
             label="アカウントの削除"
           />
           <Divider sx={{ borderColor: dangerBorder }} />
-          <Box sx={{
-            display: 'flex',
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            justifyContent: 'space-between',
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2,
-          }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              justifyContent: 'space-between',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+            }}
+          >
             <Typography sx={{ fontSize: '13px', color: 'text.secondary', lineHeight: 1.7 }}>
-              アカウントを削除すると、すべてのデータが完全に失われます。<br />
+              アカウントを削除すると、すべてのデータが完全に失われます。
+              <br />
               この操作は取り消すことができません。
             </Typography>
             <Button
@@ -560,8 +685,11 @@ export default function SettingsContent() {
               onClick={() => setIsDeleteDialogOpen(true)}
               sx={{
                 flexShrink: 0,
-                color: dangerColor, borderColor: dangerColor,
-                borderRadius: '10px', fontWeight: 'bold', whiteSpace: 'nowrap',
+                color: dangerColor,
+                borderColor: dangerColor,
+                borderRadius: '10px',
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
                 '&:hover': { backgroundColor: dangerHoverBg, borderColor: dangerColor },
               }}
             >
@@ -569,7 +697,6 @@ export default function SettingsContent() {
             </Button>
           </Box>
         </Box>
-
       </Box>
 
       <DeleteAccountDialog
@@ -581,7 +708,7 @@ export default function SettingsContent() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert severity={snackbar.severity} sx={{ width: '100%' }}>

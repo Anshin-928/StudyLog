@@ -33,12 +33,13 @@ export default async function handler(req, res) {
   }
 
   // ユーザーのトークンで動くクライアント（RLS がそのまま効く）
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY,
-    { global: { headers: { Authorization: `Bearer ${token}` } } },
-  );
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
 
   if (authError || !user) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -90,7 +91,7 @@ export default async function handler(req, res) {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -109,7 +110,11 @@ export default async function handler(req, res) {
         }),
       });
       if (!response.ok) {
-        console.error('[contact] notification email failed:', response.status, await response.text());
+        console.error(
+          '[contact] notification email failed:',
+          response.status,
+          await response.text(),
+        );
       }
     } catch (err) {
       console.error('[contact] notification email failed:', err);

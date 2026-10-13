@@ -45,13 +45,17 @@ export function useMaterials(): UseMaterialsReturn {
   const refetch = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const [{ data, error }, { data: catData, error: catError }] = await Promise.all([
         supabase
           .from('materials')
-          .select('id, category_id, title, image_url, sort_order, categories (name, color_code, sort_order)')
+          .select(
+            'id, category_id, title, image_url, sort_order, categories (name, color_code, sort_order)',
+          )
           .eq('status', 'active')
           .eq('user_id', user.id),
         supabase
@@ -65,12 +69,14 @@ export function useMaterials(): UseMaterialsReturn {
       if (catError) throw catError;
 
       if (catData) {
-        setAllCategories(catData.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          colorCode: c.color_code || theme.palette.divider,
-          sortOrder: c.sort_order || 0,
-        })));
+        setAllCategories(
+          catData.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            colorCode: c.color_code || theme.palette.divider,
+            sortOrder: c.sort_order || 0,
+          })),
+        );
       }
 
       if (data) {
@@ -94,7 +100,9 @@ export function useMaterials(): UseMaterialsReturn {
     }
   }, [theme.palette.divider]);
 
-  useEffect(() => { refetch(); }, [refetch]);
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   return { materials, allCategories, isLoading, setMaterials, refetch };
 }
