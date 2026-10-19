@@ -5,7 +5,7 @@ import { useTheme } from '@mui/material';
 import { supabase } from '../../lib/supabase';
 
 // ==========================================
-// 型定義（Materials.tsx と共有）
+// 型定義（MaterialsPage.tsx と共有）
 // ==========================================
 export interface Material {
   id: string;

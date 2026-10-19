@@ -1,4 +1,4 @@
-// src/components/LikersDialog.tsx
+// src/features/home/LikersDialog.tsx
 // 「いいねしたユーザー」一覧ダイアログ
 
 import { useState, useEffect } from 'react';
@@ -18,8 +18,8 @@ import {
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { supabase } from '../lib/supabase';
-import defaultAvatar from '../assets/defaultAvatar.webp';
+import { supabase } from '../../lib/supabase';
+import defaultAvatar from '../../assets/defaultAvatar.webp';
 
 export default function LikersDialog({
   logId,

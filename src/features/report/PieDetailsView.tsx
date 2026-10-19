@@ -19,7 +19,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } 
 import { type LogEntry, formatDuration, toLocalDate, buildPieData } from './reportUtils';
 
 // ==========================================
-// カスタム Pie Tooltip（Report.tsx でも使用するためエクスポート）
+// カスタム Pie Tooltip（ReportPage.tsx でも使用するためエクスポート）
 // ==========================================
 export const CustomPieTooltip = ({ active, payload }: any) => {
   const theme = useTheme();

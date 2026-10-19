@@ -1,4 +1,4 @@
-// src/components/TimelineItem.tsx
+// src/features/home/TimelineItem.tsx
 // タイムラインの勉強記録カード（いいねボタン・アニメーション込み）
 
 import React, { useState, useRef } from 'react';
@@ -19,8 +19,8 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import { formatDuration, formatExactTime } from '../lib/datetimeUtils';
-import defaultAvatar from '../assets/defaultAvatar.webp';
+import { formatDuration, formatExactTime } from '../../lib/datetimeUtils';
+import defaultAvatar from '../../assets/defaultAvatar.webp';
 
 export interface TimelineEntry {
   id: string;

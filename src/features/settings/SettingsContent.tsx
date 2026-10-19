@@ -1,5 +1,5 @@
 // src/features/settings/SettingsContent.tsx
-// Settings.tsx（PC）とProfile.tsx（モバイル）の両方から使い回す設定セクション
+// SettingsPage.tsx（PC）とProfilePage.tsx（モバイル）の両方から使い回す設定セクション
 
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import {

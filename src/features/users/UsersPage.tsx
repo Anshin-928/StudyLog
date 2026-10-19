@@ -1,4 +1,4 @@
-// src/components/Users.tsx
+// src/features/users/UsersPage.tsx
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
@@ -18,11 +18,11 @@ import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { follow, unfollow } from '../lib/followsApi';
-import type { FollowStatus } from '../lib/followsApi';
-import { useCurrentUserId } from '../hooks/useCurrentUser';
-import defaultAvatar from '../assets/defaultAvatar.webp';
+import { supabase } from '../../lib/supabase';
+import { follow, unfollow } from './api';
+import type { FollowStatus } from './api';
+import { useCurrentUserId } from './useCurrentUser';
+import defaultAvatar from '../../assets/defaultAvatar.webp';
 
 // ==========================================
 // ユーザー行コンポーネント
@@ -143,7 +143,7 @@ function UserRow({
   );
 }
 
-export default function Users() {
+export default function UsersPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
