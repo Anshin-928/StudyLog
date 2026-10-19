@@ -56,7 +56,7 @@ e2e/
   tests/                  specファイル。機能ごとにフォルダを分ける
     auth/                 ログイン・サインアップ・パスワードリセット
     record/               学習記録の追加・編集・削除
-    follows/              フォロー（非公開アカウントの承認制などRLSの検証を含む）
+    follow/               フォロー（非公開アカウントの承認制などRLSの検証を含む）
     storage/              画像アップロードの権限
     app/                  アプリ全体（新しい版の公開時の Service Worker・画面ファイルの扱いなど）
   helpers/                テスト作成でよく使うもの
@@ -75,7 +75,8 @@ e2e/
 ### フォルダ・ファイルの分け方
 
 - `tests/<機能>/<操作>.spec.ts` とする（例: `tests/record/create-record.spec.ts`）
-- 機能フォルダはアプリの機能単位で切る。今後増える想定: `home/`（タイムライン・いいね）、`materials/`、`report/`、`profile/`、`follows/`、`settings/`
+- 機能フォルダはアプリの機能単位で切る。今後増える想定: `home/`（タイムライン・いいね）、`material/`、`report/`、`profile/`、`setting/`
+- フォルダ名は英語の単数形にする
 - 1ファイルには1つの操作に関するテストをまとめ、`test.describe` 名はその操作を表す日本語にする
 - 複数のspecで使う処理は spec 内に書かず `helpers/` に置く
 
