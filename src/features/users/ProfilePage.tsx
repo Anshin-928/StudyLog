@@ -1,4 +1,4 @@
-// src/components/Profile.tsx
+// src/features/users/ProfilePage.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -34,11 +34,11 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 
-import { supabase } from '../lib/supabase';
-import { follow, unfollow } from '../lib/followsApi';
-import type { FollowStatus } from '../lib/followsApi';
-import { formatDuration, formatExactTime } from '../lib/datetimeUtils';
-import defaultAvatar from '../assets/defaultAvatar.webp';
+import { supabase } from '../../lib/supabase';
+import { follow, unfollow } from './api';
+import type { FollowStatus } from './api';
+import { formatDuration, formatExactTime } from '../../lib/datetimeUtils';
+import defaultAvatar from '../../assets/defaultAvatar.webp';
 
 // ==========================================
 // 型定義
@@ -373,7 +373,7 @@ function FollowListDialog({
 // ==========================================
 // メイン
 // ==========================================
-export default function Profile() {
+export default function ProfilePage() {
   const { userId: paramUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
   const theme = useTheme();

@@ -1,8 +1,8 @@
-// src/hooks/useCurrentUser.ts
+// src/features/users/useCurrentUser.ts
 // ログイン中ユーザーIDの取得フック
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 /** ログイン中ユーザーのIDを返す（取得前・未ログインは null） */
 export function useCurrentUserId(): string | null {

@@ -61,15 +61,15 @@ import { lazyWithReload, isChunkLoadError } from './lib/lazyWithReload';
 // 新しい版の公開後に古いチャンクを読み込めなかったら、自動で読み込み直す（src/lib/lazyWithReload.ts）
 const AuthPage = lazyWithReload(() => import('./features/auth/AuthPage'));
 const LandingPage = lazyWithReload(() => import('./features/landing/LandingPage'));
-const Home = lazyWithReload(() => import('./components/Home'));
+const HomePage = lazyWithReload(() => import('./features/home/HomePage'));
 const RecordPage = lazyWithReload(() => import('./features/record/RecordPage'));
 const ReportPage = lazyWithReload(() => import('./features/report/ReportPage'));
 const MaterialsPage = lazyWithReload(() => import('./features/materials/MaterialsPage'));
 const SettingsPage = lazyWithReload(() => import('./features/settings/SettingsPage'));
 const AddMaterialPage = lazyWithReload(() => import('./features/materials/AddMaterialPage'));
-const Profile = lazyWithReload(() => import('./components/Profile'));
-const EditProfile = lazyWithReload(() => import('./components/EditProfile'));
-const Users = lazyWithReload(() => import('./components/Users'));
+const ProfilePage = lazyWithReload(() => import('./features/users/ProfilePage'));
+const EditProfilePage = lazyWithReload(() => import('./features/users/EditProfilePage'));
+const UsersPage = lazyWithReload(() => import('./features/users/UsersPage'));
 const ResetPasswordPage = lazyWithReload(() => import('./features/auth/ResetPasswordPage'));
 const TermsOfServicePage = lazyWithReload(() => import('./features/legal/TermsOfServicePage'));
 const PrivacyPolicyPage = lazyWithReload(() => import('./features/legal/PrivacyPolicyPage'));
@@ -226,12 +226,12 @@ function RecordRoute() {
 
 function HomeRoute() {
   const { onRecordSaved } = useContext(AppCallbacksContext);
-  return <Home onRecordDeleted={onRecordSaved} />;
+  return <HomePage onRecordDeleted={onRecordSaved} />;
 }
 
 function EditProfileRoute() {
   const { onProfileSaved } = useContext(AppCallbacksContext);
-  return <EditProfile onProfileSaved={onProfileSaved} />;
+  return <EditProfilePage onProfileSaved={onProfileSaved} />;
 }
 
 // ==========================================
@@ -630,10 +630,10 @@ const router = createBrowserRouter([
               { path: 'materials', element: <MaterialsPage /> },
               { path: 'settings', element: <SettingsPage /> },
               { path: 'materials/add-new-material', element: <AddMaterialPage /> },
-              { path: 'profile', element: <Profile /> },
+              { path: 'profile', element: <ProfilePage /> },
               { path: 'profile/edit', element: <EditProfileRoute /> },
-              { path: 'users', element: <Users /> },
-              { path: 'users/:userId', element: <Profile /> },
+              { path: 'users', element: <UsersPage /> },
+              { path: 'users/:userId', element: <ProfilePage /> },
             ],
           },
         ],

@@ -1,4 +1,4 @@
-// src/components/Home.tsx
+// src/features/home/HomePage.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -17,11 +17,11 @@ import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { goalCategoryLabel } from '../constants/goalGroups';
-import { fetchLikes, useLikeToggle } from '../hooks/useLikes';
-import EditRecordDialog, { EditableEntry } from '../features/record/EditRecordDialog';
-import ConfirmDialog from './ConfirmDialog';
+import { supabase } from '../../lib/supabase';
+import { goalCategoryLabel } from '../../constants/goalGroups';
+import { fetchLikes, useLikeToggle } from './useLikes';
+import EditRecordDialog, { EditableEntry } from '../record/EditRecordDialog';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import TimelineItem from './TimelineItem';
 import type { TimelineEntry } from './TimelineItem';
 import LikersDialog from './LikersDialog';
@@ -79,7 +79,7 @@ function EmptyState({
 // ==========================================
 // メイン
 // ==========================================
-export default function Home({ onRecordDeleted }: { onRecordDeleted?: () => void }) {
+export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => void }) {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

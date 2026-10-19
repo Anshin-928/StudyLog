@@ -1,7 +1,7 @@
-// src/lib/followsApi.ts
+// src/features/users/api.ts
 // フォロー関係のDB操作（Profile / Users 共通）
 
-import { supabase } from './supabase';
+import { supabase } from '../../lib/supabase';
 
 export type FollowStatus = 'none' | 'pending' | 'accepted';
 

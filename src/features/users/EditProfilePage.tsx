@@ -1,4 +1,4 @@
-// src/components/EditProfile.tsx
+// src/features/users/EditProfilePage.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -24,12 +24,12 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import AddIcon from '@mui/icons-material/Add';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { useBlocker, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import NavigationBlockerDialog from './NavigationBlockerDialog';
-import { compressImage } from '../lib/compressImage';
-import { validateImageFile, safeImageExt } from '../lib/imageValidation';
-import { GOAL_CATEGORIES, getGoalSuggestions, GoalCategory } from '../constants/goalGroups';
-import defaultAvatar from '../assets/defaultAvatar.webp';
+import { supabase } from '../../lib/supabase';
+import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
+import { compressImage } from '../../lib/compressImage';
+import { validateImageFile, safeImageExt } from '../../lib/imageValidation';
+import { GOAL_CATEGORIES, getGoalSuggestions, GoalCategory } from '../../constants/goalGroups';
+import defaultAvatar from '../../assets/defaultAvatar.webp';
 
 interface ProfileData {
   id: string;
@@ -50,7 +50,7 @@ interface EditProfileProps {
 
 const MAX_GOALS = 5;
 
-export default function EditProfile({ onProfileSaved }: EditProfileProps) {
+export default function EditProfilePage({ onProfileSaved }: EditProfileProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -197,7 +197,7 @@ export default function EditProfile({ onProfileSaved }: EditProfileProps) {
       const profileUpdates: any = {
         display_name: displayName.trim() || null,
         bio: bio.trim() || null,
-        // profiles.goal_group は先頭目標と同期（Home.tsx の目標タブのため）
+        // profiles.goal_group は先頭目標と同期（HomePage.tsx の目標タブのため）
         goal_group: primaryGoal?.goalGroup ?? null,
         goal_category: primaryGoal?.goalCategory ?? null,
       };

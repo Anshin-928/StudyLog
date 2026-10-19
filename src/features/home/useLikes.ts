@@ -1,8 +1,8 @@
-// src/hooks/useLikes.ts
+// src/features/home/useLikes.ts
 // いいねの取得・トグル（楽観的更新）ロジック
 
 import { useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 export interface LikesInfo {
   /** study_log_id → いいね件数 */
