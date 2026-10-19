@@ -1,8 +1,8 @@
-// src/lib/categoryUtils.ts
+// src/features/materials/categoryUtils.ts
 // カテゴリ関連の型・定数・ユーティリティ。AddMaterial / MaterialEditDialog で共用。
 
-import { supabase } from './supabase';
-import type { Database } from '../types/supabase';
+import { supabase } from '../../lib/supabase';
+import type { Database } from '../../types/supabase';
 
 type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
 

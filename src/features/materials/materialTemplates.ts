@@ -1,4 +1,4 @@
-// src/constants/materialTemplates.ts
+// src/features/materials/materialTemplates.ts
 // 教材の表紙テンプレート一覧。AddMaterial / MaterialEditDialog で共用。
 
 export interface MaterialTemplate {

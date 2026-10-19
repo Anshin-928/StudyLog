@@ -1,4 +1,4 @@
-// src/components/Record.tsx
+// src/features/record/RecordPage.tsx
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
@@ -33,18 +33,18 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
 import { useBlocker, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { validateImageFile } from '../lib/imageValidation';
-import { formatDuration, formatDatetime, nowDatetimeLocal } from '../lib/datetimeUtils';
-import { fetchActiveMaterials } from '../lib/materialsApi';
-import { uploadStudyLogImage } from '../lib/studyLogImages';
-import type { Material, PagesData } from '../types/record';
-import NavigationBlockerDialog from './NavigationBlockerDialog';
-import CompactCell from './record/CompactCell';
-import DateDialog from './record/DateDialog';
-import DurationDialog from './record/DurationDialog';
-import PagesDialog, { getPagesDisplayValue } from './record/PagesDialog';
-import MaterialSelectDialog from './record/MaterialSelectDialog';
+import { supabase } from '../../lib/supabase';
+import { validateImageFile } from '../../lib/imageValidation';
+import { formatDuration, formatDatetime, nowDatetimeLocal } from '../../lib/datetimeUtils';
+import { fetchActiveMaterials } from '../materials/api';
+import { uploadStudyLogImage } from './studyLogImages';
+import type { Material, PagesData } from '../../types/record';
+import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
+import CompactCell from './components/CompactCell';
+import DateDialog from './components/DateDialog';
+import DurationDialog from './components/DurationDialog';
+import PagesDialog, { getPagesDisplayValue } from './components/PagesDialog';
+import MaterialSelectDialog from './components/MaterialSelectDialog';
 
 // ==========================================
 // 手動入力タブ
@@ -619,7 +619,7 @@ function StopwatchTab({
 // ==========================================
 // メインコンポーネント
 // ==========================================
-export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }) {
+export default function RecordPage({ onRecordSaved }: { onRecordSaved?: () => void }) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

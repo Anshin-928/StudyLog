@@ -1,5 +1,5 @@
-// src/components/record/PagesDialog.tsx
-// 学習量入力ダイアログ（Record / EditRecordDialog 共通）
+// src/features/record/components/PagesDialog.tsx
+// 学習量入力ダイアログ（RecordPage / EditRecordDialog 共通）
 
 import { useState, useEffect } from 'react';
 import {
@@ -15,7 +15,7 @@ import {
   DialogActions,
   useTheme,
 } from '@mui/material';
-import type { PagesData } from '../../types/record';
+import type { PagesData } from '../../../types/record';
 
 /** セルに表示する学習量ラベル（未入力なら undefined） */
 export function getPagesDisplayValue(pagesData: PagesData, unit: string): string | undefined {

@@ -1,5 +1,5 @@
-// src/components/record/DateDialog.tsx
-// 日付・時刻選択ダイアログ（Record / EditRecordDialog 共通）
+// src/features/record/components/DateDialog.tsx
+// 日付・時刻選択ダイアログ（RecordPage / EditRecordDialog 共通）
 
 import { useState, useEffect } from 'react';
 import {
@@ -21,7 +21,7 @@ import {
   combineDatetime,
   daysAgo,
   formatDateLabel,
-} from '../../lib/datetimeUtils';
+} from '../../../lib/datetimeUtils';
 
 export default function DateDialog({
   open,

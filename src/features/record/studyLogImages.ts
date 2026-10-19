@@ -1,8 +1,8 @@
-// src/lib/studyLogImages.ts
-// 勉強記録に添付する画像のアップロード（Record / EditRecordDialog 共通）
+// src/features/record/studyLogImages.ts
+// 勉強記録に添付する画像のアップロード（RecordPage / EditRecordDialog 共通）
 
-import { supabase } from './supabase';
-import { safeImageExt } from './imageValidation';
+import { supabase } from '../../lib/supabase';
+import { safeImageExt } from '../../lib/imageValidation';
 
 /** study-logs バケットの `<ユーザーID>/` 配下へアップロードし、公開URLを返す（RLSで自分のフォルダにのみ書き込める） */
 export async function uploadStudyLogImage(userId: string, image: File): Promise<string> {

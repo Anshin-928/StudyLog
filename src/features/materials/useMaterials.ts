@@ -1,8 +1,8 @@
-// src/hooks/useMaterials.ts
+// src/features/materials/useMaterials.ts
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@mui/material';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 // ==========================================
 // 型定義（Materials.tsx と共有）

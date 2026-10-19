@@ -1,4 +1,4 @@
-// src/components/MaterialEditDialog.tsx
+// src/features/materials/components/MaterialEditDialog.tsx
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -17,11 +17,11 @@ import {
   useTheme, // 🌟 useTheme を追加
 } from '@mui/material';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
-import { supabase } from '../lib/supabase';
-import { validateImageFile, safeImageExt } from '../lib/imageValidation';
-import { TEMPLATES, isTemplateUrl } from '../constants/materialTemplates';
-import { CategoryOption, buildCategoryOptions } from '../lib/categoryUtils';
-import { MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
+import { supabase } from '../../../lib/supabase';
+import { validateImageFile, safeImageExt } from '../../../lib/imageValidation';
+import { TEMPLATES, isTemplateUrl } from '../materialTemplates';
+import { CategoryOption, buildCategoryOptions } from '../categoryUtils';
+import { MaterialUnit, DEFAULT_UNIT } from '../materialUnits';
 import UnitSelector from './UnitSelector';
 
 interface MaterialEditDialogProps {

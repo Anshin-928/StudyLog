@@ -1,4 +1,4 @@
-// src/components/Materials.tsx
+// src/features/materials/MaterialsPage.tsx
 
 import React, { useState } from 'react';
 import { useNavigate, useBlocker } from 'react-router-dom';
@@ -24,14 +24,14 @@ import AddIcon from '@mui/icons-material/Add';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import SwapVertOutlinedIcon from '@mui/icons-material/SwapVertOutlined';
 import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
-import CategoryEditDialog from './CategoryEditDialog';
-import MaterialEditDialog from './MaterialEditDialog';
-import ConfirmDialog from './ConfirmDialog';
-import MaterialCard from './MaterialCard';
-import { supabase } from '../lib/supabase';
-import NavigationBlockerDialog from './NavigationBlockerDialog';
-import { useMaterials } from '../hooks/useMaterials';
-import type { Material, CategoryInfo } from '../hooks/useMaterials';
+import CategoryEditDialog from './components/CategoryEditDialog';
+import MaterialEditDialog from './components/MaterialEditDialog';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import MaterialCard from './components/MaterialCard';
+import { supabase } from '../../lib/supabase';
+import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
+import { useMaterials } from './useMaterials';
+import type { Material, CategoryInfo } from './useMaterials';
 
 import {
   DndContext,
@@ -157,7 +157,7 @@ function EmptyCategoryDropzone({
 // ==========================================
 // メインコンポーネント
 // ==========================================
-export default function Materials() {
+export default function MaterialsPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

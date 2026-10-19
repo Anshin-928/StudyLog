@@ -1,4 +1,4 @@
-// src/components/EditRecordDialog.tsx
+// src/features/record/EditRecordDialog.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -25,17 +25,17 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import CloseIcon from '@mui/icons-material/Close';
-import { supabase } from '../lib/supabase';
-import { validateImageFile } from '../lib/imageValidation';
-import { formatDuration, formatDatetime } from '../lib/datetimeUtils';
-import { fetchActiveMaterials } from '../lib/materialsApi';
-import { uploadStudyLogImage } from '../lib/studyLogImages';
-import type { Material, PagesData } from '../types/record';
-import CompactCell from './record/CompactCell';
-import DateDialog from './record/DateDialog';
-import DurationDialog from './record/DurationDialog';
-import PagesDialog, { getPagesDisplayValue } from './record/PagesDialog';
-import MaterialSelectDialog from './record/MaterialSelectDialog';
+import { supabase } from '../../lib/supabase';
+import { validateImageFile } from '../../lib/imageValidation';
+import { formatDuration, formatDatetime } from '../../lib/datetimeUtils';
+import { fetchActiveMaterials } from '../materials/api';
+import { uploadStudyLogImage } from './studyLogImages';
+import type { Material, PagesData } from '../../types/record';
+import CompactCell from './components/CompactCell';
+import DateDialog from './components/DateDialog';
+import DurationDialog from './components/DurationDialog';
+import PagesDialog, { getPagesDisplayValue } from './components/PagesDialog';
+import MaterialSelectDialog from './components/MaterialSelectDialog';
 
 // ==========================================
 // 型定義

@@ -62,11 +62,11 @@ import { lazyWithReload, isChunkLoadError } from './lib/lazyWithReload';
 const AuthPage = lazyWithReload(() => import('./features/auth/AuthPage'));
 const LandingPage = lazyWithReload(() => import('./features/landing/LandingPage'));
 const Home = lazyWithReload(() => import('./components/Home'));
-const Record = lazyWithReload(() => import('./components/Record'));
+const RecordPage = lazyWithReload(() => import('./features/record/RecordPage'));
 const ReportPage = lazyWithReload(() => import('./features/report/ReportPage'));
-const Materials = lazyWithReload(() => import('./components/Materials'));
+const MaterialsPage = lazyWithReload(() => import('./features/materials/MaterialsPage'));
 const SettingsPage = lazyWithReload(() => import('./features/settings/SettingsPage'));
-const AddMaterial = lazyWithReload(() => import('./components/AddMaterial'));
+const AddMaterialPage = lazyWithReload(() => import('./features/materials/AddMaterialPage'));
 const Profile = lazyWithReload(() => import('./components/Profile'));
 const EditProfile = lazyWithReload(() => import('./components/EditProfile'));
 const Users = lazyWithReload(() => import('./components/Users'));
@@ -219,17 +219,17 @@ export const AppCallbacksContext = createContext<AppCallbacksContextType>({
 // ==========================================
 // ページラッパー
 // ==========================================
-function RecordPage() {
+function RecordRoute() {
   const { onRecordSaved } = useContext(AppCallbacksContext);
-  return <Record onRecordSaved={onRecordSaved} />;
+  return <RecordPage onRecordSaved={onRecordSaved} />;
 }
 
-function HomePage() {
+function HomeRoute() {
   const { onRecordSaved } = useContext(AppCallbacksContext);
   return <Home onRecordDeleted={onRecordSaved} />;
 }
 
-function EditProfilePage() {
+function EditProfileRoute() {
   const { onProfileSaved } = useContext(AppCallbacksContext);
   return <EditProfile onProfileSaved={onProfileSaved} />;
 }
@@ -624,14 +624,14 @@ const router = createBrowserRouter([
             children: [
               { index: true, element: <Navigate to="/home" replace /> },
               { path: 'login', element: <Navigate to="/home" replace /> },
-              { path: 'home', element: <HomePage /> },
-              { path: 'record', element: <RecordPage /> },
+              { path: 'home', element: <HomeRoute /> },
+              { path: 'record', element: <RecordRoute /> },
               { path: 'report', element: <ReportPage /> },
-              { path: 'materials', element: <Materials /> },
+              { path: 'materials', element: <MaterialsPage /> },
               { path: 'settings', element: <SettingsPage /> },
-              { path: 'materials/add-new-material', element: <AddMaterial /> },
+              { path: 'materials/add-new-material', element: <AddMaterialPage /> },
               { path: 'profile', element: <Profile /> },
-              { path: 'profile/edit', element: <EditProfilePage /> },
+              { path: 'profile/edit', element: <EditProfileRoute /> },
               { path: 'users', element: <Users /> },
               { path: 'users/:userId', element: <Profile /> },
             ],
