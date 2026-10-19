@@ -15,7 +15,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   // リトライで不安定なテストを隠さない。失敗したら1回目で原因を調べる
   retries: 0,
-  reporter: process.env.CI ? [['line'], ['html', { open: 'never' }]] : 'html',
+  // 一覧の表示は e2e/reporter.ts。トレースを含む全結果は HTML レポートで確認する
+  reporter: process.env.CI
+    ? [['./e2e/reporter.ts'], ['html', { open: 'never' }]]
+    : [['./e2e/reporter.ts'], ['html']],
   use: {
     baseURL,
     // 実行するマシンのタイムゾーン（CIはUTC）で日付の境界が変わり結果が揺れないよう固定する

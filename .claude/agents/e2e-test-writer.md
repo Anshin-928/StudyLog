@@ -15,7 +15,7 @@ description: StudyLogのE2Eテスト（Playwright）を作成・修正するエ�
 ## 作成手順
 
 1. テスト対象の機能に対応する `e2e/tests/<機能>/` フォルダを決める（無ければ作る）。ファイル名は `<操作>.spec.ts`
-   - フォルダ名は英語の単数形にする
+   - フォルダ名は英語の単数形。新しく作った場合は `e2e/reporter.ts` の `CATEGORY_LABELS` に日本語の分類名を追加する
 2. 必要なテストデータとその削除方法を先に決める
    - ユーザーに紐づくデータは `testUser` / `loggedInPage` fixture を使えばユーザー削除時にCASCADEで消える
    - それ以外のデータ（Storageのファイル、別ユーザー等）を作る場合は、fixture の teardown で必ず削除する
