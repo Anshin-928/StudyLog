@@ -1,4 +1,4 @@
-// src/components/PieDetailsView.tsx
+// src/features/report/PieDetailsView.tsx
 
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -16,7 +16,7 @@ import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
-import { type LogEntry, formatDuration, toLocalDate, buildPieData } from '../lib/reportUtils';
+import { type LogEntry, formatDuration, toLocalDate, buildPieData } from './reportUtils';
 
 // ==========================================
 // カスタム Pie Tooltip（Report.tsx でも使用するためエクスポート）

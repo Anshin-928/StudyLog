@@ -1,4 +1,4 @@
-// src/components/ResetPasswordPage.tsx
+// src/features/auth/ResetPasswordPage.tsx
 
 import { useState, useEffect } from 'react';
 import {
@@ -15,10 +15,10 @@ import {
 } from '@mui/material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
-import studyLogLogo from '../assets/studyLogLogo.svg';
-import studyLogLogoDark from '../assets/studyLogLogo_dark.svg';
+import studyLogLogo from '../../assets/studyLogLogo.svg';
+import studyLogLogoDark from '../../assets/studyLogLogo_dark.svg';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 type Status = 'loading' | 'ready' | 'invalid';
 

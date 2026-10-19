@@ -1,10 +1,10 @@
-// src/components/Settings.tsx
+// src/features/settings/SettingsPage.tsx
 
 import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SettingsContent from './SettingsContent';
 
-export default function Settings() {
+export default function SettingsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 

@@ -50,29 +50,29 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 import { supabase } from './lib/supabase';
-import { calcStreakFromDates } from './lib/streak';
+import { calcStreakFromDates } from './features/streak/streak';
 import defaultAvatar from './assets/defaultAvatar.webp';
 import Sidebar from './components/Sidebar';
-import StreakDialog from './components/StreakDialog';
+import StreakDialog from './features/streak/StreakDialog';
 import UpdatePrompt from './components/UpdatePrompt';
 import { lazyWithReload, isChunkLoadError } from './lib/lazyWithReload';
 
 // 各画面はルート単位でコード分割し、初回ロードのバンドルを軽くする
 // 新しい版の公開後に古いチャンクを読み込めなかったら、自動で読み込み直す（src/lib/lazyWithReload.ts）
-const AuthPage = lazyWithReload(() => import('./components/AuthPage'));
-const LandingPage = lazyWithReload(() => import('./components/LandingPage'));
+const AuthPage = lazyWithReload(() => import('./features/auth/AuthPage'));
+const LandingPage = lazyWithReload(() => import('./features/landing/LandingPage'));
 const Home = lazyWithReload(() => import('./components/Home'));
 const Record = lazyWithReload(() => import('./components/Record'));
-const Report = lazyWithReload(() => import('./components/Report'));
+const ReportPage = lazyWithReload(() => import('./features/report/ReportPage'));
 const Materials = lazyWithReload(() => import('./components/Materials'));
-const Settings = lazyWithReload(() => import('./components/Settings'));
+const SettingsPage = lazyWithReload(() => import('./features/settings/SettingsPage'));
 const AddMaterial = lazyWithReload(() => import('./components/AddMaterial'));
 const Profile = lazyWithReload(() => import('./components/Profile'));
 const EditProfile = lazyWithReload(() => import('./components/EditProfile'));
 const Users = lazyWithReload(() => import('./components/Users'));
-const ResetPasswordPage = lazyWithReload(() => import('./components/ResetPasswordPage'));
-const TermsOfServicePage = lazyWithReload(() => import('./components/TermsOfServicePage'));
-const PrivacyPolicyPage = lazyWithReload(() => import('./components/PrivacyPolicyPage'));
+const ResetPasswordPage = lazyWithReload(() => import('./features/auth/ResetPasswordPage'));
+const TermsOfServicePage = lazyWithReload(() => import('./features/legal/TermsOfServicePage'));
+const PrivacyPolicyPage = lazyWithReload(() => import('./features/legal/PrivacyPolicyPage'));
 
 function FullScreenLoader() {
   return (
@@ -626,9 +626,9 @@ const router = createBrowserRouter([
               { path: 'login', element: <Navigate to="/home" replace /> },
               { path: 'home', element: <HomePage /> },
               { path: 'record', element: <RecordPage /> },
-              { path: 'report', element: <Report /> },
+              { path: 'report', element: <ReportPage /> },
               { path: 'materials', element: <Materials /> },
-              { path: 'settings', element: <Settings /> },
+              { path: 'settings', element: <SettingsPage /> },
               { path: 'materials/add-new-material', element: <AddMaterial /> },
               { path: 'profile', element: <Profile /> },
               { path: 'profile/edit', element: <EditProfilePage /> },

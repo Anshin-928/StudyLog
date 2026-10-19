@@ -1,4 +1,4 @@
-// src/components/TermsOfServicePage.tsx
+// src/features/legal/TermsOfServicePage.tsx
 
 import LegalLayout from './LegalLayout';
 

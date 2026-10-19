@@ -1,4 +1,4 @@
-// src/components/Report.tsx
+// src/features/report/ReportPage.tsx
 
 import { useState, useMemo } from 'react';
 import {
@@ -18,7 +18,7 @@ import {
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import { Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useStudyLogs } from '../hooks/useStudyLogs';
+import { useStudyLogs } from './useStudyLogs';
 import {
   type Period,
   type LogEntry,
@@ -34,7 +34,7 @@ import {
   getDow,
   getTrendPeriodInfo,
   buildPieData,
-} from '../lib/reportUtils';
+} from './reportUtils';
 import TrendDetailsView from './TrendDetailsView';
 import PieDetailsView, { CustomPieTooltip } from './PieDetailsView';
 
@@ -233,7 +233,7 @@ function PieLegend({ pieData, total }: { pieData: PieItem[]; total: number }) {
 // ==========================================
 // メインコンポーネント
 // ==========================================
-export default function Report() {
+export default function ReportPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const period: Period = '7d';

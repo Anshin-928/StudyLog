@@ -1,9 +1,9 @@
-// src/components/LandingPage.tsx
+// src/features/landing/LandingPage.tsx
 // StudyLog ランディングページ。
 
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import './LandingPage.css';
 
 const logoUrl = '/images/lp/studylog-logo.svg';

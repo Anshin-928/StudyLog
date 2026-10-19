@@ -1,4 +1,4 @@
-// src/components/TrendDetailsView.tsx
+// src/features/report/TrendDetailsView.tsx
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -30,7 +30,7 @@ import {
   getWeekSunday,
   getTrendPeriodInfo,
   formatTrendPeriodRange,
-} from '../lib/reportUtils';
+} from './reportUtils';
 
 interface TrendDetailsViewProps {
   onBack: () => void;

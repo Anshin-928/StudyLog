@@ -1,4 +1,4 @@
-// src/components/PrivacyPolicyPage.tsx
+// src/features/legal/PrivacyPolicyPage.tsx
 
 import LegalLayout from './LegalLayout';
 

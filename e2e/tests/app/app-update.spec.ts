@@ -10,8 +10,8 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../helpers/fixtures';
 
 const LEGACY_CACHE = 'supabase-cache';
-const AUTH_PAGE_MODULE = '**/src/components/AuthPage.tsx*';
-const TERMS_PAGE_MODULE = '**/src/components/TermsOfServicePage.tsx*';
+const AUTH_PAGE_MODULE = '**/src/features/auth/AuthPage.tsx*';
+const TERMS_PAGE_MODULE = '**/src/features/legal/TermsOfServicePage.tsx*';
 
 function putLegacyCache(page: Page) {
   return page.evaluate(async (name) => {

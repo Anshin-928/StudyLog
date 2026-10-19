@@ -1,10 +1,10 @@
-// src/components/LegalLayout.tsx
+// src/features/legal/LegalLayout.tsx
 
 import { Box, Typography, Divider, Button, useTheme, useMediaQuery } from '@mui/material';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import { useNavigate } from 'react-router-dom';
-import studyLogLogo from '../assets/studyLogLogo.svg';
-import studyLogLogoDark from '../assets/studyLogLogo_dark.svg';
+import studyLogLogo from '../../assets/studyLogLogo.svg';
+import studyLogLogoDark from '../../assets/studyLogLogo_dark.svg';
 
 interface Section {
   title: string;
