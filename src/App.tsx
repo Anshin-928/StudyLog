@@ -1,12 +1,12 @@
 // src/App.tsx
 
-import React, { useState, useEffect, useCallback, useMemo, createContext, useContext, Suspense, lazy } from 'react';
-import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext, Suspense } from 'react';
+import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link, useLocation, useNavigate, useRouteError, isRouteErrorResponse } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import studyLogLogo from './assets/studyLogLogo.svg';
 import studyLogLogoDark from './assets/studyLogLogo_dark.svg';
 import {
-  Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar,
+  Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar, Button,
   BottomNavigation, BottomNavigationAction, useMediaQuery, useTheme,
   createTheme, ThemeProvider, CssBaseline,
 } from '@mui/material';
@@ -26,27 +26,70 @@ import defaultAvatar from './assets/defaultAvatar.webp';
 import Sidebar from './components/Sidebar';
 import StreakDialog from './components/StreakDialog';
 import UpdatePrompt from './components/UpdatePrompt';
+import { lazyWithReload, isChunkLoadError } from './lib/lazyWithReload';
 
 // 各画面はルート単位でコード分割し、初回ロードのバンドルを軽くする
-const AuthPage = lazy(() => import('./components/AuthPage'));
-const LandingPage = lazy(() => import('./components/LandingPage'));
-const Home = lazy(() => import('./components/Home'));
-const Record = lazy(() => import('./components/Record'));
-const Report = lazy(() => import('./components/Report'));
-const Materials = lazy(() => import('./components/Materials'));
-const Settings = lazy(() => import('./components/Settings'));
-const AddMaterial = lazy(() => import('./components/AddMaterial'));
-const Profile = lazy(() => import('./components/Profile'));
-const EditProfile = lazy(() => import('./components/EditProfile'));
-const Users = lazy(() => import('./components/Users'));
-const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
-const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'));
-const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'));
+// 新しい版の公開後に古いチャンクを読み込めなかったら、自動で読み込み直す（src/lib/lazyWithReload.ts）
+const AuthPage = lazyWithReload(() => import('./components/AuthPage'));
+const LandingPage = lazyWithReload(() => import('./components/LandingPage'));
+const Home = lazyWithReload(() => import('./components/Home'));
+const Record = lazyWithReload(() => import('./components/Record'));
+const Report = lazyWithReload(() => import('./components/Report'));
+const Materials = lazyWithReload(() => import('./components/Materials'));
+const Settings = lazyWithReload(() => import('./components/Settings'));
+const AddMaterial = lazyWithReload(() => import('./components/AddMaterial'));
+const Profile = lazyWithReload(() => import('./components/Profile'));
+const EditProfile = lazyWithReload(() => import('./components/EditProfile'));
+const Users = lazyWithReload(() => import('./components/Users'));
+const ResetPasswordPage = lazyWithReload(() => import('./components/ResetPasswordPage'));
+const TermsOfServicePage = lazyWithReload(() => import('./components/TermsOfServicePage'));
+const PrivacyPolicyPage = lazyWithReload(() => import('./components/PrivacyPolicyPage'));
 
 function FullScreenLoader() {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: 'background.default' }}>
       <CircularProgress />
+    </Box>
+  );
+}
+
+// 画面の表示に失敗したときに出す。画面のファイルを読み込めなかったとき（自動で読み込み直しても失敗したとき）は通信状況の確認を促し、
+// それ以外（画面のコードの不具合など）は通信の問題に見せない。存在しない URL は不具合ではないので、ホームへの導線を出す。
+// inline のときはアプリの枠（サイドバーなど）の中に出す
+function RouteErrorScreen({ inline = false }: { inline?: boolean }) {
+  const error = useRouteError();
+  const notFound = isRouteErrorResponse(error) && error.status === 404;
+  const chunkLoadFailed = isChunkLoadError(error);
+  const unexpected = !notFound && !chunkLoadFailed;
+
+  // 描画のたびに記録しないよう、エラーが変わったときだけ記録する
+  useEffect(() => {
+    if (unexpected) console.error('[RouteErrorScreen]', error);
+  }, [error, unexpected]);
+
+  return (
+    <Box role="alert" sx={{
+      display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 2,
+      p: 2, textAlign: 'center',
+      ...(inline ? { flexGrow: 1, minHeight: '40vh' } : { height: '100dvh', backgroundColor: 'background.default' }),
+    }}>
+      {notFound ? (
+        <>
+          <Typography>ページが見つかりませんでした。</Typography>
+          <Typography variant="body2" color="text.secondary">URL が正しいか確認してください。</Typography>
+          <Button variant="contained" component={Link} to="/">ホームへ</Button>
+        </>
+      ) : (
+        <>
+          <Typography>画面を表示できませんでした。</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {chunkLoadFailed
+              ? '通信状況を確認して、ページを再読み込みしてください。'
+              : '予期しないエラーが発生しました。ページを再読み込みしても解決しない場合は、お問い合わせください。'}
+          </Typography>
+          <Button variant="contained" onClick={() => window.location.reload()}>再読み込み</Button>
+        </>
+      )}
     </Box>
   );
 }
@@ -378,26 +421,38 @@ function AppShell() {
 // ルーター定義
 // ==========================================
 const router = createBrowserRouter([
-  { path: '/login', element: <Suspense fallback={<FullScreenLoader />}><AuthPage /></Suspense> },
-  { path: '/reset-password', element: <Suspense fallback={<FullScreenLoader />}><ResetPasswordPage /></Suspense> },
-  { path: '/terms', element: <Suspense fallback={<FullScreenLoader />}><TermsOfServicePage /></Suspense> },
-  { path: '/privacy', element: <Suspense fallback={<FullScreenLoader />}><PrivacyPolicyPage /></Suspense> },
   {
-    path: '/',
-    element: <AppShell />,
+    // すべてのルートの表示エラーをここで受ける（ルートを追加しても errorElement を付け忘れないよう、1か所にまとめる）
+    errorElement: <RouteErrorScreen />,
     children: [
-      { index: true, element: <Navigate to="/home" replace /> },
-      { path: 'login', element: <Navigate to="/home" replace /> },
-      { path: 'home', element: <HomePage /> },
-      { path: 'record', element: <RecordPage /> },
-      { path: 'report', element: <Report /> },
-      { path: 'materials', element: <Materials /> },
-      { path: 'settings', element: <Settings /> },
-      { path: 'materials/add-new-material', element: <AddMaterial /> },
-      { path: 'profile', element: <Profile /> },
-      { path: 'profile/edit', element: <EditProfilePage /> },
-      { path: 'users', element: <Users /> },
-      { path: 'users/:userId', element: <Profile /> },
+      { path: '/login', element: <Suspense fallback={<FullScreenLoader />}><AuthPage /></Suspense> },
+      { path: '/reset-password', element: <Suspense fallback={<FullScreenLoader />}><ResetPasswordPage /></Suspense> },
+      { path: '/terms', element: <Suspense fallback={<FullScreenLoader />}><TermsOfServicePage /></Suspense> },
+      { path: '/privacy', element: <Suspense fallback={<FullScreenLoader />}><PrivacyPolicyPage /></Suspense> },
+      {
+        path: '/',
+        element: <AppShell />,
+        children: [
+          {
+            // 各画面のエラーはアプリの枠の中に出し、サイドバーなどから他の画面に移れるようにする
+            errorElement: <RouteErrorScreen inline />,
+            children: [
+              { index: true, element: <Navigate to="/home" replace /> },
+              { path: 'login', element: <Navigate to="/home" replace /> },
+              { path: 'home', element: <HomePage /> },
+              { path: 'record', element: <RecordPage /> },
+              { path: 'report', element: <Report /> },
+              { path: 'materials', element: <Materials /> },
+              { path: 'settings', element: <Settings /> },
+              { path: 'materials/add-new-material', element: <AddMaterial /> },
+              { path: 'profile', element: <Profile /> },
+              { path: 'profile/edit', element: <EditProfilePage /> },
+              { path: 'users', element: <Users /> },
+              { path: 'users/:userId', element: <Profile /> },
+            ],
+          },
+        ],
+      },
     ],
   },
 ]);
