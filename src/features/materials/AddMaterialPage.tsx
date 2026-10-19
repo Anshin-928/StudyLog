@@ -1,0 +1,917 @@
+// src/features/materials/AddMaterialPage.tsx
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useBlocker } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  List,
+  ListItemButton,
+  ListItemAvatar,
+  ListItemText,
+  CircularProgress,
+  IconButton,
+  Divider,
+  Tabs,
+  Tab,
+  Snackbar,
+  Alert,
+  Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  useMediaQuery,
+  useTheme,
+  alpha,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
+import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
+
+import { supabase } from '../../lib/supabase';
+import { validateImageFile, safeImageExt } from '../../lib/imageValidation';
+import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
+import { MaterialUnit, DEFAULT_UNIT } from './materialUnits';
+import UnitSelector from './components/UnitSelector';
+
+const TEMPLATES = [
+  { id: 'book_blue', url: '/images/templates/book_blue.png', label: '青色の本' },
+  { id: 'book_gray', url: '/images/templates/book_gray.png', label: '灰色の本' },
+  { id: 'book_green', url: '/images/templates/book_green.png', label: '緑色の本' },
+  { id: 'book_lightblue', url: '/images/templates/book_lightblue.png', label: '水色の本' },
+  { id: 'book_lightgreen', url: '/images/templates/book_lightgreen.png', label: '黄緑色の本' },
+  { id: 'book_purple', url: '/images/templates/book_purple.png', label: '紫色の本' },
+  { id: 'book_red', url: '/images/templates/book_red.png', label: '赤色の本' },
+  { id: 'book_yellow', url: '/images/templates/book_yellow.png', label: '黄色の本' },
+  { id: 'paper_blue', url: '/images/templates/paper_blue.png', label: '青色のプリント' },
+  { id: 'paper_gray', url: '/images/templates/paper_gray.png', label: '灰色のプリント' },
+  { id: 'paper_green', url: '/images/templates/paper_green.png', label: '緑色のプリント' },
+  { id: 'paper_lightblue', url: '/images/templates/paper_lightblue.png', label: '水色のプリント' },
+  {
+    id: 'paper_lightgreen',
+    url: '/images/templates/paper_lightgreen.png',
+    label: '黄緑色のプリント',
+  },
+  { id: 'paper_purple', url: '/images/templates/paper_purple.png', label: '紫色のプリント' },
+  { id: 'paper_red', url: '/images/templates/paper_red.png', label: '赤色のプリント' },
+  { id: 'paper_yellow', url: '/images/templates/paper_yellow.png', label: '黄色のプリント' },
+  { id: 'audio', url: '/images/templates/audio.png', label: '音声教材' },
+];
+
+// カテゴリ選択 Autocomplete で使う option 型
+interface CategoryOption {
+  id: string;
+  name: string;
+  isNew?: boolean;
+}
+
+const NEW_CATEGORY_PREFIX = '__new__';
+
+export default function AddMaterialPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+
+  const [tabIndex, setTabIndex] = useState(0);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('sort_order', { ascending: true });
+      if (data) {
+        setCategoryOptions(data.map((c: any) => ({ id: c.id, name: c.name })));
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // 検索タブ
+  const [pendingBook, setPendingBook] = useState<any | null>(null);
+  const [searchCategory, setSearchCategory] = useState<CategoryOption | null>(null);
+  const [searchCategoryInput, setSearchCategoryInput] = useState('');
+  const [searchUnit, setSearchUnit] = useState<MaterialUnit>(DEFAULT_UNIT);
+
+  // オリジナルタブ用
+  const [originalTitle, setOriginalTitle] = useState('');
+  const [originalCategory, setOriginalCategory] = useState<CategoryOption | null>(null);
+  const [originalCategoryInput, setOriginalCategoryInput] = useState('');
+  const [originalUnit, setOriginalUnit] = useState<MaterialUnit>(DEFAULT_UNIT);
+  const [originalImage, setOriginalImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState('/images/templates/book_blue.png');
+
+  const [isAdding, setIsAdding] = useState(false);
+
+  // 入力ありのとき離脱ブロック
+  const isDirty = originalTitle.trim() !== '' || originalImage !== null || pendingBook !== null;
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && !isAdding && currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' = 'error') => {
+    setSnackbar({ open: true, message, severity });
+  };
+  const handleSnackbarClose = () => setSnackbar((s) => ({ ...s, open: false }));
+
+  // ==========================================
+  // ユーティリティ: カテゴリ名 → id（なければ INSERT）
+  // ==========================================
+  const resolveCategory = async (name: string, userId: string): Promise<string> => {
+    const { data: existing } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', name)
+      .eq('user_id', userId)
+      .single();
+    if (existing) return existing.id;
+
+    const insertData: any = { name, user_id: userId };
+    if (name === 'カテゴリなし') insertData.color_code = theme.palette.divider;
+
+    const { data: created, error } = await supabase
+      .from('categories')
+      .insert([insertData])
+      .select()
+      .single();
+    if (error) throw error;
+    return created.id;
+  };
+
+  // ==========================================
+  // Autocomplete の options 生成
+  // 入力文字が既存と完全一致しない場合のみ「新規作成」を末尾に追加
+  // ==========================================
+  const buildOptions = (input: string, base: CategoryOption[]): CategoryOption[] => {
+    const trimmed = input.trim();
+    const exactMatch = base.some((c) => c.name === trimmed);
+    if (trimmed && !exactMatch) {
+      return [...base, { id: `${NEW_CATEGORY_PREFIX}${trimmed}`, name: trimmed, isNew: true }];
+    }
+    return base;
+  };
+
+  const originalAutocompleteOptions = useMemo(
+    () => buildOptions(originalCategoryInput, categoryOptions),
+    [originalCategoryInput, categoryOptions],
+  );
+
+  const searchAutocompleteOptions = useMemo(
+    () => buildOptions(searchCategoryInput, categoryOptions),
+    [searchCategoryInput, categoryOptions],
+  );
+
+  // ==========================================
+  // 検索タブ
+  // ==========================================
+  const searchBooks = async () => {
+    if (!searchQuery) return;
+    setIsSearching(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const res = await fetch(
+        `/api/rakuten?format=json&title=${encodeURIComponent(searchQuery)}&hits=20&sort=sales&outOfStockFlag=1`,
+        {
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        },
+      );
+      const data = await res.json();
+      setSearchResults(data.Items || []);
+    } catch (error) {
+      console.error('検索エラー:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddFromSearchClick = (e: React.MouseEvent, book: any) => {
+    e.stopPropagation();
+    setSearchCategory(null);
+    setSearchCategoryInput('');
+    setSearchUnit(DEFAULT_UNIT);
+    setPendingBook(book);
+  };
+
+  // ダイアログの「追加する」: DB 保存
+  const handleConfirmSearchAdd = async () => {
+    if (!pendingBook) return;
+
+    const categoryName = searchCategory?.isNew
+      ? searchCategory.name
+      : (searchCategory?.name ?? 'カテゴリなし');
+
+    let imageUrl = pendingBook.largeImageUrl || pendingBook.mediumImageUrl;
+    if (imageUrl?.includes('?')) imageUrl = imageUrl.split('?')[0];
+
+    setIsAdding(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const categoryId = await resolveCategory(categoryName, user.id);
+
+      const { error } = await supabase.from('materials').insert([
+        {
+          category_id: categoryId,
+          user_id: user.id,
+          title: pendingBook.title,
+          image_url: imageUrl || '/images/templates/book_gray.png',
+          unit: searchUnit,
+        },
+      ]);
+      if (error) throw error;
+
+      setPendingBook(null);
+      showSnackbar('教材を追加しました', 'success');
+      setTimeout(() => navigate('/materials'), 1500);
+    } catch (error) {
+      console.error('DB登録エラー:', error);
+      showSnackbar('登録に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  // オリジナルタブ
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      showSnackbar(validationError, 'error');
+      return;
+    }
+
+    setOriginalImage(file);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const handleAddOriginal = async () => {
+    if (!originalTitle.trim()) {
+      showSnackbar('教材のタイトルを入力してください。', 'warning');
+      return;
+    }
+
+    const categoryName = originalCategory?.isNew
+      ? originalCategory.name
+      : (originalCategory?.name ?? 'カテゴリなし');
+
+    setIsAdding(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      let finalImageUrl = selectedTemplate;
+
+      if (originalImage) {
+        const validationError = validateImageFile(originalImage);
+        if (validationError) {
+          showSnackbar(validationError, 'error');
+          return;
+        }
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${safeImageExt(originalImage)}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('material-images')
+          .upload(filePath, originalImage);
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('material-images')
+          .getPublicUrl(filePath);
+        finalImageUrl = publicUrlData.publicUrl;
+      }
+
+      const categoryId = await resolveCategory(categoryName, user.id);
+
+      const { error } = await supabase.from('materials').insert([
+        {
+          category_id: categoryId,
+          user_id: user.id,
+          title: originalTitle.trim(),
+          image_url: finalImageUrl,
+          unit: originalUnit,
+        },
+      ]);
+      if (error) throw error;
+
+      navigate('/materials');
+    } catch (error) {
+      console.error('オリジナル教材の登録エラー:', error);
+      showSnackbar('登録に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  // Autocomplete の renderOption（共通）
+  const renderCategoryOption = (
+    props: React.HTMLAttributes<HTMLLIElement>,
+    option: CategoryOption,
+  ) => (
+    <li {...props} key={option.id}>
+      {option.isNew ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
+            ＋
+          </Typography>
+          <Typography variant="body2">「{option.name}」を新しいカテゴリとして作成</Typography>
+        </Box>
+      ) : (
+        <Typography variant="body2">{option.name}</Typography>
+      )}
+    </li>
+  );
+
+  // レンダリング
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        maxWidth: '1000px',
+        margin: '0 auto',
+        width: '100%',
+      }}
+    >
+      {/* ヘッダー */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: { xs: 1.5, sm: 4 },
+          color: 'text.primary',
+        }}
+      >
+        <IconButton
+          onClick={() => navigate('/materials')}
+          sx={{ mr: 2, backgroundColor: 'action.hover' }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 'bold',
+            color: 'text.primary',
+            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+          }}
+        >
+          新しい教材を登録
+        </Typography>
+      </Box>
+
+      {/* タブ */}
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: 'divider',
+          mb: { xs: 1.5, sm: 4 },
+          color: 'text.primary',
+        }}
+      >
+        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} variant="fullWidth">
+          <Tab
+            icon={isMobile ? undefined : <SearchIcon />}
+            iconPosition="start"
+            label={isMobile ? '市販教材を検索' : '市販の教材を検索'}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '12px 12px 0 0',
+              minHeight: isMobile ? '48px' : '56px',
+            }}
+          />
+          <Tab
+            icon={isMobile ? undefined : <LibraryAddOutlinedIcon />}
+            iconPosition="start"
+            label={isMobile ? 'オリジナル教材登録' : 'オリジナル教材を登録'}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '12px 12px 0 0',
+              minHeight: isMobile ? '48px' : '56px',
+            }}
+          />
+        </Tabs>
+      </Box>
+
+      {/* ========== タブ0: 検索 ========== */}
+      {tabIndex === 0 && (
+        <>
+          <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 1 }, mb: { xs: 1.5, sm: 4 } }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder={
+                isMobile ? '書籍検索（タイトル・著者等）' : '書籍検索（タイトル・著者・出版社）'
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') searchBooks();
+              }}
+              sx={{ backgroundColor: 'background.paper', borderRadius: '8px' }}
+              disabled={isAdding}
+            />
+            <Button
+              variant="contained"
+              onClick={searchBooks}
+              disableElevation
+              disabled={isAdding}
+              sx={{
+                borderRadius: '8px',
+                px: 4,
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
+                py: { xs: 1.5, sm: 'auto' },
+              }}
+            >
+              検索
+            </Button>
+          </Box>
+
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflowY: 'auto',
+              backgroundColor: 'background.paper',
+              borderRadius: '16px',
+              border: '1px solid',
+              borderColor: 'divider',
+              p: 2,
+              pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom) + 24px)' : 2,
+            }}
+          >
+            {!isSearching && searchResults.length === 0 && !searchQuery && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  py: 10,
+                  color: 'text.disabled',
+                }}
+              >
+                <SearchIcon sx={{ fontSize: { xs: 54, sm: 64 }, mb: 2, opacity: 0.5 }} />
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 'bold', textAlign: 'center', whiteSpace: 'pre-wrap' }}
+                >
+                  {isMobile
+                    ? 'キーワードを入力して\n教材を検索してください'
+                    : 'キーワードを入力して教材を検索してください'}
+                </Typography>
+              </Box>
+            )}
+            {(isSearching || isAdding) && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  py: 8,
+                }}
+              >
+                <CircularProgress />
+                {isAdding && (
+                  <Typography sx={{ mt: 2, color: 'text.secondary' }}>
+                    データベースに保存中...
+                  </Typography>
+                )}
+              </Box>
+            )}
+            {!isSearching && !isAdding && searchResults.length > 0 && (
+              <List sx={{ pt: 0 }}>
+                {searchResults.map((item, index) => {
+                  const book = item.Item;
+                  return (
+                    <React.Fragment key={index}>
+                      <ListItemButton
+                        onClick={(e) => handleAddFromSearchClick(e, book)}
+                        sx={{
+                          borderRadius: '12px',
+                          mb: 1,
+                          py: { xs: 1, sm: 2 },
+                          px: { xs: 0, sm: 2 },
+                          transition: '0.2s',
+                          '&:hover': { backgroundColor: 'action.hover' },
+                        }}
+                      >
+                        <ListItemAvatar sx={{ mr: { xs: 2, sm: 3 } }}>
+                          <Box
+                            component="img"
+                            src={book.mediumImageUrl}
+                            alt="表紙"
+                            sx={{
+                              height: isMobile ? '72px' : '88px',
+                              width: 'auto',
+                              objectFit: 'contain',
+                              borderRadius: '8px',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              backgroundColor: 'background.default',
+                            }}
+                          />
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              sx={{
+                                fontWeight: 'bold',
+                                fontSize: { xs: '14px', sm: '16px' },
+                                mb: 0.5,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {book.title}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {book.author} / {book.publisherName}
+                            </Typography>
+                          }
+                        />
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderRadius: '20px', minWidth: '80px', fontWeight: 'bold' }}
+                        >
+                          追加
+                        </Button>
+                      </ListItemButton>
+                      {index < searchResults.length - 1 && (
+                        <Divider variant="inset" component="li" />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </List>
+            )}
+            {!isSearching && searchResults.length === 0 && searchQuery && (
+              <Typography
+                align="center"
+                color="text.secondary"
+                sx={{ py: 8, whiteSpace: 'pre-wrap', fontSize: { xs: '14px', sm: '18px' } }}
+              >
+                {isMobile
+                  ? '見つかりませんでした\n別のキーワードで試してみてください。'
+                  : '見つかりませんでした。別のキーワードで試してみてください。'}
+              </Typography>
+            )}
+          </Box>
+
+          {/* カテゴリ選択ダイアログ（検索タブ専用） */}
+          <Dialog
+            open={pendingBook !== null}
+            onClose={(_, reason) => {
+              if (reason === 'backdropClick') return;
+              if (!isAdding) setPendingBook(null);
+            }}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{
+              sx: { borderRadius: '16px', p: { xs: 0.5, sm: 1 }, m: { xs: 2, sm: 3 } },
+            }}
+          >
+            <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>カテゴリを選択</DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              {pendingBook && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 3,
+                    p: 1.5,
+                    backgroundColor: 'background.default',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={pendingBook.mediumImageUrl}
+                    alt="表紙"
+                    sx={{
+                      height: '64px',
+                      width: 'auto',
+                      objectFit: 'contain',
+                      borderRadius: '4px',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 'bold',
+                      lineHeight: 1.4,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {pendingBook.title}
+                  </Typography>
+                </Box>
+              )}
+              <Autocomplete
+                options={searchAutocompleteOptions}
+                getOptionLabel={(o) => o.name}
+                value={searchCategory}
+                inputValue={searchCategoryInput}
+                onInputChange={(_, v) => setSearchCategoryInput(v)}
+                onChange={(_, v) => setSearchCategory(v)}
+                disabled={isAdding}
+                renderOption={renderCategoryOption}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="カテゴリ"
+                    placeholder="選択または新規入力"
+                    helperText="空欄の場合は「カテゴリなし」になります"
+                  />
+                )}
+                noOptionsText="カテゴリが見つかりません"
+              />
+              <Box sx={{ mt: 3 }}>
+                <UnitSelector value={searchUnit} onChange={setSearchUnit} disabled={isAdding} />
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: { xs: 2, sm: 3 }, pt: 0 }}>
+              <Button
+                onClick={() => setPendingBook(null)}
+                disabled={isAdding}
+                sx={{ color: 'text.secondary', fontWeight: 'bold' }}
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleConfirmSearchAdd}
+                variant="contained"
+                disabled={isAdding}
+                disableElevation
+                sx={{ borderRadius: '8px', fontWeight: 'bold', px: { xs: 2, sm: 3 } }}
+              >
+                {isAdding ? '追加中...' : '追加する'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
+
+      {/* ========== タブ1: オリジナル登録 ========== */}
+      {tabIndex === 1 && (
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflow: 'auto',
+            backgroundColor: 'background.paper',
+            borderRadius: '16px',
+            border: '1px solid',
+            borderColor: 'divider',
+            p: { xs: 2, sm: 4 },
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 'bold', mb: 3, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
+          >
+            オリジナル教材の詳細を入力
+          </Typography>
+
+          {/* 教材名 */}
+          <TextField
+            fullWidth
+            label="教材名 (必須)"
+            value={originalTitle}
+            onChange={(e) => setOriginalTitle(e.target.value)}
+            sx={{ mb: 3 }}
+            disabled={isAdding}
+          />
+
+          {/* カテゴリ選択（Autocomplete） */}
+          <Autocomplete
+            options={originalAutocompleteOptions}
+            getOptionLabel={(o) => o.name}
+            value={originalCategory}
+            inputValue={originalCategoryInput}
+            onInputChange={(_, v) => setOriginalCategoryInput(v)}
+            onChange={(_, v) => setOriginalCategory(v)}
+            disabled={isAdding}
+            renderOption={renderCategoryOption}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="カテゴリ"
+                placeholder="選択または新規入力"
+                helperText="空欄の場合は「カテゴリなし」になります"
+              />
+            )}
+            noOptionsText="カテゴリが見つかりません"
+            sx={{ mb: 3 }}
+          />
+
+          {/* 単位選択 */}
+          <Box sx={{ mb: 4 }}>
+            <UnitSelector value={originalUnit} onChange={setOriginalUnit} disabled={isAdding} />
+          </Box>
+
+          {/* テンプレート選択 */}
+          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}>
+            表紙画像を選択
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1,
+              mb: 4,
+              flexWrap: 'wrap',
+              p: 2,
+              backgroundColor: 'background.default',
+              borderRadius: '12px',
+            }}
+          >
+            {TEMPLATES.map((tmpl) => (
+              <Box
+                key={tmpl.id}
+                onClick={() => {
+                  setSelectedTemplate(tmpl.url);
+                  setOriginalImage(null);
+                  setPreviewUrl(null);
+                }}
+                sx={{
+                  width: { xs: 48, sm: 48 },
+                  height: { xs: 64, sm: 64 },
+                  cursor: 'pointer',
+                  borderRadius: { xs: '4px', sm: '4px' },
+                  overflow: 'hidden',
+                  border:
+                    selectedTemplate === tmpl.url && !originalImage
+                      ? '3px solid'
+                      : '1px solid transparent',
+                  borderColor:
+                    selectedTemplate === tmpl.url && !originalImage
+                      ? 'primary.main'
+                      : 'transparent',
+                  boxShadow: (theme) => theme.customShadows.sm,
+                  transition: '0.2s',
+                  '&:hover': { opacity: 0.8, transform: 'translateY(-2px)' },
+                }}
+              >
+                <img
+                  src={tmpl.url}
+                  alt={tmpl.label}
+                  title={tmpl.label}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </Box>
+            ))}
+          </Box>
+
+          {/* 画像アップロード */}
+          <input
+            type="file"
+            accept="image/*"
+            id="image-upload-input"
+            style={{ display: 'none' }}
+            onChange={handleImageChange}
+            disabled={isAdding}
+          />
+          <label htmlFor="image-upload-input">
+            <Box
+              sx={{
+                border: originalImage ? '3px solid' : '2px dashed',
+                borderColor: originalImage ? 'primary.main' : 'divider',
+                borderRadius: '12px',
+                p: 2,
+                textAlign: 'center',
+                mb: 4,
+                backgroundColor: originalImage
+                  ? alpha(theme.palette.primary.main, 0.08)
+                  : 'background.default',
+                color: 'text.secondary',
+                cursor: 'pointer',
+                transition: '0.2s',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                },
+              }}
+            >
+              {previewUrl ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Box
+                    component="img"
+                    src={previewUrl}
+                    alt="Preview"
+                    sx={{
+                      maxHeight: '160px',
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      borderRadius: '8px',
+                      boxShadow: (theme) => theme.customShadows.sm,
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ mt: 2, display: 'block' }}>
+                    クリックで画像を変更
+                  </Typography>
+                </Box>
+              ) : (
+                <>
+                  <LibraryAddOutlinedIcon sx={{ fontSize: { xs: 32, sm: 40 }, mb: 1 }} />
+                  <Typography sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                    {isMobile ? '表紙画像をアップロード' : 'クリックして表紙画像をアップロード'}
+                  </Typography>
+                  <Typography variant="caption">（※画像なしでも登録できます）</Typography>
+                </>
+              )}
+            </Box>
+          </label>
+
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            disableElevation
+            onClick={handleAddOriginal}
+            disabled={isAdding}
+            sx={{ borderRadius: '8px', fontWeight: 'bold', py: 1.5 }}
+          >
+            {isAdding ? '登録中...' : 'この教材を登録する'}
+          </Button>
+        </Box>
+      )}
+
+      <NavigationBlockerDialog
+        open={blocker.state === 'blocked'}
+        onProceed={() => blocker.proceed?.()}
+        onCancel={() => blocker.reset?.()}
+        message={'入力内容が保存されていません。\nこのページを離れると、入力内容が破棄されます。'}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+}

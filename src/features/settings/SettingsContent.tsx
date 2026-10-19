@@ -1,5 +1,5 @@
 // src/features/settings/SettingsContent.tsx
-// Settings.tsx（PC）とProfile.tsx（モバイル）の両方から使い回す設定セクション
+// SettingsPage.tsx（PC）とProfilePage.tsx（モバイル）の両方から使い回す設定セクション
 
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
@@ -33,7 +33,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { supabase } from '../../lib/supabase';
-import { ColorModeContext } from '../../App';
+import { ColorModeContext } from '../../app/contexts';
 
 // ==========================================
 // 共通 UI パーツ

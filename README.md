@@ -79,24 +79,46 @@
 ```
 StudyLog/
 ├── .github/workflows/
+│   ├── ci.yml                # lint・型チェック・ビルド・E2E
 │   └── sync-school-data.yml  # 学校データ月次自動更新ワークフロー
-├── api/
-│   └── rakuten.js            # 楽天 API のサーバーサイドハンドラー (Vercel Functions)
+├── api/                      # Vercel Functions
+│   ├── contact.js            # お問い合わせの送信
+│   └── rakuten.js            # 楽天 API のサーバーサイドハンドラー
+├── e2e/                      # E2E テスト（Playwright）。詳細は e2e/README.md
 ├── scripts/
-│   └── fetch-school-data.mjs # edu-data.jp API からの学校データ取得スクリプト
+│   ├── fetch-school-data.mjs # edu-data.jp API からの学校データ取得スクリプト
+│   └── sql/                  # 本番用の SQL（緊急時の手順など）
+├── supabase/
+│   ├── migrations/           # DB スキーマ・RLS のマイグレーション
+│   └── seed.sql              # ローカル開発用の初期データ
 ├── public/
+│   ├── data/schools.json     # 高校・大学データ（自動更新）
 │   └── images/templates/     # 教材カバー画像テンプレート
 ├── src/
-│   ├── components/           # ページ・UIコンポーネント
-│   ├── data/
-│   │   └── schools.json      # 高校・大学データ（自動更新）
-│   ├── hooks/                # カスタムフック
-│   ├── lib/                  # Supabase クライアント・ユーティリティ
-│   ├── constants/            # 目標グループ・カテゴリ定数
+│   ├── main.tsx              # エントリーポイント
+│   ├── app/                  # アプリの土台
+│   │   ├── App.tsx           #   テーマ管理と RouterProvider
+│   │   ├── router.tsx        #   ルート定義
+│   │   ├── AppShell.tsx      #   ログイン後の共通レイアウト（ヘッダー・ボトムナビ）
+│   │   ├── Sidebar.tsx
+│   │   ├── contexts.ts       #   アプリ全体で共有する Context
+│   │   └── theme.ts          #   MUI テーマ
+│   ├── features/             # 機能ごとの画面・部品・hooks・データ取得
+│   │   ├── auth/             #   ログイン・パスワード再設定
+│   │   ├── home/             #   ホーム（タイムライン・いいね）
+│   │   ├── record/           #   学習記録の入力・編集
+│   │   ├── materials/        #   教材の一覧・追加・編集
+│   │   ├── report/           #   レポート
+│   │   ├── users/            #   ユーザー一覧・プロフィール・フォロー
+│   │   ├── streak/           #   連続学習日数
+│   │   ├── settings/         #   設定
+│   │   ├── landing/          #   ランディングページ
+│   │   └── legal/            #   利用規約・プライバシーポリシー
+│   ├── components/           # 複数の機能で使う汎用 UI
+│   ├── lib/                  # Supabase クライアント・汎用ユーティリティ
+│   ├── constants/            # 複数の機能で使う定数
 │   ├── types/                # TypeScript 型定義
-│   ├── assets/               # ロゴ・デフォルト画像
-│   ├── App.tsx               # ルーティング・テーマ管理
-│   └── main.tsx              # エントリーポイント
+│   └── assets/               # ロゴ・デフォルト画像
 ├── vercel.json               # Vercel デプロイ設定
 └── vite.config.ts            # Vite 設定
 ```

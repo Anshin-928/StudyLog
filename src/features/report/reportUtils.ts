@@ -1,5 +1,5 @@
 // src/features/report/reportUtils.ts
-// Report画面で使う型定義・ユーティリティ・データ加工関数
+// レポート画面（ReportPage）で使う型定義・ユーティリティ・データ加工関数
 
 import { formatDuration as formatDurationBase } from '../../lib/datetimeUtils';
 
