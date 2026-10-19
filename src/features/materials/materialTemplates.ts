@@ -1,5 +1,5 @@
 // src/features/materials/materialTemplates.ts
-// 教材の表紙テンプレート一覧。AddMaterial / MaterialEditDialog で共用。
+// 教材の表紙テンプレート一覧。AddMaterialPage / MaterialEditDialog で共用。
 
 export interface MaterialTemplate {
   id: string;
