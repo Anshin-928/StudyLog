@@ -31,3 +31,6 @@ dist-ssr
 
 # Claude Code（個人設定）
 .claude/settings.local.json
+
+# TypeScript のインクリメンタルビルドの情報
+*.tsbuildinfo

@@ -32,9 +32,26 @@ jobs:
       # Service Worker が Supabase の API 応答をキャッシュしていないこと（個人データが端末に残り、別のユーザーに返るため）
       - name: Assert service worker does not cache API responses
         run: |
-          # 画面遷移用の NavigationRoute（index.html を返す）は正当なので、キャッシュ戦略と supabase の有無で判定する
-          if grep -qE "NetworkFirst|CacheFirst|StaleWhileRevalidate|supabase" dist/sw.js; then
-            echo "dist/sw.js に実行時キャッシュの設定があります。vite.config.ts の runtimeCaching を確認してください。"
+          # 経路の登録は画面遷移用の NavigationRoute（index.html を返す）の1つだけであること。
+          # キャッシュ戦略名やキャッシュ名で判定すると、別の名前や独自のハンドラで API の経路が追加されたときに見逃す
+          routes=$(grep -o "registerRoute(" dist/sw.js | wc -l | tr -d " ")
+          if [ "$routes" -ne 1 ] || ! grep -q "registerRoute(new [A-Za-z_$.]*NavigationRoute(" dist/sw.js; then
+            echo "dist/sw.js に画面遷移以外の経路が登録されています（${routes} 件）。vite.config.ts の runtimeCaching を確認してください。"
+            exit 1
+          fi
+          # 経路を使わずに応答を返す・キャッシュする手段（既定や失敗時のハンドラ、キャッシュ戦略、Supabase 向けの設定）がないこと
+          if grep -qE "setDefaultHandler|setCatchHandler|NetworkFirst|CacheFirst|StaleWhileRevalidate|NetworkOnly|supabase" dist/sw.js; then
+            echo "dist/sw.js に実行時キャッシュやハンドラの設定があります。vite.config.ts の workbox を確認してください。"
+            exit 1
+          fi
+          # importScripts で読み込ませるスクリプトは削除だけを行い、応答を返したりキャッシュに保存したりしないこと（コメント行は除いて判定する）
+          if grep -vE "^[[:space:]]*//" public/sw-legacy-cache-cleanup.js | grep -qE "respondWith|caches\.open|\.put\(|\.add(All)?\(|importScripts"; then
+            echo "public/sw-legacy-cache-cleanup.js が応答を返すかキャッシュに保存しています。削除以外の処理を入れないでください。"
+            exit 1
+          fi
+          # 以前の 'supabase-cache' を削除する処理を Service Worker が読み込んでいること
+          if ! grep -q 'importScripts("sw-legacy-cache-cleanup.js")' dist/sw.js || [ ! -f dist/sw-legacy-cache-cleanup.js ]; then
+            echo "dist/sw.js が sw-legacy-cache-cleanup.js を読み込んでいません。vite.config.ts の workbox.importScripts を確認してください。"
             exit 1
           fi
 

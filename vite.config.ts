@@ -39,9 +39,12 @@ export default defineConfig({
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
+        // Service Worker 自身が importScripts で読み込むので、precache には入れない
+        globIgnores: ['sw-legacy-cache-cleanup.js'],
         // Supabase の API 応答はキャッシュしない（runtimeCaching を設定しない）。
         // キャッシュは URL だけで引かれ、誰のトークンで取得したかを区別しないため、ログアウト後も個人データが端末に残り、
-        // 通信断のときには別のユーザーに前のユーザーの応答が返る。以前のキャッシュは src/lib/serviceWorkerBoot.ts で消す
+        // 通信断のときには別のユーザーに前のユーザーの応答が返る。以前のキャッシュは新しい Service Worker が有効になった時点で消す
+        importScripts: ['sw-legacy-cache-cleanup.js'],
       },
     }),
   ],
