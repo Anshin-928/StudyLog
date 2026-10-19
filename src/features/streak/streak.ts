@@ -1,4 +1,4 @@
-// src/lib/streak.ts
+// src/features/streak/streak.ts
 // 連続学習日数（ストリーク）の計算
 
 /** 記録日時（ISO文字列）の配列から、今日または昨日を起点とした連続学習日数を返す */

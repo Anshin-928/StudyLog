@@ -1,8 +1,8 @@
-// src/hooks/useStudyLogs.ts
+// src/features/report/useStudyLogs.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import type { LogEntry } from '../lib/reportUtils';
+import { supabase } from '../../lib/supabase';
+import type { LogEntry } from './reportUtils';
 
 interface UseStudyLogsReturn {
   allLogs: LogEntry[];

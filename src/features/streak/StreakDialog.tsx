@@ -1,4 +1,4 @@
-// src/components/StreakDialog.tsx
+// src/features/streak/StreakDialog.tsx
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
@@ -24,7 +24,7 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import CalendarTodayRoundedIcon from '@mui/icons-material/CalendarTodayRounded';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 interface StreakDialogProps {
   open: boolean;

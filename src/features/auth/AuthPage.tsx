@@ -1,4 +1,4 @@
-// src/components/AuthPage.tsx
+// src/features/auth/AuthPage.tsx
 
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -20,10 +20,10 @@ import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined
 import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
-import studyLogLogo from '../assets/studyLogLogo.svg';
-import studyLogLogoDark from '../assets/studyLogLogo_dark.svg';
+import studyLogLogo from '../../assets/studyLogLogo.svg';
+import studyLogLogoDark from '../../assets/studyLogLogo_dark.svg';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 const OTP_LENGTH = 6;
 
