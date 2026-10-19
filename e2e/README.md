@@ -35,6 +35,10 @@ pnpm test:e2e:headed                         # ブラウザを表示し、1操�
 pnpm exec playwright test e2e/tests/record            # 特定の機能だけ実行
 ```
 
+ターミナルでは、実行を開始した順にテストが並び、実行中は経過時間、終了後は ✓ / ✘ と所要時間が表示される。
+表示は専用の画面で行うため上へスクロールはできず、終了後に失敗したテストの詳細とサマリーが表示される。
+成功したテストも含めた全結果とトレースは `pnpm exec playwright show-report` で確認できる。
+
 スキーマを初期状態に戻したいときは、実行前に `pnpm supabase:local:reset` を実行する（CIでは毎回実行している）。
 `supabase/seed.sql` は意図的に空にしている。共有のテストデータは入れないこと。
 
@@ -56,7 +60,7 @@ e2e/
   tests/                  specファイル。機能ごとにフォルダを分ける
     auth/                 ログイン・サインアップ・パスワードリセット
     record/               学習記録の追加・編集・削除
-    follows/              フォロー（非公開アカウントの承認制などRLSの検証を含む）
+    follow/               フォロー（非公開アカウントの承認制などRLSの検証を含む）
     storage/              画像アップロードの権限
     app/                  アプリ全体（新しい版の公開時の Service Worker・画面ファイルの扱いなど）
   helpers/                テスト作成でよく使うもの
@@ -70,12 +74,15 @@ e2e/
     assert-clean.sh       実行後にテストデータが残っていないことの検証
   global-setup.ts         全体の前処理
   global-teardown.ts      全体の後処理
+  reporter.ts             実行中のテスト一覧の表示（分類名の対応表もここにある）
 ```
 
 ### フォルダ・ファイルの分け方
 
 - `tests/<機能>/<操作>.spec.ts` とする（例: `tests/record/create-record.spec.ts`）
-- 機能フォルダはアプリの機能単位で切る。今後増える想定: `home/`（タイムライン・いいね）、`materials/`、`report/`、`profile/`、`follows/`、`settings/`
+- 機能フォルダはアプリの機能単位で切る。今後増える想定: `home/`（タイムライン・いいね）、`material/`、`report/`、`profile/`、`setting/`
+- フォルダ名は英語の単数形にする
+- 実行中の一覧には、フォルダごとの日本語の分類名が先頭に表示される（例: `認証 > メールアドレスでのログイン > ...`）。フォルダを追加したら `e2e/reporter.ts` の `CATEGORY_LABELS` に分類名を追加する（未登録だと実行後に警告が出る）
 - 1ファイルには1つの操作に関するテストをまとめ、`test.describe` 名はその操作を表す日本語にする
 - 複数のspecで使う処理は spec 内に書かず `helpers/` に置く
 
