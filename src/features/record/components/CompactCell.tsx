@@ -1,5 +1,5 @@
-// src/components/record/CompactCell.tsx
-// 記録入力フォームの1行セル（Record / EditRecordDialog 共通）
+// src/features/record/components/CompactCell.tsx
+// 記録入力フォームの1行セル（RecordPage / EditRecordDialog 共通）
 
 import React from 'react';
 import { Box, Typography } from '@mui/material';

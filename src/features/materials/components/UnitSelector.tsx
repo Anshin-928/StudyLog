@@ -1,8 +1,8 @@
-// src/components/UnitSelector.tsx
+// src/features/materials/components/UnitSelector.tsx
 
 import React from 'react';
 import { Box, Typography, useTheme, alpha } from '@mui/material'; // 🌟 useTheme, alpha を追加
-import { MATERIAL_UNITS, MaterialUnit } from '../constants/materialUnits';
+import { MATERIAL_UNITS, MaterialUnit } from '../materialUnits';
 
 interface UnitSelectorProps {
   value: MaterialUnit;

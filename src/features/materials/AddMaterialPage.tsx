@@ -1,4 +1,4 @@
-// src/components/AddMaterial.tsx
+// src/features/materials/AddMaterialPage.tsx
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useBlocker } from 'react-router-dom';
@@ -31,11 +31,11 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 
-import { supabase } from '../lib/supabase';
-import { validateImageFile, safeImageExt } from '../lib/imageValidation';
-import NavigationBlockerDialog from './NavigationBlockerDialog';
-import { MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
-import UnitSelector from './UnitSelector';
+import { supabase } from '../../lib/supabase';
+import { validateImageFile, safeImageExt } from '../../lib/imageValidation';
+import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
+import { MaterialUnit, DEFAULT_UNIT } from './materialUnits';
+import UnitSelector from './components/UnitSelector';
 
 const TEMPLATES = [
   { id: 'book_blue', url: '/images/templates/book_blue.png', label: '青色の本' },
@@ -70,7 +70,7 @@ interface CategoryOption {
 
 const NEW_CATEGORY_PREFIX = '__new__';
 
-export default function AddMaterial() {
+export default function AddMaterialPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();

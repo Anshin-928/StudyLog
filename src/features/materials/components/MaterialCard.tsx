@@ -1,4 +1,4 @@
-// src/components/MaterialCard.tsx
+// src/features/materials/components/MaterialCard.tsx
 
 import React, { useState } from 'react';
 import {

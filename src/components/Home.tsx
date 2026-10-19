@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { goalCategoryLabel } from '../constants/goalGroups';
 import { fetchLikes, useLikeToggle } from '../hooks/useLikes';
-import EditRecordDialog, { EditableEntry } from './EditRecordDialog';
+import EditRecordDialog, { EditableEntry } from '../features/record/EditRecordDialog';
 import ConfirmDialog from './ConfirmDialog';
 import TimelineItem from './TimelineItem';
 import type { TimelineEntry } from './TimelineItem';

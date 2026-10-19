@@ -1,5 +1,5 @@
-// src/components/record/MaterialSelectDialog.tsx
-// 教材選択ダイアログ（Record / EditRecordDialog 共通）
+// src/features/record/components/MaterialSelectDialog.tsx
+// 教材選択ダイアログ（RecordPage / EditRecordDialog 共通）
 
 import {
   Box,
@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
-import type { Material } from '../../types/record';
+import type { Material } from '../../../types/record';
 
 function SelectableMaterialCard({
   material,

@@ -1,5 +1,5 @@
-// src/components/record/DurationDialog.tsx
-// 学習時間入力ダイアログ（Record / EditRecordDialog 共通）
+// src/features/record/components/DurationDialog.tsx
+// 学習時間入力ダイアログ（RecordPage / EditRecordDialog 共通）
 
 import { useState, useEffect } from 'react';
 import {
@@ -13,7 +13,7 @@ import {
   DialogActions,
   useTheme,
 } from '@mui/material';
-import { formatDuration } from '../../lib/datetimeUtils';
+import { formatDuration } from '../../../lib/datetimeUtils';
 
 export default function DurationDialog({
   open,

@@ -1,8 +1,8 @@
-// src/lib/materialsApi.ts
-// アクティブな教材の取得（Record / EditRecordDialog 共通）
+// src/features/materials/api.ts
+// アクティブな教材の取得（RecordPage / EditRecordDialog 共通）
 
-import { supabase } from './supabase';
-import type { Material } from '../types/record';
+import { supabase } from '../../lib/supabase';
+import type { Material } from '../../types/record';
 
 export async function fetchActiveMaterials(fallbackColor = '#ccc'): Promise<Material[]> {
   const {

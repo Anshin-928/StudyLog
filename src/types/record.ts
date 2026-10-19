@@ -1,5 +1,5 @@
 // src/types/record.ts
-// 記録入力（Record / EditRecordDialog）で共有するアプリ内型
+// 記録入力（RecordPage / EditRecordDialog）で共有するアプリ内型
 
 export interface Material {
   id: string;

@@ -1,4 +1,4 @@
-// src/components/CategoryEditDialog.tsx
+// src/features/materials/components/CategoryEditDialog.tsx
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -40,8 +40,8 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { supabase } from '../lib/supabase';
-import ConfirmDialog from './ConfirmDialog';
+import { supabase } from '../../../lib/supabase';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 
 const PALETTE = ['#1A73E8', '#E53935', '#43A047', '#FFB300', '#8E24AA', '#00ACC1', '#9E9E9E'];
 
