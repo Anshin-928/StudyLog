@@ -28,7 +28,7 @@
 アップロード時に申告される形式（Content-Type）だけで、ファイルの中身が実際に画像かどうかは確認しない。
 
 `e4a` と `e4b` は、実行する時点の状態を取り違えると別の問題を起こす（前半の状態で `e4b` → 旧画面のアップロードが失敗、
-後半の状態で `e4a` → 閉じた `public/` が再び開く）。実行前に `npx supabase migration list --linked` で、
+後半の状態で `e4a` → 閉じた `public/` が再び開く）。実行前に `pnpm exec supabase migration list --linked` で、
 Remote に `20260926120100` があるか（後半まで適用済みか）を確かめる。
 
 `e6` の診断に当てはまらない場合（権限もトリガーも正常なのに失敗する）は、SQLで直さずに Postgres のログのエラー本文から原因を調べる。
@@ -56,24 +56,24 @@ SECURITY DEFINER の関数の search_path は、原因が特定できないま�
 1. 実行したファイルと日時を記録する
 2. マイグレーションを作る
    ```bash
-   npx supabase migration new emergency_<ファイル名の e1 などを除いた部分>
+   pnpm exec supabase migration new emergency_<ファイル名の e1 などを除いた部分>
    ```
    （スクリプトやパイプの中で実行すると、標準入力からSQLを待って止まる。その場合は末尾に `< /dev/null` を付ける）
    できたファイルに、実行したSQLを貼り付ける。**`BEGIN;` / `COMMIT;` の行と、最後の確認用 `SELECT` は削除する**
    （マイグレーションは適用時に1つのトランザクションで実行されるため）
 3. 本番では実行済みなので、再実行せずに「適用済み」として記録する
    ```bash
-   npx supabase migration repair --status applied <手順2で作ったファイルのタイムスタンプ> --linked
-   npx supabase migration list --linked   # Local と Remote の両方に、そのタイムスタンプがあること
+   pnpm exec supabase migration repair --status applied <手順2で作ったファイルのタイムスタンプ> --linked
+   pnpm exec supabase migration list --linked   # Local と Remote の両方に、そのタイムスタンプがあること
    ```
 4. 本番とリポジトリのスキーマが一致したことを確かめる
    ```bash
-   npx supabase db diff --linked --schema public,storage   # 「No schema changes found」と出ること
+   pnpm exec supabase db diff --linked --schema public,storage   # 「No schema changes found」と出ること
    ```
    バケットの設定（`e3a` / `e3b`）は `db diff` の対象外なので、実行した場合は `storage.buckets` を SELECT して、
    マイグレーションを適用したローカルと本番で同じ値になっていることを確かめる。
    診断SQL（`e6_diagnose_signup_withdrawal.sql`）は何も変更しないので、マイグレーションにする必要はない
-5. ローカルで `npm run supabase:local:reset` を実行し、e2e を流す。結果に応じてテストを直す
+5. ローカルで `pnpm supabase:local:reset` を実行し、e2e を流す。結果に応じてテストを直す
    - `e5` を実行した場合、`e2e/tests/storage/legacy-path-closed.spec.ts` は失敗する（旧パスを再び許可したため）。
      旧パスを再び閉じるまでの間は、このテストを `legacy-path-transition.spec.ts` に戻す
    - `e3a` / `e3b` を実行した場合、マイグレーションには `<BUCKET>` などを実際に使った値に置き換えた後のSQLを貼り付ける

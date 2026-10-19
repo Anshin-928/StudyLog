@@ -21,11 +21,11 @@ description: StudyLogのE2Eテスト（Playwright）を作成・修正するエ�
 3. テストを書く。`test` / `expect` は `helpers/fixtures` から import する
 4. 2つ以上のspecで使う処理は `e2e/helpers/` に切り出す
 5. 以下を実行し、全て成功することを確認する
-   - `npx tsc -p e2e/tsconfig.json`
-   - `npx playwright test <作成したspec> --repeat-each=3 --workers=3`（並列・繰り返しでも結果が変わらないこと）
-   - `npm run test:e2e`（既存テストを壊していないこと）
+   - `pnpm exec tsc -p e2e/tsconfig.json`
+   - `pnpm exec playwright test <作成したspec> --repeat-each=3 --workers=3`（並列・繰り返しでも結果が変わらないこと）
+   - `pnpm test:e2e`（既存テストを壊していないこと）
 6. 実行後、テストデータが残っていないことを確認する
-   - `npm run test:e2e:assert-clean` が成功すること
+   - `pnpm test:e2e:assert-clean` が成功すること
 
 ## 禁止事項
 
