@@ -1,4 +1,4 @@
-// src/components/Sidebar.tsx
+// src/app/Sidebar.tsx
 
 import {
   Drawer,

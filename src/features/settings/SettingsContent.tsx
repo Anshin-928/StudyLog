@@ -33,7 +33,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { supabase } from '../../lib/supabase';
-import { ColorModeContext } from '../../App';
+import { ColorModeContext } from '../../app/contexts';
 
 // ==========================================
 // 共通 UI パーツ
