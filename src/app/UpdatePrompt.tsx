@@ -1,4 +1,4 @@
-// src/components/UpdatePrompt.tsx
+// src/app/UpdatePrompt.tsx
 // 新しいバージョンが公開されたら再読み込みを促す。
 // SPA/PWAは開いたままだと古いコードで動き続け、DB側の変更（廃止したAPI・RLSの強化など）と食い違うため、
 // 定期的に更新を確認する。新しいService Workerは autoUpdate で自動的に有効になる（vite.config.ts）が、
