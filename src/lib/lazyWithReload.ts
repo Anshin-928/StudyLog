@@ -33,7 +33,8 @@ let reloading = false;
 // ブラウザごとの、動的 import でファイルを取得・読み込みできなかったときのメッセージ（Chrome / Firefox / Safari）、
 // Safari で JavaScript 以外（index.html など）が返ったときのメッセージと、Vite が依存する CSS を読み込めなかったときのメッセージ。
 // E2E は Chromium でしか確かめていないので、ほかのブラウザで当てはまらない文言が見つかったらここに足す
-const CHUNK_LOAD_ERROR = /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type|Unable to preload CSS/i;
+const CHUNK_LOAD_ERROR =
+  /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type|Unable to preload CSS/i;
 
 export function isChunkLoadError(error: unknown): boolean {
   return error instanceof Error && CHUNK_LOAD_ERROR.test(error.message);
@@ -55,13 +56,18 @@ function reloadForChunkError(): boolean {
 }
 
 export function lazyWithReload<T extends ComponentType>(factory: () => Promise<{ default: T }>) {
-  return lazy(() => factory().then((module) => {
-    loadedByChunkReload = false;
-    return module;
-  }, (error: unknown) => {
-    console.error('[lazyWithReload] 画面のファイルを読み込めませんでした:', error);
-    if (!isChunkLoadError(error) || !reloadForChunkError()) throw error;
-    // 読み込み直すまで、読み込み中の表示のままにする
-    return new Promise<{ default: T }>(() => {});
-  }));
+  return lazy(() =>
+    factory().then(
+      (module) => {
+        loadedByChunkReload = false;
+        return module;
+      },
+      (error: unknown) => {
+        console.error('[lazyWithReload] 画面のファイルを読み込めませんでした:', error);
+        if (!isChunkLoadError(error) || !reloadForChunkError()) throw error;
+        // 読み込み直すまで、読み込み中の表示のままにする
+        return new Promise<{ default: T }>(() => {});
+      },
+    ),
+  );
 }

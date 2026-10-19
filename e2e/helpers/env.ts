@@ -15,7 +15,9 @@ export function requiredLocalUrl(name: string): string {
   const value = requiredEnv(name);
   const { hostname } = new URL(value);
   if (!LOCAL_HOSTS.includes(hostname)) {
-    throw new Error(`${name}=${value} はローカルではありません。e2eはローカルSupabaseでのみ実行できます。`);
+    throw new Error(
+      `${name}=${value} はローカルではありません。e2eはローカルSupabaseでのみ実行できます。`,
+    );
   }
   return value;
 }
@@ -31,6 +33,8 @@ export function assertSameSupabase(nameA: string, nameB: string): void {
   const a = requiredLocalUrl(nameA);
   const b = requiredLocalUrl(nameB);
   if (normalize(a) !== normalize(b)) {
-    throw new Error(`${nameA}=${a} と ${nameB}=${b} が別のSupabaseを指しています。同じ接続先にしてください。`);
+    throw new Error(
+      `${nameA}=${a} と ${nameB}=${b} が別のSupabaseを指しています。同じ接続先にしてください。`,
+    );
   }
 }

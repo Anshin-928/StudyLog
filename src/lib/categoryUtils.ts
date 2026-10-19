@@ -27,16 +27,13 @@ export const NEW_CATEGORY_PREFIX = '__new__';
 // ==========================================
 export const buildCategoryOptions = (
   inputValue: string,
-  base: CategoryOption[]
+  base: CategoryOption[],
 ): CategoryOption[] => {
   const trimmed = inputValue.trim();
-  const exactMatch = base.some(c => c.name === trimmed);
+  const exactMatch = base.some((c) => c.name === trimmed);
 
   if (trimmed && !exactMatch) {
-    return [
-      ...base,
-      { id: `${NEW_CATEGORY_PREFIX}${trimmed}`, name: trimmed, isNew: true },
-    ];
+    return [...base, { id: `${NEW_CATEGORY_PREFIX}${trimmed}`, name: trimmed, isNew: true }];
   }
   return base;
 };
@@ -47,10 +44,7 @@ export const buildCategoryOptions = (
 // 既存カテゴリがあればその ID を返し、
 // なければ INSERT して新しい ID を返す。
 // ==========================================
-export const resolveCategory = async (
-  name: string,
-  colorCode?: string
-): Promise<string> => {
+export const resolveCategory = async (name: string, colorCode?: string): Promise<string> => {
   const { data: existing } = await supabase
     .from('categories')
     .select('id')
@@ -59,7 +53,9 @@ export const resolveCategory = async (
 
   if (existing) return existing.id;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
   const insertData: CategoryInsert = { name, user_id: user.id };

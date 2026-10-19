@@ -2,8 +2,13 @@
 
 import React, { useRef } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Typography, Box, useTheme
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
 } from '@mui/material';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
@@ -26,13 +31,13 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const theme = useTheme();
-
   const touchHandledRef = useRef(false);
 
   const handleTouchEnd = (e: React.TouchEvent, action: () => void) => {
     touchHandledRef.current = true;
-    setTimeout(() => { touchHandledRef.current = false; }, 500);
+    setTimeout(() => {
+      touchHandledRef.current = false;
+    }, 500);
     const touch = e.changedTouches[0];
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
@@ -57,26 +62,37 @@ export default function ConfirmDialog({
       onClose={onCancel}
       maxWidth="xs"
       fullWidth
-      PaperProps={{ 
-        sx: { 
-          borderRadius: '20px', 
-          p: { xs: 1, sm: 2 }, 
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          p: { xs: 1, sm: 2 },
           m: { xs: 2, sm: 'auto' },
           backgroundImage: 'none',
-        } 
+        },
       }}
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <WarningAmberRoundedIcon sx={{ color: 'error.main', fontSize: '28px' }} />
-          <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.1rem', sm: '1.25rem' }, color: 'text.primary' }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 'bold',
+              fontSize: { xs: '1.1rem', sm: '1.25rem' },
+              color: 'text.primary',
+            }}
+          >
             {title}
           </Typography>
         </Box>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 0, pb: { xs: 2, sm: 3 } }}>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, fontSize: { xs: '13px', sm: '14px' } }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ lineHeight: 1.7, fontSize: { xs: '13px', sm: '14px' } }}
+        >
           {message}
         </Typography>
       </DialogContent>
@@ -86,13 +102,13 @@ export default function ConfirmDialog({
           onTouchEnd={(e) => handleTouchEnd(e, onCancel)}
           variant="outlined"
           onClick={(e) => handleClick(e, onCancel)}
-          sx={{ 
-            color: 'text.secondary', 
-            fontWeight: 'bold', 
-            flex: 1, 
-            borderRadius: '8px', 
-            py: 1, 
-            borderColor: 'divider' 
+          sx={{
+            color: 'text.secondary',
+            fontWeight: 'bold',
+            flex: 1,
+            borderRadius: '8px',
+            py: 1,
+            borderColor: 'divider',
           }}
         >
           {cancelLabel}

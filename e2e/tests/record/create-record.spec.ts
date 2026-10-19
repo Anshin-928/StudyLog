@@ -1,7 +1,10 @@
 import { test, expect } from '../../helpers/fixtures';
 
 test.describe('記録の追加', () => {
-  test('記録を追加するとホームのタイムラインに表示される', async ({ loggedInPage: page, testUser }) => {
+  test('記録を追加するとホームのタイムラインに表示される', async ({
+    loggedInPage: page,
+    testUser,
+  }) => {
     // 他ユーザーの記録も表示される画面で並列実行中の別テストの記録と衝突しないよう一意にする
     const memo = `e2eテストの記録メモ ${testUser.id}`;
 

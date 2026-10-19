@@ -2,9 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Box, IconButton, TextField, Popover, CircularProgress,
-  Snackbar, Alert, Typography, useTheme, alpha,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Box,
+  IconButton,
+  TextField,
+  Popover,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Typography,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import DragIndicatorOutlinedIcon from '@mui/icons-material/DragIndicatorOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -50,7 +62,11 @@ interface CategoryEditDialogProps {
 // ソータブル行コンポーネント
 // ==========================================
 function SortableCategoryRow({
-  cat, isDefault, onColorClick, onNameChange, onDelete,
+  cat,
+  isDefault,
+  onColorClick,
+  onNameChange,
+  onDelete,
 }: {
   cat: Category;
   isDefault: boolean;
@@ -59,14 +75,10 @@ function SortableCategoryRow({
   onDelete: (id: string) => void;
 }) {
   const theme = useTheme();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: cat.id, disabled: isDefault });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: cat.id,
+    disabled: isDefault,
+  });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -79,7 +91,9 @@ function SortableCategoryRow({
     <Box ref={setNodeRef} style={style} sx={{ pb: '12px' }}>
       <Box
         sx={{
-          display: 'flex', alignItems: 'center', p: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          p: 1.5,
           backgroundColor: isDragging
             ? alpha(theme.palette.primary.main, 0.08)
             : 'background.paper',
@@ -96,7 +110,9 @@ function SortableCategoryRow({
         <Box
           {...(isDefault ? {} : { ...attributes, ...listeners })}
           sx={{
-            display: 'flex', alignItems: 'center', mr: 1,
+            display: 'flex',
+            alignItems: 'center',
+            mr: 1,
             cursor: isDefault ? 'default' : 'grab',
             touchAction: 'none',
             '&:active': { cursor: isDefault ? 'default' : 'grabbing' },
@@ -108,7 +124,9 @@ function SortableCategoryRow({
 
         <IconButton
           size="small"
-          onClick={(e: React.MouseEvent<HTMLButtonElement>) => !isDefault && onColorClick(e, cat.id)}
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+            !isDefault && onColorClick(e, cat.id)
+          }
           sx={{ mr: 1, p: 0.5 }}
           disabled={isDefault}
         >
@@ -118,7 +136,9 @@ function SortableCategoryRow({
         <TextField
           variant="standard"
           value={cat.name}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onNameChange(cat.id, e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onNameChange(cat.id, e.target.value)
+          }
           disabled={isDefault}
           fullWidth
           InputProps={{ disableUnderline: true, sx: { fontWeight: 'bold', color: 'text.primary' } }}
@@ -153,11 +173,14 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
-  const deleteCategoryName = categories.find(c => c.id === deleteCategoryId)?.name ?? '';
+  const deleteCategoryName = categories.find((c) => c.id === deleteCategoryId)?.name ?? '';
 
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: '',
+  });
   const showSnackbar = (message: string) => setSnackbar({ open: true, message });
-  const handleSnackbarClose = () => setSnackbar(s => ({ ...s, open: false }));
+  const handleSnackbarClose = () => setSnackbar((s) => ({ ...s, open: false }));
 
   // ==========================================
   // dnd-kit センサー設定
@@ -170,8 +193,8 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 150,       // 150ms 押し続けるとドラッグ開始
-        tolerance: 8,     // 8px 以内の動きはスクロールではなくドラッグ意図と判断
+        delay: 150, // 150ms 押し続けるとドラッグ開始
+        tolerance: 8, // 8px 以内の動きはスクロールではなくドラッグ意図と判断
       },
     }),
   );
@@ -183,13 +206,19 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase.from('categories').select('*').eq('user_id', user.id).order('sort_order', { ascending: true });
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('sort_order', { ascending: true });
       if (error) throw error;
-      setCategories((data ?? []).map(c => ({ ...c, color_code: c.color_code ?? '#9E9E9E' })));
+      setCategories((data ?? []).map((c) => ({ ...c, color_code: c.color_code ?? '#9E9E9E' })));
     } catch (error) {
-      console.error("カテゴリ取得エラー:", error);
+      console.error('カテゴリ取得エラー:', error);
     } finally {
       setIsLoading(false);
     }
@@ -204,15 +233,15 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    setCategories(prev => {
-      const oldIndex = prev.findIndex(c => c.id === active.id);
-      const newIndex = prev.findIndex(c => c.id === over.id);
+    setCategories((prev) => {
+      const oldIndex = prev.findIndex((c) => c.id === active.id);
+      const newIndex = prev.findIndex((c) => c.id === over.id);
       return arrayMove(prev, oldIndex, newIndex);
     });
   };
 
   const handleNameChange = (id: string, newName: string) => {
-    setCategories(prev => prev.map(cat => cat.id === id ? { ...cat, name: newName } : cat));
+    setCategories((prev) => prev.map((cat) => (cat.id === id ? { ...cat, name: newName } : cat)));
   };
 
   const handleColorClick = (event: React.MouseEvent<HTMLElement>, id: string) => {
@@ -222,7 +251,9 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
 
   const handleColorSelect = (color: string) => {
     if (activeCategoryId) {
-      setCategories(prev => prev.map(cat => cat.id === activeCategoryId ? { ...cat, color_code: color } : cat));
+      setCategories((prev) =>
+        prev.map((cat) => (cat.id === activeCategoryId ? { ...cat, color_code: color } : cat)),
+      );
     }
     setColorAnchorEl(null);
   };
@@ -234,73 +265,119 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
       color_code: PALETTE[0],
       sort_order: categories.length,
     };
-    setCategories(prev => [...prev, newCat]);
+    setCategories((prev) => [...prev, newCat]);
   };
 
   const handleDeleteCategory = (id: string) => setDeleteCategoryId(id);
 
   const handleConfirmDelete = () => {
-    setCategories(prev => prev.filter(cat => cat.id !== deleteCategoryId));
+    setCategories((prev) => prev.filter((cat) => cat.id !== deleteCategoryId));
     setDeleteCategoryId(null);
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       let nullCategoryId;
-      const { data: nullCat } = await supabase.from('categories').select('id').eq('name', 'カテゴリなし').eq('user_id', user.id).single();
+      const { data: nullCat } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', 'カテゴリなし')
+        .eq('user_id', user.id)
+        .single();
       if (nullCat) {
         nullCategoryId = nullCat.id;
       } else {
-        const { data: newNullCat } = await supabase.from('categories').insert([{ name: 'カテゴリなし', color_code: theme.palette.divider, sort_order: 0, user_id: user.id }]).select().single();
+        const { data: newNullCat } = await supabase
+          .from('categories')
+          .insert([
+            {
+              name: 'カテゴリなし',
+              color_code: theme.palette.divider,
+              sort_order: 0,
+              user_id: user.id,
+            },
+          ])
+          .select()
+          .single();
         nullCategoryId = newNullCat?.id;
       }
 
-      const { data: dbCategories } = await supabase.from('categories').select('id').eq('user_id', user.id);
-      const currentIds = categories.filter(c => !c.id.startsWith('new-')).map(c => c.id);
-      const deletedIds = dbCategories?.filter(c => c.id !== nullCategoryId).map(c => c.id).filter(id => !currentIds.includes(id)) || [];
+      const { data: dbCategories } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', user.id);
+      const currentIds = categories.filter((c) => !c.id.startsWith('new-')).map((c) => c.id);
+      const deletedIds =
+        dbCategories
+          ?.filter((c) => c.id !== nullCategoryId)
+          .map((c) => c.id)
+          .filter((id) => !currentIds.includes(id)) || [];
 
-      await Promise.all(deletedIds.map(async (dId) => {
-        await supabase.from('materials').update({ category_id: nullCategoryId }).eq('category_id', dId);
-        await supabase.from('categories').delete().eq('id', dId);
-      }));
+      await Promise.all(
+        deletedIds.map(async (dId) => {
+          await supabase
+            .from('materials')
+            .update({ category_id: nullCategoryId })
+            .eq('category_id', dId);
+          await supabase.from('categories').delete().eq('id', dId);
+        }),
+      );
 
-      await Promise.all(categories.map((cat, i) => {
-        if (cat.id.startsWith('new-')) {
-          return supabase.from('categories').insert([{ name: cat.name, color_code: cat.color_code, sort_order: i, user_id: user.id }]);
-        } else {
-          return supabase.from('categories').update({ name: cat.name, color_code: cat.color_code, sort_order: i }).eq('id', cat.id);
-        }
-      }));
+      await Promise.all(
+        categories.map((cat, i) => {
+          if (cat.id.startsWith('new-')) {
+            return supabase
+              .from('categories')
+              .insert([
+                { name: cat.name, color_code: cat.color_code, sort_order: i, user_id: user.id },
+              ]);
+          } else {
+            return supabase
+              .from('categories')
+              .update({ name: cat.name, color_code: cat.color_code, sort_order: i })
+              .eq('id', cat.id);
+          }
+        }),
+      );
 
       onUpdated();
       onClose();
     } catch (error) {
-      console.error("保存エラー:", error);
-      showSnackbar("保存中にエラーが発生しました。時間をおいて再度お試しください。");
+      console.error('保存エラー:', error);
+      showSnackbar('保存中にエラーが発生しました。時間をおいて再度お試しください。');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const activeDragCat = categories.find(c => c.id === activeDragId);
+  const activeDragCat = categories.find((c) => c.id === activeDragId);
 
   return (
     <>
       <Dialog
         open={open}
-        onClose={(_, reason) => { if (reason === 'backdropClick') return; if (!isSaving) onClose(); }}
+        onClose={(_, reason) => {
+          if (reason === 'backdropClick') return;
+          if (!isSaving) onClose();
+        }}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>カテゴリの編集</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>
+          カテゴリの編集
+        </DialogTitle>
         <DialogContent sx={{ minHeight: '300px' }}>
           {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress /></Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+              <CircularProgress />
+            </Box>
           ) : (
             <DndContext
               sensors={sensors}
@@ -309,11 +386,11 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={categories.map(c => c.id)}
+                items={categories.map((c) => c.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <Box sx={{ pt: 1 }}>
-                  {categories.map(cat => (
+                  {categories.map((cat) => (
                     <SortableCategoryRow
                       key={cat.id}
                       cat={cat}
@@ -323,7 +400,11 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                       onDelete={handleDeleteCategory}
                     />
                   ))}
-                  <Button startIcon={<AddIcon />} onClick={handleAddCategory} sx={{ mt: 2, fontWeight: 'bold', pl: 4 }}>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={handleAddCategory}
+                    sx={{ mt: 2, fontWeight: 'bold', pl: 4 }}
+                  >
                     新しいカテゴリを追加
                   </Button>
                 </Box>
@@ -334,9 +415,12 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
                 {activeDragCat && (
                   <Box
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      p: 1.5,
                       backgroundColor: 'background.paper',
-                      border: '1px solid', borderColor: 'primary.main',
+                      border: '1px solid',
+                      borderColor: 'primary.main',
                       borderRadius: '8px',
                       boxShadow: theme.customShadows.lg ?? theme.customShadows.md,
                       opacity: 0.95,
@@ -356,8 +440,20 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
         </DialogContent>
 
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={onClose} disabled={isSaving} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>キャンセル</Button>
-          <Button onClick={handleSave} variant="contained" disabled={isSaving} disableElevation sx={{ borderRadius: '8px', fontWeight: 'bold', px: 4 }}>
+          <Button
+            onClick={onClose}
+            disabled={isSaving}
+            sx={{ color: 'text.secondary', fontWeight: 'bold' }}
+          >
+            キャンセル
+          </Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={isSaving}
+            disableElevation
+            sx={{ borderRadius: '8px', fontWeight: 'bold', px: 4 }}
+          >
             {isSaving ? '保存中...' : '保存して完了'}
           </Button>
         </DialogActions>
@@ -370,13 +466,17 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         sx={{
           '& .MuiPaper-root': {
-            borderRadius: '12px', p: 1.5, display: 'flex', gap: 1,
-            backgroundColor: 'background.paper', backgroundImage: 'none',
+            borderRadius: '12px',
+            p: 1.5,
+            display: 'flex',
+            gap: 1,
+            backgroundColor: 'background.paper',
+            backgroundImage: 'none',
             boxShadow: theme.customShadows.md,
-          }
+          },
         }}
       >
-        {PALETTE.map(color => (
+        {PALETTE.map((color) => (
           <IconButton key={color} onClick={() => handleColorSelect(color)} sx={{ p: 0.5 }}>
             <CircleIcon sx={{ color: color, fontSize: '28px' }} />
           </IconButton>
@@ -392,7 +492,8 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
               カテゴリ<strong>「{deleteCategoryName}」</strong>を削除します。
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              このカテゴリに含まれる教材は削除されず、<strong>「カテゴリなし」</strong>に自動的に移動します。
+              このカテゴリに含まれる教材は削除されず、<strong>「カテゴリなし」</strong>
+              に自動的に移動します。
             </Typography>
           </>
         }

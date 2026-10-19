@@ -16,7 +16,10 @@ const TERMS_PAGE_MODULE = '**/src/components/TermsOfServicePage.tsx*';
 function putLegacyCache(page: Page) {
   return page.evaluate(async (name) => {
     const cache = await caches.open(name);
-    await cache.put('http://127.0.0.1:54321/auth/v1/user', new Response('{"email":"someone@example.com"}'));
+    await cache.put(
+      'http://127.0.0.1:54321/auth/v1/user',
+      new Response('{"email":"someone@example.com"}'),
+    );
   }, LEGACY_CACHE);
 }
 
@@ -39,12 +42,16 @@ async function serveIndexHtmlFor(page: Page, pattern: string, times = Infinity) 
 // ページ本体（index.html）を読み込んだ回数を数える（ページ内の画面遷移は数えない）
 function countDocumentLoads(page: Page) {
   const counter = { value: 0 };
-  page.on('request', (request) => { if (request.isNavigationRequest() && request.frame() === page.mainFrame()) counter.value += 1; });
+  page.on('request', (request) => {
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) counter.value += 1;
+  });
   return counter;
 }
 
 test.describe('新しい版の公開', () => {
-  test('新しい Service Worker が有効になると、以前の API 応答のキャッシュを削除する', async ({ page }) => {
+  test('新しい Service Worker が有効になると、以前の API 応答のキャッシュを削除する', async ({
+    page,
+  }) => {
     await page.goto('/login');
     await putLegacyCache(page);
 
@@ -58,7 +65,8 @@ test.describe('新しい版の公開', () => {
       await new Promise<void>((resolve, reject) => {
         worker.addEventListener('statechange', () => {
           if (worker.state === 'activated') resolve();
-          if (worker.state === 'redundant') reject(new Error('Service Worker のインストールか有効化に失敗しました'));
+          if (worker.state === 'redundant')
+            reject(new Error('Service Worker のインストールか有効化に失敗しました'));
         });
       });
     });
@@ -73,7 +81,11 @@ test.describe('新しい版の公開', () => {
       await expect.poll(() => hasLegacyCache(page)).toBe(false);
     } finally {
       await page.evaluate(async () => {
-        await Promise.all((await navigator.serviceWorker.getRegistrations()).map((registration) => registration.unregister()));
+        await Promise.all(
+          (await navigator.serviceWorker.getRegistrations()).map((registration) =>
+            registration.unregister(),
+          ),
+        );
       });
     }
   });
@@ -88,7 +100,9 @@ test.describe('新しい版の公開', () => {
     expect(documentLoads.value).toBe(2);
   });
 
-  test('自動で読み込み直して表示できた後も、次に読み込めなかったときにまた読み込み直す', async ({ page }) => {
+  test('自動で読み込み直して表示できた後も、次に読み込めなかったときにまた読み込み直す', async ({
+    page,
+  }) => {
     await serveIndexHtmlFor(page, AUTH_PAGE_MODULE, 1);
     const documentLoads = countDocumentLoads(page);
     await page.goto('/login');
@@ -103,7 +117,9 @@ test.describe('新しい版の公開', () => {
     expect(documentLoads.value).toBe(3);
   });
 
-  test('読み込み直しても失敗したら、繰り返さずにエラーを出し、再読み込みで表示できる', async ({ page }) => {
+  test('読み込み直しても失敗したら、繰り返さずにエラーを出し、再読み込みで表示できる', async ({
+    page,
+  }) => {
     await serveIndexHtmlFor(page, AUTH_PAGE_MODULE);
     const documentLoads = countDocumentLoads(page);
 
@@ -118,10 +134,16 @@ test.describe('新しい版の公開', () => {
     await expect(page.getByLabel('メールアドレスを入力')).toBeVisible();
   });
 
-  test('画面のコードが実行中に例外を投げたら、読み込み直さずに通信の問題ではないエラーを出す', async ({ page }) => {
-    await page.route(AUTH_PAGE_MODULE, (route) => route.fulfill({
-      status: 200, contentType: 'text/javascript', body: 'throw new Error("画面のコードの不具合");',
-    }));
+  test('画面のコードが実行中に例外を投げたら、読み込み直さずに通信の問題ではないエラーを出す', async ({
+    page,
+  }) => {
+    await page.route(AUTH_PAGE_MODULE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/javascript',
+        body: 'throw new Error("画面のコードの不具合");',
+      }),
+    );
     const documentLoads = countDocumentLoads(page);
 
     await page.goto('/login');

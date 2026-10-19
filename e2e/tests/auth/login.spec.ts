@@ -13,7 +13,9 @@ test.describe('メールアドレスでのログイン', () => {
     await page.getByLabel('パスワード', { exact: true }).fill(`${testUser.password}-wrong`);
     await page.getByRole('button', { name: 'ログイン' }).click();
 
-    await expect(page.getByText('メールアドレスまたはパスワードが正しくありません。')).toBeVisible();
+    await expect(
+      page.getByText('メールアドレスまたはパスワードが正しくありません。'),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 });

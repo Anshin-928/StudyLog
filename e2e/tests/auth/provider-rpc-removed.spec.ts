@@ -5,7 +5,9 @@ import { createAnonClient } from '../../helpers/userClient';
 
 test.describe('登録有無を判定するRPCの廃止', () => {
   test('未ログインでは check_user_provider を呼べない', async ({ testUser }) => {
-    const { error } = await createAnonClient().rpc('check_user_provider', { p_email: testUser.email });
+    const { error } = await createAnonClient().rpc('check_user_provider', {
+      p_email: testUser.email,
+    });
 
     expect(error).not.toBeNull();
   });

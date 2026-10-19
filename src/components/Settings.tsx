@@ -9,11 +9,25 @@ export default function Settings() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
-
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        maxWidth: '1100px',
+        margin: '0 auto',
+        width: '100%',
+      }}
+    >
       {/* ページヘッダー */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, color: 'text.primary' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            mr: 1.5,
+            '& svg': { fontSize: isMobile ? '24px' : '32px' },
+          }}
+        >
           <SettingsOutlinedIcon />
         </Box>
         <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>
@@ -25,7 +39,6 @@ export default function Settings() {
       <Box sx={{ pb: 2 }}>
         <SettingsContent />
       </Box>
-
     </Box>
   );
 }

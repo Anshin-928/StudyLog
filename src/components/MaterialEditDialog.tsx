@@ -2,19 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Box, TextField, Typography, CircularProgress,
-  Autocomplete, Snackbar, Alert, useTheme // 🌟 useTheme を追加
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Box,
+  TextField,
+  Typography,
+  CircularProgress,
+  Autocomplete,
+  Snackbar,
+  Alert,
+  useTheme, // 🌟 useTheme を追加
 } from '@mui/material';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import { supabase } from '../lib/supabase';
 import { validateImageFile, safeImageExt } from '../lib/imageValidation';
 import { TEMPLATES, isTemplateUrl } from '../constants/materialTemplates';
-import {
-  CategoryOption,
-  buildCategoryOptions,
-  resolveCategory,
-} from '../lib/categoryUtils';
+import { CategoryOption, buildCategoryOptions } from '../lib/categoryUtils';
 import { MaterialUnit, DEFAULT_UNIT } from '../constants/materialUnits';
 import UnitSelector from './UnitSelector';
 
@@ -24,7 +30,11 @@ interface MaterialEditDialogProps {
   onUpdated: () => void;
 }
 
-export default function MaterialEditDialog({ materialId, onClose, onUpdated }: MaterialEditDialogProps) {
+export default function MaterialEditDialog({
+  materialId,
+  onClose,
+  onUpdated,
+}: MaterialEditDialogProps) {
   const theme = useTheme(); // 🌟 テーマを呼び出し
   const open = materialId !== null;
 
@@ -41,13 +51,19 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
 
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'warning' }>({
-    open: false, message: '', severity: 'error'
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'error',
   });
   const showSnackbar = (message: string, severity: 'error' | 'warning' = 'error') => {
     setSnackbar({ open: true, message, severity });
   };
-  const handleSnackbarClose = () => setSnackbar(s => ({ ...s, open: false }));
+  const handleSnackbarClose = () => setSnackbar((s) => ({ ...s, open: false }));
 
   useEffect(() => {
     if (!open || !materialId) return;
@@ -57,7 +73,9 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
   const fetchData = async (id: string) => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const [materialRes, categoriesRes] = await Promise.all([
@@ -85,7 +103,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
 
       setTitle(material.title ?? '');
 
-      const currentCat = cats.find(c => c.id === material.categories?.id) ?? null;
+      const currentCat = cats.find((c) => c.id === material.categories?.id) ?? null;
       setSelectedCategory(currentCat);
       setCategoryInputValue(currentCat?.name ?? '');
 
@@ -125,7 +143,7 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
 
   const autocompleteOptions = React.useMemo<CategoryOption[]>(
     () => buildCategoryOptions(categoryInputValue, categoryOptions),
-    [categoryInputValue, categoryOptions]
+    [categoryInputValue, categoryOptions],
   );
 
   const handleSave = async () => {
@@ -137,7 +155,9 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
 
     setIsSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       let categoryId: string;
@@ -148,7 +168,11 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
           : selectedCategory.name;
 
       const { data: existing } = await supabase
-        .from('categories').select('id').eq('name', categoryName).eq('user_id', user.id).single();
+        .from('categories')
+        .select('id')
+        .eq('name', categoryName)
+        .eq('user_id', user.id)
+        .single();
 
       if (existing) {
         categoryId = existing.id;
@@ -157,7 +181,10 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
         // 🌟 修正: ハードコードを廃止しテーマの divider を使用
         if (categoryName === 'カテゴリなし') insertData.color_code = theme.palette.divider;
         const { data: created, error: catError } = await supabase
-          .from('categories').insert([insertData]).select().single();
+          .from('categories')
+          .insert([insertData])
+          .select()
+          .single();
         if (catError) throw catError;
         categoryId = created.id;
       }
@@ -224,20 +251,25 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
     <>
       <Dialog
         open={open}
-        onClose={(_, reason) => { if (reason === 'backdropClick') return; handleClose(); }}
+        onClose={(_, reason) => {
+          if (reason === 'backdropClick') return;
+          handleClose();
+        }}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ 
-          sx: { 
-            borderRadius: '16px', 
-            p: 1, 
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            p: 1,
             maxHeight: '90vh',
             // 🌟 修正: 背景画像の重ねがけを禁止
-            backgroundImage: 'none' 
-          } 
+            backgroundImage: 'none',
+          },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>教材を編集</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: 'text.primary' }}>
+          教材を編集
+        </DialogTitle>
 
         <DialogContent sx={{ pt: 2, overflowY: 'auto' }}>
           {isLoading ? (
@@ -246,7 +278,6 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-
               <TextField
                 fullWidth
                 label="教材名 (必須)"
@@ -268,8 +299,12 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                   <li {...props} key={option.id}>
                     {option.isNew ? (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>＋</Typography>
-                        <Typography variant="body2">「{option.name}」を新しいカテゴリとして作成</Typography>
+                        <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
+                          ＋
+                        </Typography>
+                        <Typography variant="body2">
+                          「{option.name}」を新しいカテゴリとして作成
+                        </Typography>
                       </Box>
                     ) : (
                       <Typography variant="body2">{option.name}</Typography>
@@ -291,11 +326,23 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
 
               <Box>
                 {/* 🌟 修正: text.secondary を使用 */}
-                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}
+                >
                   表紙テンプレートを選択
                 </Typography>
                 {/* 🌟 修正: background.subtle を使用 */}
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', p: 2, backgroundColor: 'background.subtle', borderRadius: '12px' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 1,
+                    flexWrap: 'wrap',
+                    p: 2,
+                    backgroundColor: 'background.subtle',
+                    borderRadius: '12px',
+                  }}
+                >
                   {TEMPLATES.map((tmpl) => (
                     <Box
                       key={tmpl.id}
@@ -306,20 +353,32 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                         setPreviewUrl(null);
                       }}
                       sx={{
-                        width: 48, height: 64,
-                        cursor: 'pointer', overflow: 'hidden', borderRadius: '4px',
+                        width: 48,
+                        height: 64,
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        borderRadius: '4px',
                         // 🌟 修正: primary.main を使用
-                        border: selectedTemplateUrl === tmpl.url && !uploadedImage && !previewUrl
-                          ? '3px solid' : '1px solid transparent',
-                        borderColor: selectedTemplateUrl === tmpl.url && !uploadedImage && !previewUrl
-                          ? 'primary.main' : 'transparent',
+                        border:
+                          selectedTemplateUrl === tmpl.url && !uploadedImage && !previewUrl
+                            ? '3px solid'
+                            : '1px solid transparent',
+                        borderColor:
+                          selectedTemplateUrl === tmpl.url && !uploadedImage && !previewUrl
+                            ? 'primary.main'
+                            : 'transparent',
                         // 🌟 修正: customShadows.sm を使用
                         boxShadow: theme.customShadows.sm,
                         transition: '0.2s',
                         '&:hover': { opacity: 0.8, transform: 'translateY(-2px)' },
                       }}
                     >
-                      <img src={tmpl.url} alt={tmpl.label} title={tmpl.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img
+                        src={tmpl.url}
+                        alt={tmpl.label}
+                        title={tmpl.label}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
                     </Box>
                   ))}
                 </Box>
@@ -335,47 +394,75 @@ export default function MaterialEditDialog({ materialId, onClose, onUpdated }: M
                   disabled={isSaving}
                 />
                 <label htmlFor="edit-image-upload-input">
-                  <Box sx={{
-                    // 🌟 修正: primary.main と divider を使用
-                    border: (uploadedImage || (previewUrl && !isTemplateUrl(previewUrl)))
-                      ? '3px solid' : '2px dashed',
-                    borderColor: (uploadedImage || (previewUrl && !isTemplateUrl(previewUrl)))
-                      ? 'primary.main' : 'divider',
-                    borderRadius: '12px',
-                    p: 3, textAlign: 'center',
-                    // 🌟 修正: primary.lighter と background.subtle を使用
-                    backgroundColor: uploadedImage ? 'primary.lighter' : 'background.subtle',
-                    color: 'text.disabled', cursor: isSaving ? 'default' : 'pointer', transition: '0.2s',
-                    '&:hover': !isSaving ? { borderColor: 'primary.main', color: 'primary.main', backgroundColor: 'primary.lighter' } : {},
-                  }}>
+                  <Box
+                    sx={{
+                      // 🌟 修正: primary.main と divider を使用
+                      border:
+                        uploadedImage || (previewUrl && !isTemplateUrl(previewUrl))
+                          ? '3px solid'
+                          : '2px dashed',
+                      borderColor:
+                        uploadedImage || (previewUrl && !isTemplateUrl(previewUrl))
+                          ? 'primary.main'
+                          : 'divider',
+                      borderRadius: '12px',
+                      p: 3,
+                      textAlign: 'center',
+                      // 🌟 修正: primary.lighter と background.subtle を使用
+                      backgroundColor: uploadedImage ? 'primary.lighter' : 'background.subtle',
+                      color: 'text.disabled',
+                      cursor: isSaving ? 'default' : 'pointer',
+                      transition: '0.2s',
+                      '&:hover': !isSaving
+                        ? {
+                            borderColor: 'primary.main',
+                            color: 'primary.main',
+                            backgroundColor: 'primary.lighter',
+                          }
+                        : {},
+                    }}
+                  >
                     {previewUrl ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <img
                           src={previewUrl}
                           alt="Preview"
                           // 🌟 修正: customShadows.sm を使用
-                          style={{ maxHeight: '140px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', boxShadow: theme.customShadows.sm }}
+                          style={{
+                            maxHeight: '140px',
+                            maxWidth: '100%',
+                            objectFit: 'contain',
+                            borderRadius: '8px',
+                            boxShadow: theme.customShadows.sm,
+                          }}
                         />
-                        <Typography variant="caption" sx={{ mt: 1.5, display: 'block' }}>クリックで画像を変更</Typography>
+                        <Typography variant="caption" sx={{ mt: 1.5, display: 'block' }}>
+                          クリックで画像を変更
+                        </Typography>
                       </Box>
                     ) : (
                       <>
                         <LibraryAddOutlinedIcon sx={{ fontSize: 36, mb: 0.5 }} />
                         <Typography variant="body2">クリックして画像をアップロード</Typography>
-                        <Typography variant="caption">（テンプレートを使用する場合は不要）</Typography>
+                        <Typography variant="caption">
+                          （テンプレートを使用する場合は不要）
+                        </Typography>
                       </>
                     )}
                   </Box>
                 </label>
               </Box>
-
             </Box>
           )}
         </DialogContent>
 
         <DialogActions sx={{ p: 3, pt: 0 }}>
           {/* 🌟 修正: text.secondary を使用 */}
-          <Button onClick={handleClose} disabled={isSaving} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+          <Button
+            onClick={handleClose}
+            disabled={isSaving}
+            sx={{ color: 'text.secondary', fontWeight: 'bold' }}
+          >
             キャンセル
           </Button>
           <Button

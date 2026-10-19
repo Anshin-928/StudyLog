@@ -8,9 +8,9 @@ import imageCompression from 'browser-image-compression';
  */
 export async function compressImage(file: File): Promise<File> {
   const options = {
-    maxSizeMB: 1,          // 最大1MB
+    maxSizeMB: 1, // 最大1MB
     maxWidthOrHeight: 1024, // 最大幅・高さ 1024px
-    useWebWorker: true,     // バックグラウンドで処理してUIをブロックしない
+    useWebWorker: true, // バックグラウンドで処理してUIをブロックしない
   };
   return await imageCompression(file, options);
 }

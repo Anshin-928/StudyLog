@@ -2,9 +2,23 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Box, Typography, TextField, Button, Chip, Tabs, Tab,
-  IconButton, Divider, ListItemButton, ListItemText, ListItemIcon,
-  Snackbar, Alert, Fade, useMediaQuery, useTheme
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Chip,
+  Tabs,
+  Tab,
+  IconButton,
+  Divider,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  Snackbar,
+  Alert,
+  Fade,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
@@ -32,13 +46,16 @@ import DurationDialog from './record/DurationDialog';
 import PagesDialog, { getPagesDisplayValue } from './record/PagesDialog';
 import MaterialSelectDialog from './record/MaterialSelectDialog';
 
-
 // ==========================================
 // 手動入力タブ
 // ==========================================
 function ManualInputTab({
-  selectedMaterial, onOpenMaterialDialog, isSaving, onSave,
-  presetHours, presetMinutes,
+  selectedMaterial,
+  onOpenMaterialDialog,
+  isSaving,
+  onSave,
+  presetHours,
+  presetMinutes,
   saveFnRef,
   onTotalMinutesChange,
   onDirtyChange,
@@ -46,18 +63,29 @@ function ManualInputTab({
   selectedMaterial: Material | null | 'none';
   onOpenMaterialDialog: () => void;
   isSaving: boolean;
-  onSave: (datetime: string, hours: string, minutes: string, pages: string, memo: string, image: File | null) => void;
+  onSave: (
+    datetime: string,
+    hours: string,
+    minutes: string,
+    pages: string,
+    memo: string,
+    image: File | null,
+  ) => void;
   presetHours: string;
   presetMinutes: string;
   saveFnRef: React.MutableRefObject<(() => void) | null>;
   onTotalMinutesChange: (n: number) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const theme = useTheme();
   const [recordDatetime, setRecordDatetime] = useState(nowDatetimeLocal);
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
-  const [pagesData, setPagesData] = useState<PagesData>({ mode: 'total', total: '', rangeStart: '', rangeEnd: '' });
+  const [pagesData, setPagesData] = useState<PagesData>({
+    mode: 'total',
+    total: '',
+    rangeStart: '',
+    rangeEnd: '',
+  });
   const [memo, setMemo] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -76,7 +104,7 @@ function ManualInputTab({
     }
   }, [presetHours, presetMinutes]);
 
-  const totalMinutes = (parseInt(hours || '0') * 60) + parseInt(minutes || '0');
+  const totalMinutes = parseInt(hours || '0') * 60 + parseInt(minutes || '0');
 
   const currentUnit =
     selectedMaterial && selectedMaterial !== 'none'
@@ -104,10 +132,11 @@ function ManualInputTab({
   }, [totalMinutes, onTotalMinutesChange]);
 
   useEffect(() => {
-    const dirty = totalMinutes > 0
-      || (pagesData.total !== '' && parseInt(pagesData.total) > 0)
-      || memo.length > 0
-      || image !== null;
+    const dirty =
+      totalMinutes > 0 ||
+      (pagesData.total !== '' && parseInt(pagesData.total) > 0) ||
+      memo.length > 0 ||
+      image !== null;
     onDirtyChange(dirty);
   }, [totalMinutes, pagesData, memo, image, onDirtyChange]);
 
@@ -133,19 +162,35 @@ function ManualInputTab({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', pt: 2 }}>
-
-      <ListItemButton onClick={onOpenMaterialDialog} sx={{
-        borderRadius: '16px',
-        border: selectedMaterial ? '2px solid' : '1px solid',
-        borderColor: selectedMaterial ? 'primary.main' : 'divider',
-        backgroundColor: selectedMaterial ? 'primary.lighter' : 'background.subtle',
-        mb: 1.5, px:  { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, minHeight: { xs: '100px', sm: '120px' }, transition: '0.15s',
-        '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
-      }}>
-        <ListItemIcon sx={{ minWidth: { xs: 60, sm: 80 }, mr: 2, color: selectedMaterial ? 'primary.main' : 'text.disabled', justifyContent: 'center' }}>
+      <ListItemButton
+        onClick={onOpenMaterialDialog}
+        sx={{
+          borderRadius: '16px',
+          border: selectedMaterial ? '2px solid' : '1px solid',
+          borderColor: selectedMaterial ? 'primary.main' : 'divider',
+          backgroundColor: selectedMaterial ? 'primary.lighter' : 'background.subtle',
+          mb: 1.5,
+          px: { xs: 2, sm: 3 },
+          py: { xs: 2, sm: 3 },
+          minHeight: { xs: '100px', sm: '120px' },
+          transition: '0.15s',
+          '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            minWidth: { xs: 60, sm: 80 },
+            mr: 2,
+            color: selectedMaterial ? 'primary.main' : 'text.disabled',
+            justifyContent: 'center',
+          }}
+        >
           {selectedMaterial && selectedMaterial !== 'none' ? (
-            <img src={(selectedMaterial as Material).image} alt=""
-              style={{ height: '80px', maxWidth: '80px', objectFit: 'contain' }} />
+            <img
+              src={(selectedMaterial as Material).image}
+              alt=""
+              style={{ height: '80px', maxWidth: '80px', objectFit: 'contain' }}
+            />
           ) : (
             <MenuBookOutlinedIcon sx={{ fontSize: { xs: '36px', sm: '48px' } }} />
           )}
@@ -154,16 +199,27 @@ function ManualInputTab({
           primary={
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {selectedMaterial && selectedMaterial !== 'none' && (
-                <Chip label={(selectedMaterial as Material).categoryName} size="small" sx={{
-                  backgroundColor: (selectedMaterial as Material).colorCode, color: 'error.contrastText',
-                  fontSize: '11px', height: '22px', fontWeight: 'bold', alignSelf: 'flex-start',
-                }} />
+                <Chip
+                  label={(selectedMaterial as Material).categoryName}
+                  size="small"
+                  sx={{
+                    backgroundColor: (selectedMaterial as Material).colorCode,
+                    color: 'error.contrastText',
+                    fontSize: '11px',
+                    height: '22px',
+                    fontWeight: 'bold',
+                    alignSelf: 'flex-start',
+                  }}
+                />
               )}
-              <Typography sx={{
-                fontWeight: 'bold', fontSize: '18px',
-                color: selectedMaterial ? 'primary.main' : 'text.disabled',
-                lineHeight: 1.3,
-              }}>
+              <Typography
+                sx={{
+                  fontWeight: 'bold',
+                  fontSize: '18px',
+                  color: selectedMaterial ? 'primary.main' : 'text.disabled',
+                  lineHeight: 1.3,
+                }}
+              >
                 {materialLabel() ?? '教材を選択'}
               </Typography>
               {!selectedMaterial && (
@@ -174,7 +230,9 @@ function ManualInputTab({
             </Box>
           }
         />
-        <KeyboardArrowRightIcon sx={{ color: selectedMaterial ? 'primary.main' : 'text.disabled', fontSize: '28px' }} />
+        <KeyboardArrowRightIcon
+          sx={{ color: selectedMaterial ? 'primary.main' : 'text.disabled', fontSize: '28px' }}
+        />
       </ListItemButton>
 
       <CompactCell
@@ -206,16 +264,29 @@ function ManualInputTab({
 
       <Box sx={{ mt: 1, mb: 1.5 }}>
         <TextField
-          placeholder="要点・ひとことメモ" value={memo}
+          placeholder="要点・ひとことメモ"
+          value={memo}
           onChange={(e) => setMemo(e.target.value)}
-          fullWidth multiline rows={3} disabled={isSaving}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: 'background.subtle', color: 'text.primary' } }}
+          fullWidth
+          multiline
+          rows={3}
+          disabled={isSaving}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
+              backgroundColor: 'background.subtle',
+              color: 'text.primary',
+            },
+          }}
         />
       </Box>
 
       <input
-        type="file" accept="image/*" ref={fileInputRef}
-        style={{ display: 'none' }} onChange={handleImageChange}
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        onChange={handleImageChange}
       />
       {imageError && (
         <Typography variant="caption" sx={{ color: 'error.main', mb: 1, display: 'block' }}>
@@ -226,20 +297,43 @@ function ManualInputTab({
         <Box
           onClick={() => fileInputRef.current?.click()}
           sx={{
-            display: 'flex', alignItems: 'center', gap: 2,
-            borderRadius: '12px', border: '2px solid',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            borderRadius: '12px',
+            border: '2px solid',
             borderColor: 'primary.main',
-            backgroundColor: 'primary.lighter', mb: 1.5, px: 2, py: 1.5,
-            cursor: 'pointer', transition: '0.15s',
+            backgroundColor: 'primary.lighter',
+            mb: 1.5,
+            px: 2,
+            py: 1.5,
+            cursor: 'pointer',
+            transition: '0.15s',
             '&:hover': { backgroundColor: 'action.hover' },
           }}
         >
-          <img src={previewUrl} alt="preview"
-            style={{ height: '48px', width: '48px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
-          <Typography sx={{
-            fontWeight: 'bold', fontSize: '13px', color: 'primary.main', flexGrow: 1,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
+          <img
+            src={previewUrl}
+            alt="preview"
+            style={{
+              height: '48px',
+              width: '48px',
+              objectFit: 'cover',
+              borderRadius: '8px',
+              flexShrink: 0,
+            }}
+          />
+          <Typography
+            sx={{
+              fontWeight: 'bold',
+              fontSize: '13px',
+              color: 'primary.main',
+              flexGrow: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {image.name}
           </Typography>
           <KeyboardArrowRightIcon sx={{ color: 'primary.main', fontSize: '20px' }} />
@@ -253,17 +347,26 @@ function ManualInputTab({
       )}
 
       <DateDialog
-        open={isDateDialogOpen} onClose={() => setIsDateDialogOpen(false)}
-        value={recordDatetime} onChange={setRecordDatetime}
+        open={isDateDialogOpen}
+        onClose={() => setIsDateDialogOpen(false)}
+        value={recordDatetime}
+        onChange={setRecordDatetime}
       />
       <DurationDialog
-        open={isDurationDialogOpen} onClose={() => setIsDurationDialogOpen(false)}
-        hours={hours} minutes={minutes}
-        onConfirm={(h, m) => { setHours(h); setMinutes(m); }}
+        open={isDurationDialogOpen}
+        onClose={() => setIsDurationDialogOpen(false)}
+        hours={hours}
+        minutes={minutes}
+        onConfirm={(h, m) => {
+          setHours(h);
+          setMinutes(m);
+        }}
       />
       <PagesDialog
-        open={isPagesDialogOpen} onClose={() => setIsPagesDialogOpen(false)}
-        value={pagesData} unit={currentUnit}
+        open={isPagesDialogOpen}
+        onClose={() => setIsPagesDialogOpen(false)}
+        value={pagesData}
+        unit={currentUnit}
         onConfirm={setPagesData}
       />
     </Box>
@@ -274,8 +377,11 @@ function ManualInputTab({
 // ストップウォッチタブ
 // ==========================================
 function StopwatchTab({
-  selectedMaterial, onOpenMaterialDialog, onUseTime,
-  useFnRef, pauseFnRef,
+  selectedMaterial,
+  onOpenMaterialDialog,
+  onUseTime,
+  useFnRef,
+  pauseFnRef,
   onStateChange,
 }: {
   selectedMaterial: Material | null | 'none';
@@ -285,8 +391,6 @@ function StopwatchTab({
   pauseFnRef: React.MutableRefObject<(() => void) | null>;
   onStateChange: (elapsed: number, isRunning: boolean) => void;
 }) {
-  const theme = useTheme();
-
   const savedIsRunning = localStorage.getItem('studylog_sw_isRunning') === 'true';
   const savedStartTime = parseInt(localStorage.getItem('studylog_sw_startTime') || '0');
   const savedAccum = parseInt(localStorage.getItem('studylog_sw_accumulated') || '0');
@@ -301,7 +405,7 @@ function StopwatchTab({
   const [elapsed, setElapsed] = useState(() =>
     savedIsRunning && savedStartTime > 0
       ? Math.floor((Date.now() - savedStartTime) / 1000) + savedAccum
-      : savedAccum
+      : savedAccum,
   );
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(savedIsRunning ? savedStartTime : 0);
@@ -315,7 +419,9 @@ function StopwatchTab({
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [isRunning]);
 
   useEffect(() => {
@@ -359,19 +465,35 @@ function StopwatchTab({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%', pt: 2 }}>
-
-      <ListItemButton onClick={onOpenMaterialDialog} sx={{
-        borderRadius: '16px',
-        border: selectedMaterial ? '2px solid' : '1px solid',
-        borderColor: selectedMaterial ? 'primary.main' : 'divider',
-        backgroundColor: selectedMaterial ? 'primary.lighter' : 'background.subtle',
-        mb: 1.5, px: 3, py: 3, minHeight: '120px', transition: '0.15s',
-        '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
-      }}>
-        <ListItemIcon sx={{ minWidth: 80, mr: 2, color: selectedMaterial ? 'primary.main' : 'text.disabled', justifyContent: 'center' }}>
+      <ListItemButton
+        onClick={onOpenMaterialDialog}
+        sx={{
+          borderRadius: '16px',
+          border: selectedMaterial ? '2px solid' : '1px solid',
+          borderColor: selectedMaterial ? 'primary.main' : 'divider',
+          backgroundColor: selectedMaterial ? 'primary.lighter' : 'background.subtle',
+          mb: 1.5,
+          px: 3,
+          py: 3,
+          minHeight: '120px',
+          transition: '0.15s',
+          '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            minWidth: 80,
+            mr: 2,
+            color: selectedMaterial ? 'primary.main' : 'text.disabled',
+            justifyContent: 'center',
+          }}
+        >
           {selectedMaterial && selectedMaterial !== 'none' ? (
-            <img src={(selectedMaterial as Material).image} alt=""
-              style={{ height: '80px', maxWidth: '80px', objectFit: 'contain' }} />
+            <img
+              src={(selectedMaterial as Material).image}
+              alt=""
+              style={{ height: '80px', maxWidth: '80px', objectFit: 'contain' }}
+            />
           ) : (
             <MenuBookOutlinedIcon sx={{ fontSize: '48px' }} />
           )}
@@ -380,16 +502,27 @@ function StopwatchTab({
           primary={
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {selectedMaterial && selectedMaterial !== 'none' && (
-                <Chip label={(selectedMaterial as Material).categoryName} size="small" sx={{
-                  backgroundColor: (selectedMaterial as Material).colorCode, color: 'error.contrastText',
-                  fontSize: '11px', height: '22px', fontWeight: 'bold', alignSelf: 'flex-start',
-                }} />
+                <Chip
+                  label={(selectedMaterial as Material).categoryName}
+                  size="small"
+                  sx={{
+                    backgroundColor: (selectedMaterial as Material).colorCode,
+                    color: 'error.contrastText',
+                    fontSize: '11px',
+                    height: '22px',
+                    fontWeight: 'bold',
+                    alignSelf: 'flex-start',
+                  }}
+                />
               )}
-              <Typography sx={{
-                fontWeight: 'bold', fontSize: '18px',
-                color: selectedMaterial ? 'primary.main' : 'text.disabled',
-                lineHeight: 1.3,
-              }}>
+              <Typography
+                sx={{
+                  fontWeight: 'bold',
+                  fontSize: '18px',
+                  color: selectedMaterial ? 'primary.main' : 'text.disabled',
+                  lineHeight: 1.3,
+                }}
+              >
                 {materialLabel() ?? '教材を選択'}
               </Typography>
               {!selectedMaterial && (
@@ -400,46 +533,81 @@ function StopwatchTab({
             </Box>
           }
         />
-        <KeyboardArrowRightIcon sx={{ color: selectedMaterial ? 'primary.main' : 'text.disabled', fontSize: '28px' }} />
+        <KeyboardArrowRightIcon
+          sx={{ color: selectedMaterial ? 'primary.main' : 'text.disabled', fontSize: '28px' }}
+        />
       </ListItemButton>
 
-      <Box sx={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        py: 5, px: 3, backgroundColor: 'background.subtle', borderRadius: '20px',
-        border: '1px solid', borderColor: 'divider', gap: 4,
-      }}>
-        <Typography sx={{
-          fontSize: 'clamp(56px, 10vw, 88px)', fontWeight: '300',
-          letterSpacing: '-2px', lineHeight: 1,
-          color: isRunning ? 'primary.main' : elapsed > 0 ? 'text.primary' : 'text.disabled',
-          fontFamily: '"Roboto Mono", monospace',
-          transition: 'color 0.3s',
-        }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          py: 5,
+          px: 3,
+          backgroundColor: 'background.subtle',
+          borderRadius: '20px',
+          border: '1px solid',
+          borderColor: 'divider',
+          gap: 4,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: 'clamp(56px, 10vw, 88px)',
+            fontWeight: '300',
+            letterSpacing: '-2px',
+            lineHeight: 1,
+            color: isRunning ? 'primary.main' : elapsed > 0 ? 'text.primary' : 'text.disabled',
+            fontFamily: '"Roboto Mono", monospace',
+            transition: 'color 0.3s',
+          }}
+        >
           {formatTime(elapsed)}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={handleReset} disabled={elapsed === 0}
-            sx={{ backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', width: 52, height: 52, '&:hover': { backgroundColor: 'action.hover' }, color: 'text.primary' }}>
+          <IconButton
+            onClick={handleReset}
+            disabled={elapsed === 0}
+            sx={{
+              backgroundColor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              width: 52,
+              height: 52,
+              '&:hover': { backgroundColor: 'action.hover' },
+              color: 'text.primary',
+            }}
+          >
             <ReplayRoundedIcon />
           </IconButton>
-          <IconButton onClick={() => {
-            if (isRunning) {
-              accumulatedRef.current = elapsed;
-              localStorage.setItem('studylog_sw_isRunning', 'false');
-              localStorage.setItem('studylog_sw_accumulated', String(elapsed));
-              setIsRunning(false);
-            } else {
-              startTimeRef.current = Date.now();
-              localStorage.setItem('studylog_sw_isRunning', 'true');
-              localStorage.setItem('studylog_sw_startTime', String(startTimeRef.current));
-              setIsRunning(true);
-            }
-          }} sx={{
-            width: 72, height: 72,
-            backgroundColor: isRunning ? 'error.main' : 'primary.main', color: 'error.contrastText',
-            '&:hover': { backgroundColor: isRunning ? 'error.dark' : 'primary.dark' },
-          }}>
-            {isRunning ? <PauseRoundedIcon sx={{ fontSize: '36px' }} /> : <PlayArrowRoundedIcon sx={{ fontSize: '36px' }} />}
+          <IconButton
+            onClick={() => {
+              if (isRunning) {
+                accumulatedRef.current = elapsed;
+                localStorage.setItem('studylog_sw_isRunning', 'false');
+                localStorage.setItem('studylog_sw_accumulated', String(elapsed));
+                setIsRunning(false);
+              } else {
+                startTimeRef.current = Date.now();
+                localStorage.setItem('studylog_sw_isRunning', 'true');
+                localStorage.setItem('studylog_sw_startTime', String(startTimeRef.current));
+                setIsRunning(true);
+              }
+            }}
+            sx={{
+              width: 72,
+              height: 72,
+              backgroundColor: isRunning ? 'error.main' : 'primary.main',
+              color: 'error.contrastText',
+              '&:hover': { backgroundColor: isRunning ? 'error.dark' : 'primary.dark' },
+            }}
+          >
+            {isRunning ? (
+              <PauseRoundedIcon sx={{ fontSize: '36px' }} />
+            ) : (
+              <PlayArrowRoundedIcon sx={{ fontSize: '36px' }} />
+            )}
           </IconButton>
           <Box sx={{ width: 52 }} />
         </Box>
@@ -483,8 +651,14 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
 
   const navigate = useNavigate();
 
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false, message: '', severity: 'success',
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
   });
   const showSnackbar = (message: string, severity: 'success' | 'error' = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -496,8 +670,8 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
 
   const headerButtonDisabled =
     tabIndex === 0
-      ? (isSaving || selectedMaterial === null)
-      : (swElapsed === 0 || swIsRunning || selectedMaterial === null);
+      ? isSaving || selectedMaterial === null
+      : swElapsed === 0 || swIsRunning || selectedMaterial === null;
 
   const handleHeaderAction = () => {
     if (tabIndex === 0) {
@@ -507,7 +681,7 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
     }
   };
 
-  const handleTotalMinutesChange = useCallback((n: number) => {
+  const handleTotalMinutesChange = useCallback(() => {
     // manualTotalMinutes is removed as it's not used in parent
   }, []);
 
@@ -519,7 +693,7 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
   const shouldBlock = !isSaveNavigatingRef.current && (manualIsDirty || swElapsed > 0);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      shouldBlock && currentLocation.pathname !== nextLocation.pathname
+      shouldBlock && currentLocation.pathname !== nextLocation.pathname,
   );
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -541,7 +715,9 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
     }
   };
 
-  useEffect(() => { fetchMaterials(); }, []);
+  useEffect(() => {
+    fetchMaterials();
+  }, []);
 
   const handleUseStopwatchTime = (totalMinutes: number) => {
     const h = Math.floor(totalMinutes / 60);
@@ -553,16 +729,22 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
   };
 
   const handleSave = async (
-    datetime: string, hours: string, minutes: string,
-    pages: string, memo: string, image: File | null,
+    datetime: string,
+    hours: string,
+    minutes: string,
+    pages: string,
+    memo: string,
+    image: File | null,
   ) => {
     if (selectedMaterial === null) return;
 
-    const totalMinutes = (parseInt(hours || '0') * 60) + parseInt(minutes || '0');
+    const totalMinutes = parseInt(hours || '0') * 60 + parseInt(minutes || '0');
 
     setIsSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       let imageUrl: string | null = null;
@@ -575,23 +757,22 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
         imageUrl = await uploadStudyLogImage(user.id, image);
       }
 
-      const materialId = selectedMaterial !== 'none'
-        ? (selectedMaterial as Material).id : null;
+      const materialId = selectedMaterial !== 'none' ? (selectedMaterial as Material).id : null;
 
-      const { error } = await supabase.from('study_logs').insert([{
-        user_id: user.id,
-        material_id: materialId,
-        study_datetime: new Date(datetime).toISOString(),
-        duration_minutes: totalMinutes > 0 ? totalMinutes : null,
-        pages: pages ? parseInt(pages) : null,
-        memo: memo.trim() || null,
-        image_url: imageUrl,
-      }]);
+      const { error } = await supabase.from('study_logs').insert([
+        {
+          user_id: user.id,
+          material_id: materialId,
+          study_datetime: new Date(datetime).toISOString(),
+          duration_minutes: totalMinutes > 0 ? totalMinutes : null,
+          pages: pages ? parseInt(pages) : null,
+          memo: memo.trim() || null,
+          image_url: imageUrl,
+        },
+      ]);
       if (error) throw error;
 
-      const label = selectedMaterial === 'none'
-        ? '教材なし'
-        : (selectedMaterial as Material).name;
+      const label = selectedMaterial === 'none' ? '教材なし' : (selectedMaterial as Material).name;
 
       setSelectedMaterial(null);
       setPresetHours('');
@@ -616,17 +797,39 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
   };
 
   return (
-    <Box sx={{ 
-      display: 'flex', flexDirection: 'column', minHeight: 0, 
-      maxWidth: '1100px', margin: '0 auto', width: '100%' 
-    }}>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isMobile ? 2 : 4, color: 'text.primary' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        maxWidth: '1100px',
+        margin: '0 auto',
+        width: '100%',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: isMobile ? 2 : 4,
+          color: 'text.primary',
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              mr: 1,
+              '& svg': { fontSize: isMobile ? '24px' : '32px' },
+            }}
+          >
             <ModeEditOutlineOutlinedIcon />
           </Box>
-          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>記録の入力</Typography>
+          <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>
+            記録の入力
+          </Typography>
         </Box>
         <Button
           variant="contained"
@@ -641,18 +844,33 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: isMobile ? 0 : 4 }}>
-        <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth" sx={{ '& .MuiTab-root': { color: 'text.secondary' } }}>
+        <Tabs
+          value={tabIndex}
+          onChange={handleTabChange}
+          variant="fullWidth"
+          sx={{ '& .MuiTab-root': { color: 'text.secondary' } }}
+        >
           <Tab
             icon={<ModeEditOutlineOutlinedIcon />}
             iconPosition="start"
             label="手動入力"
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap' }}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '12px 12px 0 0',
+              minHeight: { xs: '48px', sm: '56px' },
+              whiteSpace: 'nowrap',
+            }}
           />
           <Tab
             icon={<TimerOutlinedIcon />}
             iconPosition="start"
             label="ストップウォッチ"
-            sx={{ fontWeight: 'bold', borderRadius: '12px 12px 0 0', minHeight: { xs: '48px', sm: '56px' }, whiteSpace: 'nowrap' }}
+            sx={{
+              fontWeight: 'bold',
+              borderRadius: '12px 12px 0 0',
+              minHeight: { xs: '48px', sm: '56px' },
+              whiteSpace: 'nowrap',
+            }}
           />
         </Tabs>
       </Box>
@@ -693,20 +911,32 @@ export default function Record({ onRecordSaved }: { onRecordSaved?: () => void }
       />
 
       <Fade in={savePopupOpen} timeout={300}>
-        <Box sx={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: 'background.overlay',
-          pointerEvents: 'none',
-        }}>
-          <Box sx={{
-            backgroundColor: 'background.paper',
-            borderRadius: '24px',
-            px: { xs: 4, sm: 5 }, py: 4,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-            boxShadow: theme.customShadows.lg,
-            minWidth: { xs: '200px', sm: '260px' },
-          }}>
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'background.overlay',
+            pointerEvents: 'none',
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: 'background.paper',
+              borderRadius: '24px',
+              px: { xs: 4, sm: 5 },
+              py: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 2,
+              boxShadow: theme.customShadows.lg,
+              minWidth: { xs: '200px', sm: '260px' },
+            }}
+          >
             <CheckCircleOutlineIcon sx={{ fontSize: '64px', color: 'success.main' }} />
             <Typography sx={{ fontWeight: 'bold', fontSize: '20px', color: 'text.primary' }}>
               記録しました！

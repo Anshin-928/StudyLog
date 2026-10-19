@@ -5,7 +5,9 @@ import { supabase } from './supabase';
 import type { Material } from '../types/record';
 
 export async function fetchActiveMaterials(fallbackColor = '#ccc'): Promise<Material[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
   const { data, error } = await supabase
     .from('materials')

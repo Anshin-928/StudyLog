@@ -3,7 +3,7 @@ name: Sync School Data
 on:
   schedule:
     # 毎月1日 JST 0:00 (UTC 15:00)
-    - cron: "0 15 1 * *"
+    - cron: '0 15 1 * *'
   workflow_dispatch: # 手動実行も可能
 
 permissions:
@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Fetch school data from edu-data.jp
         env:

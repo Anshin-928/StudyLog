@@ -1,8 +1,16 @@
 // src/components/Sidebar.tsx
 
 import {
-  Drawer, Toolbar, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-  useMediaQuery, useTheme, alpha,
+  Drawer,
+  Toolbar,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  useMediaQuery,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import React from 'react';
@@ -20,11 +28,11 @@ interface SidebarItem {
 }
 
 export const mainMenus: SidebarItem[] = [
-  { text: 'ホーム',        path: '/home',      icon: <HomeOutlinedIcon /> },
-  { text: '記録する',      path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
-  { text: 'レポート',      path: '/report',    icon: <BarChartOutlinedIcon /> },
-  { text: '教材管理',      path: '/materials', icon: <MenuBookOutlinedIcon /> },
-  { text: '設定',          path: '/settings',  icon: <SettingsOutlinedIcon /> },
+  { text: 'ホーム', path: '/home', icon: <HomeOutlinedIcon /> },
+  { text: '記録する', path: '/record', icon: <ModeEditOutlineOutlinedIcon /> },
+  { text: 'レポート', path: '/report', icon: <BarChartOutlinedIcon /> },
+  { text: '教材管理', path: '/materials', icon: <MenuBookOutlinedIcon /> },
+  { text: '設定', path: '/settings', icon: <SettingsOutlinedIcon /> },
 ];
 
 export const closedDrawerWidth = 72;
@@ -42,9 +50,8 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
 
   if (isMobile) return null;
 
-  const selectedBg = theme.palette.mode === 'dark'
-    ? alpha(theme.palette.primary.main, 0.18)
-    : '#D3E3FD';
+  const selectedBg =
+    theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.18) : '#D3E3FD';
 
   return (
     <Drawer
