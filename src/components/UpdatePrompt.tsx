@@ -17,16 +17,22 @@ export default function UpdatePrompt() {
     if (!sw) return;
     // 初回訪問でService Workerが制御を始めたときは、画面のコードは最新なので知らせない
     const hadController = Boolean(sw.controller);
-    const onControllerChange = () => { if (hadController) setUpdated(true); };
+    const onControllerChange = () => {
+      if (hadController) setUpdated(true);
+    };
     sw.addEventListener('controllerchange', onControllerChange);
 
     const check = () => {
       sw.getRegistration()
-        .then(registration => registration?.update())
-        .catch(() => { /* オフライン時などは次回に再確認する */ });
+        .then((registration) => registration?.update())
+        .catch(() => {
+          /* オフライン時などは次回に再確認する */
+        });
     };
     // バックグラウンドから戻ったときにも確認する（ホーム画面のPWAは開きっぱなしになりやすい）
-    const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check();
+    };
     const timer = setInterval(check, UPDATE_CHECK_INTERVAL_MS);
     document.addEventListener('visibilitychange', onVisible);
 

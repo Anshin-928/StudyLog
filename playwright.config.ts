@@ -25,9 +25,7 @@ export default defineConfig({
     // 画面遷移を目で追いたいとき用。E2E_SLOW_MO=500 のように操作ごとの待ち時間(ms)を指定する
     launchOptions: { slowMo: Number(process.env.E2E_SLOW_MO ?? 0) },
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'npm run dev:e2e',
     url: baseURL,

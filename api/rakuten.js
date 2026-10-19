@@ -3,7 +3,15 @@
 import { createClient } from '@supabase/supabase-js';
 
 // フロントエンドから受け取ってよいパラメータのみを許可する（それ以外は無視）
-const ALLOWED_PARAMS = new Set(['format', 'title', 'author', 'hits', 'page', 'sort', 'outOfStockFlag']);
+const ALLOWED_PARAMS = new Set([
+  'format',
+  'title',
+  'author',
+  'hits',
+  'page',
+  'sort',
+  'outOfStockFlag',
+]);
 
 export default async function handler(req, res) {
   // GET のみ受け付ける
@@ -31,11 +39,11 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY,
-  );
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
 
   if (authError || !user) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -45,9 +53,10 @@ export default async function handler(req, res) {
   const params = new URLSearchParams();
   for (const key of ALLOWED_PARAMS) {
     if (req.query[key] !== undefined) {
-      const value = (key === 'title' || key === 'author')
-        ? String(req.query[key]).slice(0, 100)
-        : String(req.query[key]);
+      const value =
+        key === 'title' || key === 'author'
+          ? String(req.query[key]).slice(0, 100)
+          : String(req.query[key]);
       params.set(key, value);
     }
   }
@@ -76,8 +85,8 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(url, {
       headers: {
-        'Referer': 'https://studylog-app.com/',
-        'Origin': 'https://studylog-app.com/',
+        Referer: 'https://studylog-app.com/',
+        Origin: 'https://studylog-app.com/',
       },
     });
 

@@ -4,11 +4,11 @@
 /** 記録日時（ISO文字列）の配列から、今日または昨日を起点とした連続学習日数を返す */
 export function calcStreakFromDates(isoDates: string[]): number {
   const dates = new Set(
-    isoDates.map(iso => {
+    isoDates.map((iso) => {
       const d = new Date(iso);
       const offset = d.getTimezoneOffset();
       return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
-    })
+    }),
   );
   const now = new Date();
   const offset = now.getTimezoneOffset();

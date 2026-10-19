@@ -2,15 +2,19 @@
 
 import React, { useRef } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Typography, Box, useMediaQuery, useTheme
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
 } from '@mui/material';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
 interface NavigationBlockerDialogProps {
   open: boolean;
-  onProceed: () => void;  // 移動する
-  onCancel: () => void;   // キャンセル
+  onProceed: () => void; // 移動する
+  onCancel: () => void; // キャンセル
   message?: string;
 }
 
@@ -20,15 +24,13 @@ export default function NavigationBlockerDialog({
   onCancel,
   message = '変更内容が保存されていません。\nこのページを離れると、変更が破棄されます。',
 }: NavigationBlockerDialogProps) {
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
   const touchHandledRef = useRef(false);
 
   const handleTouchEnd = (e: React.TouchEvent, action: () => void) => {
     touchHandledRef.current = true;
-    setTimeout(() => { touchHandledRef.current = false; }, 500);
+    setTimeout(() => {
+      touchHandledRef.current = false;
+    }, 500);
 
     const touch = e.changedTouches[0];
     const target = e.currentTarget as HTMLElement;
@@ -40,7 +42,7 @@ export default function NavigationBlockerDialog({
       touch.clientY >= rect.top &&
       touch.clientY <= rect.bottom
     ) {
-      action(); 
+      action();
     }
   };
 
@@ -55,24 +57,39 @@ export default function NavigationBlockerDialog({
       onClose={onCancel}
       maxWidth="xs"
       fullWidth
-      PaperProps={{ 
-        sx: { 
-          borderRadius: '20px', 
-          p: { xs: 1, sm: 2 }, 
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          p: { xs: 1, sm: 2 },
           m: { xs: 2, sm: 'auto' },
-          backgroundImage: 'none' // ダークモード時の意図しない重なりを防止
-        } 
+          backgroundImage: 'none', // ダークモード時の意図しない重なりを防止
+        },
       }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
         <WarningAmberRoundedIcon sx={{ color: 'warning.main', fontSize: '28px' }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1.05rem', sm: '1.25rem' }, color: 'text.primary' }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 'bold',
+            fontSize: { xs: '1.05rem', sm: '1.25rem' },
+            color: 'text.primary',
+          }}
+        >
           未保存の変更があります
         </Typography>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 0, pb: { xs: 2, sm: 3 } }}>
-        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-line', lineHeight: 1.8, fontSize: { xs: '13px', sm: '14px' } }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            whiteSpace: 'pre-line',
+            lineHeight: 1.8,
+            fontSize: { xs: '13px', sm: '14px' },
+          }}
+        >
           {message}
         </Typography>
       </DialogContent>
@@ -82,13 +99,13 @@ export default function NavigationBlockerDialog({
           onTouchEnd={(e) => handleTouchEnd(e, onCancel)}
           onClick={(e) => handleClick(e, onCancel)}
           variant="outlined"
-          sx={{ 
-            fontWeight: 'bold', 
-            borderRadius: '8px', 
-            flex: 1, 
-            borderColor: 'divider', 
-            color: 'text.primary', 
-            py: 1 
+          sx={{
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            flex: 1,
+            borderColor: 'divider',
+            color: 'text.primary',
+            py: 1,
           }}
         >
           キャンセル

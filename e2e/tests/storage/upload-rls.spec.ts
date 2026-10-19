@@ -6,7 +6,10 @@ import { createAnonClient, createUserClient } from '../../helpers/userClient';
 
 const BUCKETS = ['study-logs', 'material-images'] as const;
 // 1x1 の透過PNG
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
 const upload = { contentType: 'image/png' };
 
 for (const bucket of BUCKETS) {
@@ -43,7 +46,9 @@ for (const bucket of BUCKETS) {
       expect(error).toBeNull();
       uploaded.push(path);
 
-      const { data: removed, error: removeError } = await client.storage.from(bucket).remove([path]);
+      const { data: removed, error: removeError } = await client.storage
+        .from(bucket)
+        .remove([path]);
       expect(removeError).toBeNull();
       expect(removed).toHaveLength(1);
       uploaded.splice(uploaded.indexOf(path), 1);

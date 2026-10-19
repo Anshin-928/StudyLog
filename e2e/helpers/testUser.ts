@@ -22,7 +22,9 @@ const RUN_PID_KEY = 'e2e_run_pid';
 const TEST_PASSWORD = 'e2e-test-password-123';
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 // e2e-signup.<実行ID>.<プロセスID>.<ランダムID>@example.com（e2e/scripts/assert-clean.sh も同じ形式で判定している）
-const SIGNUP_EMAIL_PATTERN = new RegExp(`^e2e-signup\\.(${UUID})\\.(\\d+)\\.${UUID}@example\\.com$`);
+const SIGNUP_EMAIL_PATTERN = new RegExp(
+  `^e2e-signup\\.(${UUID})\\.(\\d+)\\.${UUID}@example\\.com$`,
+);
 
 export type TestUser = {
   id: string;

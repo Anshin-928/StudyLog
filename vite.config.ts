@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -55,12 +55,13 @@ export default defineConfig({
       '/api/rakuten': {
         target: 'https://openapi.rakuten.co.jp',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/rakuten/, '/services/api/BooksBook/Search/20170404'),
+        rewrite: (path) =>
+          path.replace(/^\/api\/rakuten/, '/services/api/BooksBook/Search/20170404'),
         headers: {
-          'Referer': 'https://studylog-seven.vercel.app',
-          'Origin': 'https://studylog-seven.vercel.app',
-        }
-      }
-    }
-  }
-})
+          Referer: 'https://studylog-seven.vercel.app',
+          Origin: 'https://studylog-seven.vercel.app',
+        },
+      },
+    },
+  },
+});

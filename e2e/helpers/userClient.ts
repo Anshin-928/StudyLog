@@ -5,14 +5,22 @@ import { requiredEnv, requiredLocalUrl } from './env';
 import type { TestUser } from './testUser';
 
 export function createAnonClient(): SupabaseClient {
-  return createClient(requiredLocalUrl('VITE_SUPABASE_URL'), requiredEnv('VITE_SUPABASE_ANON_KEY'), {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  return createClient(
+    requiredLocalUrl('VITE_SUPABASE_URL'),
+    requiredEnv('VITE_SUPABASE_ANON_KEY'),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    },
+  );
 }
 
 export async function createUserClient(user: TestUser): Promise<SupabaseClient> {
   const client = createAnonClient();
-  const { error } = await client.auth.signInWithPassword({ email: user.email, password: user.password });
-  if (error) throw new Error(`テストユーザーのログインに失敗しました (${user.id}): ${error.message}`);
+  const { error } = await client.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+  if (error)
+    throw new Error(`テストユーザーのログインに失敗しました (${user.id}): ${error.message}`);
   return client;
 }

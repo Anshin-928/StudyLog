@@ -19,17 +19,33 @@ async function setup(testUser: TestUser): Promise<Setup> {
   const admin = createSupabaseAdmin();
   const target = await createTestUser();
 
-  const { error: profileError } = await admin.from('profiles').update({ is_public: false }).eq('id', target.id);
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({ is_public: false })
+    .eq('id', target.id);
   if (profileError) throw profileError;
 
-  const { data: material, error: materialError } = await admin.from('materials')
-    .insert({ user_id: target.id, title: `非公開教材-${target.id}`, image_url: '/images/templates/book_blue.png' })
-    .select('id').single();
+  const { data: material, error: materialError } = await admin
+    .from('materials')
+    .insert({
+      user_id: target.id,
+      title: `非公開教材-${target.id}`,
+      image_url: '/images/templates/book_blue.png',
+    })
+    .select('id')
+    .single();
   if (materialError) throw materialError;
 
-  const { data: log, error: logError } = await admin.from('study_logs')
-    .insert({ user_id: target.id, material_id: material.id, study_datetime: new Date().toISOString(), duration_minutes: 30 })
-    .select('id').single();
+  const { data: log, error: logError } = await admin
+    .from('study_logs')
+    .insert({
+      user_id: target.id,
+      material_id: material.id,
+      study_datetime: new Date().toISOString(),
+      duration_minutes: 30,
+    })
+    .select('id')
+    .single();
   if (logError) throw logError;
 
   return {
@@ -42,8 +58,12 @@ async function setup(testUser: TestUser): Promise<Setup> {
 }
 
 async function followStatus(followerId: string, targetId: string): Promise<string | null> {
-  const { data, error } = await createSupabaseAdmin().from('follows')
-    .select('status').eq('follower_id', followerId).eq('following_id', targetId).maybeSingle();
+  const { data, error } = await createSupabaseAdmin()
+    .from('follows')
+    .select('status')
+    .eq('follower_id', followerId)
+    .eq('following_id', targetId)
+    .maybeSingle();
   if (error) throw error;
   return data?.status ?? null;
 }
@@ -82,7 +102,8 @@ test.describe('非公開アカウントへのフォロー', () => {
   });
 
   test('いきなり accepted でフォローを作成できない', async ({ testUser }) => {
-    const { error } = await s.followerClient.from('follows')
+    const { error } = await s.followerClient
+      .from('follows')
       .insert({ follower_id: testUser.id, following_id: s.target.id, status: 'accepted' });
 
     expect(error).not.toBeNull();
@@ -91,12 +112,16 @@ test.describe('非公開アカウントへのフォロー', () => {
   });
 
   test('申請者が自分の申請を accepted に書き換えられない', async ({ testUser }) => {
-    const { error: insertError } = await s.followerClient.from('follows')
+    const { error: insertError } = await s.followerClient
+      .from('follows')
       .insert({ follower_id: testUser.id, following_id: s.target.id, status: 'pending' });
     expect(insertError).toBeNull();
 
-    await s.followerClient.from('follows')
-      .update({ status: 'accepted' }).eq('follower_id', testUser.id).eq('following_id', s.target.id);
+    await s.followerClient
+      .from('follows')
+      .update({ status: 'accepted' })
+      .eq('follower_id', testUser.id)
+      .eq('following_id', s.target.id);
 
     expect(await followStatus(testUser.id, s.target.id)).toBe('pending');
     expect(await canSeeLog(s.followerClient, s.logId)).toBe(false);
@@ -105,11 +130,15 @@ test.describe('非公開アカウントへのフォロー', () => {
   test('承認された側がフォロー元を別ユーザーに付け替えられない', async ({ testUser }) => {
     const other = await createTestUser();
     try {
-      await s.followerClient.from('follows')
+      await s.followerClient
+        .from('follows')
         .insert({ follower_id: testUser.id, following_id: s.target.id, status: 'pending' });
 
-      await s.targetClient.from('follows')
-        .update({ follower_id: other.id }).eq('follower_id', testUser.id).eq('following_id', s.target.id);
+      await s.targetClient
+        .from('follows')
+        .update({ follower_id: other.id })
+        .eq('follower_id', testUser.id)
+        .eq('following_id', s.target.id);
 
       expect(await followStatus(testUser.id, s.target.id)).toBe('pending');
       expect(await followStatus(other.id, s.target.id)).toBeNull();
@@ -119,11 +148,15 @@ test.describe('非公開アカウントへのフォロー', () => {
   });
 
   test('相手が承認すると記録・教材が見える', async ({ testUser }) => {
-    await s.followerClient.from('follows')
+    await s.followerClient
+      .from('follows')
       .insert({ follower_id: testUser.id, following_id: s.target.id, status: 'pending' });
 
-    const { error } = await s.targetClient.from('follows')
-      .update({ status: 'accepted' }).eq('follower_id', testUser.id).eq('following_id', s.target.id);
+    const { error } = await s.targetClient
+      .from('follows')
+      .update({ status: 'accepted' })
+      .eq('follower_id', testUser.id)
+      .eq('following_id', s.target.id);
     expect(error).toBeNull();
 
     expect(await followStatus(testUser.id, s.target.id)).toBe('accepted');
@@ -137,7 +170,8 @@ test.describe('公開アカウントへのフォロー', () => {
     const target = await createTestUser();
     try {
       const client = await createUserClient(testUser);
-      const { error } = await client.from('follows')
+      const { error } = await client
+        .from('follows')
         .insert({ follower_id: testUser.id, following_id: target.id, status: 'accepted' });
 
       expect(error).toBeNull();
@@ -151,7 +185,8 @@ test.describe('公開アカウントへのフォロー', () => {
     const [target, victim] = [await createTestUser(), await createTestUser()];
     try {
       const client = await createUserClient(testUser);
-      const { error } = await client.from('follows')
+      const { error } = await client
+        .from('follows')
         .insert({ follower_id: victim.id, following_id: target.id, status: 'accepted' });
 
       expect(error).not.toBeNull();
@@ -164,7 +199,8 @@ test.describe('公開アカウントへのフォロー', () => {
 
   test('自分自身をフォローできない', async ({ testUser }) => {
     const client = await createUserClient(testUser);
-    const { error } = await client.from('follows')
+    const { error } = await client
+      .from('follows')
       .insert({ follower_id: testUser.id, following_id: testUser.id, status: 'accepted' });
 
     expect(error).not.toBeNull();

@@ -1,14 +1,45 @@
 // src/App.tsx
 
-import React, { useState, useEffect, useCallback, useMemo, createContext, useContext, Suspense } from 'react';
-import { createBrowserRouter, RouterProvider, Outlet, Navigate, Link, useLocation, useNavigate, useRouteError, isRouteErrorResponse } from 'react-router-dom';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  createContext,
+  useContext,
+  Suspense,
+} from 'react';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  Navigate,
+  Link,
+  useLocation,
+  useNavigate,
+  useRouteError,
+  isRouteErrorResponse,
+} from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import studyLogLogo from './assets/studyLogLogo.svg';
 import studyLogLogoDark from './assets/studyLogLogo_dark.svg';
 import {
-  Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Chip, Avatar, Button,
-  BottomNavigation, BottomNavigationAction, useMediaQuery, useTheme,
-  createTheme, ThemeProvider, CssBaseline,
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  CircularProgress,
+  Chip,
+  Avatar,
+  Button,
+  BottomNavigation,
+  BottomNavigationAction,
+  useMediaQuery,
+  useTheme,
+  createTheme,
+  ThemeProvider,
+  CssBaseline,
 } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
@@ -16,8 +47,6 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
-import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
-import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 import { supabase } from './lib/supabase';
@@ -47,7 +76,15 @@ const PrivacyPolicyPage = lazyWithReload(() => import('./components/PrivacyPolic
 
 function FullScreenLoader() {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: 'background.default' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100dvh',
+        backgroundColor: 'background.default',
+      }}
+    >
       <CircularProgress />
     </Box>
   );
@@ -68,16 +105,30 @@ function RouteErrorScreen({ inline = false }: { inline?: boolean }) {
   }, [error, unexpected]);
 
   return (
-    <Box role="alert" sx={{
-      display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 2,
-      p: 2, textAlign: 'center',
-      ...(inline ? { flexGrow: 1, minHeight: '40vh' } : { height: '100dvh', backgroundColor: 'background.default' }),
-    }}>
+    <Box
+      role="alert"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 2,
+        p: 2,
+        textAlign: 'center',
+        ...(inline
+          ? { flexGrow: 1, minHeight: '40vh' }
+          : { height: '100dvh', backgroundColor: 'background.default' }),
+      }}
+    >
       {notFound ? (
         <>
           <Typography>ページが見つかりませんでした。</Typography>
-          <Typography variant="body2" color="text.secondary">URL が正しいか確認してください。</Typography>
-          <Button variant="contained" component={Link} to="/">ホームへ</Button>
+          <Typography variant="body2" color="text.secondary">
+            URL が正しいか確認してください。
+          </Typography>
+          <Button variant="contained" component={Link} to="/">
+            ホームへ
+          </Button>
         </>
       ) : (
         <>
@@ -87,7 +138,9 @@ function RouteErrorScreen({ inline = false }: { inline?: boolean }) {
               ? '通信状況を確認して、ページを再読み込みしてください。'
               : '予期しないエラーが発生しました。ページを再読み込みしても解決しない場合は、お問い合わせください。'}
           </Typography>
-          <Button variant="contained" onClick={() => window.location.reload()}>再読み込み</Button>
+          <Button variant="contained" onClick={() => window.location.reload()}>
+            再読み込み
+          </Button>
         </>
       )}
     </Box>
@@ -96,7 +149,15 @@ function RouteErrorScreen({ inline = false }: { inline?: boolean }) {
 
 function PageLoader() {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, minHeight: '40vh' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexGrow: 1,
+        minHeight: '40vh',
+      }}
+    >
       <CircularProgress />
     </Box>
   );
@@ -183,11 +244,11 @@ interface NavItem {
 }
 
 const bottomNavItems: NavItem[] = [
-  { label: 'ホーム',   path: '/home',      icon: <HomeOutlinedIcon /> },
-  { label: '記録する', path: '/record',    icon: <ModeEditOutlineOutlinedIcon /> },
-  { label: 'レポート', path: '/report',    icon: <BarChartOutlinedIcon /> },
-  { label: '教材',     path: '/materials', icon: <MenuBookOutlinedIcon /> },
-  { label: '設定',     path: '/settings',  icon: <SettingsOutlinedIcon /> },
+  { label: 'ホーム', path: '/home', icon: <HomeOutlinedIcon /> },
+  { label: '記録する', path: '/record', icon: <ModeEditOutlineOutlinedIcon /> },
+  { label: 'レポート', path: '/report', icon: <BarChartOutlinedIcon /> },
+  { label: '教材', path: '/materials', icon: <MenuBookOutlinedIcon /> },
+  { label: '設定', path: '/settings', icon: <SettingsOutlinedIcon /> },
 ];
 
 function BottomNav() {
@@ -195,12 +256,17 @@ function BottomNav() {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  const currentPath = bottomNavItems.find(item => location.pathname.startsWith(item.path))?.path || false;
+  const currentPath =
+    bottomNavItems.find((item) => location.pathname.startsWith(item.path))?.path || false;
 
   return (
     <Box
       sx={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1200,
         borderTop: `1px solid ${theme.palette.divider}`,
         backgroundColor: theme.palette.background.paper,
         paddingBottom: 'env(safe-area-inset-bottom)',
@@ -223,7 +289,8 @@ function BottomNav() {
               minWidth: 0,
               color: theme.palette.text.disabled,
               borderRadius: '20px',
-              m: '4px', p: '4px',
+              m: '4px',
+              p: '4px',
               '&.Mui-selected': { color: theme.palette.primary.main },
               '& .MuiBottomNavigationAction-label': {
                 fontSize: '10px',
@@ -251,39 +318,64 @@ function AppShell() {
   const [streak, setStreak] = useState(0);
   const [isStudiedToday, setIsStudiedToday] = useState(false);
   const [isStreakOpen, setIsStreakOpen] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>({ display_name: '', avatar_url: null });
+  const [profileData, setProfileData] = useState<ProfileData>({
+    display_name: '',
+    avatar_url: null,
+  });
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
     return () => subscription.unsubscribe();
   }, []);
 
   const fetchStreak = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from('study_logs').select('study_datetime').eq('user_id', user.id);
+    const { data } = await supabase
+      .from('study_logs')
+      .select('study_datetime')
+      .eq('user_id', user.id);
     if (data) {
       const isoDates = data.map((d: { study_datetime: string }) => d.study_datetime);
       setStreak(calcStreakFromDates(isoDates));
       const now = new Date();
       const offset = now.getTimezoneOffset();
       const today = new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
-      setIsStudiedToday(isoDates.some(iso => {
-        const d = new Date(iso);
-        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) === today;
-      }));
+      setIsStudiedToday(
+        isoDates.some((iso) => {
+          const d = new Date(iso);
+          return (
+            new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) ===
+            today
+          );
+        }),
+      );
     }
   }, []);
 
   const fetchProfile = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
-    if (data) setProfileData({ display_name: data.display_name || '', avatar_url: data.avatar_url || null });
+    const { data } = await supabase
+      .from('profiles')
+      .select('display_name, avatar_url')
+      .eq('id', user.id)
+      .single();
+    if (data)
+      setProfileData({
+        display_name: data.display_name || '',
+        avatar_url: data.avatar_url || null,
+      });
   }, []);
 
   useEffect(() => {
@@ -292,12 +384,15 @@ function AppShell() {
     fetchProfile();
   }, [session, fetchStreak, fetchProfile]);
 
-  const callbacks = useMemo<AppCallbacksContextType>(() => ({
-    onRecordSaved: fetchStreak,
-    onProfileSaved: fetchProfile,
-  }), [fetchStreak, fetchProfile]);
+  const callbacks = useMemo<AppCallbacksContextType>(
+    () => ({
+      onRecordSaved: fetchStreak,
+      onProfileSaved: fetchProfile,
+    }),
+    [fetchStreak, fetchProfile],
+  );
 
-  const toggleSidebar = () => setSidebarOpen(prev => !prev);
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
   if (session === undefined) return <FullScreenLoader />;
 
@@ -311,32 +406,60 @@ function AppShell() {
 
   return (
     <AppCallbacksContext.Provider value={callbacks}>
-      <Box sx={{ display: 'flex', height: '100dvh', backgroundColor: theme.palette.background.default }}>
-
+      <Box
+        sx={{
+          display: 'flex',
+          height: '100dvh',
+          backgroundColor: theme.palette.background.default,
+        }}
+      >
         <AppBar
           position="fixed"
           elevation={0}
           sx={{
-            backgroundColor: isMobile ? theme.palette.background.paper : theme.palette.background.default,
+            backgroundColor: isMobile
+              ? theme.palette.background.paper
+              : theme.palette.background.default,
             color: theme.palette.text.primary,
             boxShadow: isMobile ? `0 1px 0 ${theme.palette.divider}` : 'none',
             zIndex: (t) => t.zIndex.drawer + 1,
           }}
         >
-          <Toolbar disableGutters sx={{ display: 'flex', alignItems: 'center', px: isMobile ? '12px' : '16px', minHeight: isMobile ? '52px !important' : '64px !important' }}>
+          <Toolbar
+            disableGutters
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: isMobile ? '12px' : '16px',
+              minHeight: isMobile ? '52px !important' : '64px !important',
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: isMobile ? 1 : 0 }}>
               {!isMobile && (
-                <IconButton onClick={toggleSidebar} edge="start" sx={{ ml: 0, mr: 2, color: theme.palette.text.primary }}>
+                <IconButton
+                  onClick={toggleSidebar}
+                  edge="start"
+                  sx={{ ml: 0, mr: 2, color: theme.palette.text.primary }}
+                >
                   <MenuRoundedIcon />
                 </IconButton>
               )}
-              <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? 'auto' : '230px' }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', width: isMobile ? 'auto' : '230px' }}
+              >
                 <img
                   src={theme.palette.mode === 'dark' ? studyLogLogoDark : studyLogLogo}
                   alt="StudyLog"
                   style={{ height: isMobile ? '30px' : '32px', marginRight: '8px' }}
                 />
-                <Typography variant="h6" sx={{ fontWeight: '900', fontSize: isMobile ? '20px' : '24px', letterSpacing: '-0.5px' }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: '900',
+                    fontSize: isMobile ? '20px' : '24px',
+                    letterSpacing: '-0.5px',
+                  }}
+                >
                   StudyLog
                 </Typography>
               </Box>
@@ -351,17 +474,34 @@ function AppShell() {
               sx={{
                 fontWeight: 'bold',
                 fontSize: isMobile ? '13px' : '16px',
-                px: 0.5, py: isMobile ? 1.5 : 2,
-                backgroundColor: streak > 0 && isStudiedToday ? theme.palette.streak.lighter : theme.palette.action.hover,
-                color: streak > 0 && isStudiedToday ? theme.palette.streak.main : theme.palette.text.disabled,
-                border: streak > 0 && isStudiedToday ? `1px solid ${theme.palette.streak.border}` : `1px solid ${theme.palette.divider}`,
-                cursor: 'pointer', transition: '0.2s',
+                px: 0.5,
+                py: isMobile ? 1.5 : 2,
+                backgroundColor:
+                  streak > 0 && isStudiedToday
+                    ? theme.palette.streak.lighter
+                    : theme.palette.action.hover,
+                color:
+                  streak > 0 && isStudiedToday
+                    ? theme.palette.streak.main
+                    : theme.palette.text.disabled,
+                border:
+                  streak > 0 && isStudiedToday
+                    ? `1px solid ${theme.palette.streak.border}`
+                    : `1px solid ${theme.palette.divider}`,
+                cursor: 'pointer',
+                transition: '0.2s',
                 '&:hover': {
-                  backgroundColor: streak > 0 && isStudiedToday ? theme.palette.streak.lighter : theme.palette.action.selected,
+                  backgroundColor:
+                    streak > 0 && isStudiedToday
+                      ? theme.palette.streak.lighter
+                      : theme.palette.action.selected,
                   opacity: 0.8,
                 },
                 '& .MuiChip-icon': {
-                  color: streak > 0 && isStudiedToday ? `${theme.palette.streak.main} !important` : theme.palette.text.disabled,
+                  color:
+                    streak > 0 && isStudiedToday
+                      ? `${theme.palette.streak.main} !important`
+                      : theme.palette.text.disabled,
                 },
                 mr: 1,
               }}
@@ -371,10 +511,14 @@ function AppShell() {
               <Avatar
                 src={profileData.avatar_url || defaultAvatar}
                 sx={{
-                  width: 36, height: 36, fontSize: '15px', fontWeight: 'bold',
+                  width: 36,
+                  height: 36,
+                  fontSize: '15px',
+                  fontWeight: 'bold',
                   backgroundColor: theme.palette.primary.main,
                   border: `2px solid ${theme.palette.primary.lighter}`,
-                  transition: 'border-color 0.2s', '&:hover': { borderColor: theme.palette.primary.main },
+                  transition: 'border-color 0.2s',
+                  '&:hover': { borderColor: theme.palette.primary.main },
                 }}
               />
             </IconButton>
@@ -386,24 +530,37 @@ function AppShell() {
         <Box
           component="main"
           sx={{
-            flexGrow: 1, display: 'flex', flexDirection: 'column',
-            pb: isMobile ? 0 : 2, pr: isMobile ? 0 : 2,
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            pb: isMobile ? 0 : 2,
+            pr: isMobile ? 0 : 2,
             transition: 'margin-left 0.2s',
-            minWidth: 0, minHeight: 0, overflow: 'hidden',
+            minWidth: 0,
+            minHeight: 0,
+            overflow: 'hidden',
           }}
         >
           <Toolbar sx={{ minHeight: isMobile ? '52px !important' : '64px !important' }} />
-          <Box sx={{
-            backgroundColor: theme.palette.background.paper,
-            flexGrow: 1,
-            borderRadius: isMobile ? 0 : '24px',
-            boxShadow: isMobile ? 'none' : (theme.palette.mode === 'dark' ? 'none' : theme.customShadows.sm),
-            overflowX: 'hidden', overflowY: 'auto',
-            p: isMobile ? 2 : 4,
-            display: 'flex', flexDirection: 'column',
-            pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 4,
-            position: 'relative',
-          }}>
+          <Box
+            sx={{
+              backgroundColor: theme.palette.background.paper,
+              flexGrow: 1,
+              borderRadius: isMobile ? 0 : '24px',
+              boxShadow: isMobile
+                ? 'none'
+                : theme.palette.mode === 'dark'
+                  ? 'none'
+                  : theme.customShadows.sm,
+              overflowX: 'hidden',
+              overflowY: 'auto',
+              p: isMobile ? 2 : 4,
+              display: 'flex',
+              flexDirection: 'column',
+              pb: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 4,
+              position: 'relative',
+            }}
+          >
             <Suspense fallback={<PageLoader />}>
               <Outlet />
             </Suspense>
@@ -425,10 +582,38 @@ const router = createBrowserRouter([
     // すべてのルートの表示エラーをここで受ける（ルートを追加しても errorElement を付け忘れないよう、1か所にまとめる）
     errorElement: <RouteErrorScreen />,
     children: [
-      { path: '/login', element: <Suspense fallback={<FullScreenLoader />}><AuthPage /></Suspense> },
-      { path: '/reset-password', element: <Suspense fallback={<FullScreenLoader />}><ResetPasswordPage /></Suspense> },
-      { path: '/terms', element: <Suspense fallback={<FullScreenLoader />}><TermsOfServicePage /></Suspense> },
-      { path: '/privacy', element: <Suspense fallback={<FullScreenLoader />}><PrivacyPolicyPage /></Suspense> },
+      {
+        path: '/login',
+        element: (
+          <Suspense fallback={<FullScreenLoader />}>
+            <AuthPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/reset-password',
+        element: (
+          <Suspense fallback={<FullScreenLoader />}>
+            <ResetPasswordPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/terms',
+        element: (
+          <Suspense fallback={<FullScreenLoader />}>
+            <TermsOfServicePage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/privacy',
+        element: (
+          <Suspense fallback={<FullScreenLoader />}>
+            <PrivacyPolicyPage />
+          </Suspense>
+        ),
+      },
       {
         path: '/',
         element: <AppShell />,
@@ -467,73 +652,88 @@ export default function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  const colorMode = useMemo<ColorModeContextType>(() => ({
-    mode,
-    toggleColorMode: () => {
-      setMode(prev => {
-        const next = prev === 'light' ? 'dark' : 'light';
-        localStorage.setItem(THEME_KEY, next);
-        return next;
-      });
-    },
-  }), [mode]);
-
-  const theme = useMemo(() => createTheme({
-    palette: {
+  const colorMode = useMemo<ColorModeContextType>(
+    () => ({
       mode,
-      primary: {
-        main: '#4285F4',
-        lighter: mode === 'dark' ? 'rgba(66, 133, 244, 0.15)' : 'rgba(66, 133, 244, 0.08)',
+      toggleColorMode: () => {
+        setMode((prev) => {
+          const next = prev === 'light' ? 'dark' : 'light';
+          localStorage.setItem(THEME_KEY, next);
+          return next;
+        });
       },
-      chart: [
-        '#1A73E8', '#34A853', '#EA4335', '#FBBC05', '#8E24AA',
-        '#00ACC1', '#FF6D00', '#546E7A', '#D81B60', '#00897B',
-      ],
-      error: {
-        main: mode === 'dark' ? '#ff5252' : '#d32f2f',
-        dark: mode === 'dark' ? '#ff867f' : '#b71c1c',
-        lighter: mode === 'dark' ? 'rgba(255, 82, 82, 0.15)' : 'rgba(211, 47, 47, 0.05)',
-        contrastText: '#FFFFFF',
-      },
-      success: {
-        main: mode === 'dark' ? '#81c995' : '#34A853',
-        lighter: mode === 'dark' ? 'rgba(129, 201, 149, 0.15)' : 'rgba(52, 168, 83, 0.1)',
-      },
-      warning: {
-        main: mode === 'dark' ? '#fdd663' : '#FBBC04',
-        lighter: mode === 'dark' ? 'rgba(253, 214, 99, 0.15)' : 'rgba(251, 188, 4, 0.1)',
-      },
-      streak: {
-        main: '#FF6B00',
-        lighter: mode === 'dark' ? 'rgba(255, 107, 0, 0.15)' : '#FFF4EC',
-        border: mode === 'dark' ? 'rgba(255, 107, 0, 0.3)' : '#FFE0C2',
-      },
-      background: {
-        default: mode === 'dark' ? '#202124' : '#F0F4F9',
-        paper: mode === 'dark' ? '#303134' : '#FFFFFF',
-        subtle: mode === 'dark' ? '#3c4043' : '#f9f9f9',
-        overlay: mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)',
-      },
-      text: {
-        primary: mode === 'dark' ? '#e8eaed' : '#333333',
-        secondary: mode === 'dark' ? '#9aa0a6' : '#666666',
-        disabled: mode === 'dark' ? '#5f6368' : '#aaaaaa',
-      },
-      divider: mode === 'dark' ? '#3c4043' : '#E8E8E8',
-    },
-    customShadows: {
-      sm: mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)'  : '0 2px 4px rgba(0,0,0,0.1)',
-      md: mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.15)',
-      lg: mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.6)' : '0 8px 24px rgba(0,0,0,0.2)',
-    },
-    components: {
-      MuiPaper: {
-        styleOverrides: {
-          root: { backgroundImage: 'none' },
+    }),
+    [mode],
+  );
+
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          primary: {
+            main: '#4285F4',
+            lighter: mode === 'dark' ? 'rgba(66, 133, 244, 0.15)' : 'rgba(66, 133, 244, 0.08)',
+          },
+          chart: [
+            '#1A73E8',
+            '#34A853',
+            '#EA4335',
+            '#FBBC05',
+            '#8E24AA',
+            '#00ACC1',
+            '#FF6D00',
+            '#546E7A',
+            '#D81B60',
+            '#00897B',
+          ],
+          error: {
+            main: mode === 'dark' ? '#ff5252' : '#d32f2f',
+            dark: mode === 'dark' ? '#ff867f' : '#b71c1c',
+            lighter: mode === 'dark' ? 'rgba(255, 82, 82, 0.15)' : 'rgba(211, 47, 47, 0.05)',
+            contrastText: '#FFFFFF',
+          },
+          success: {
+            main: mode === 'dark' ? '#81c995' : '#34A853',
+            lighter: mode === 'dark' ? 'rgba(129, 201, 149, 0.15)' : 'rgba(52, 168, 83, 0.1)',
+          },
+          warning: {
+            main: mode === 'dark' ? '#fdd663' : '#FBBC04',
+            lighter: mode === 'dark' ? 'rgba(253, 214, 99, 0.15)' : 'rgba(251, 188, 4, 0.1)',
+          },
+          streak: {
+            main: '#FF6B00',
+            lighter: mode === 'dark' ? 'rgba(255, 107, 0, 0.15)' : '#FFF4EC',
+            border: mode === 'dark' ? 'rgba(255, 107, 0, 0.3)' : '#FFE0C2',
+          },
+          background: {
+            default: mode === 'dark' ? '#202124' : '#F0F4F9',
+            paper: mode === 'dark' ? '#303134' : '#FFFFFF',
+            subtle: mode === 'dark' ? '#3c4043' : '#f9f9f9',
+            overlay: mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)',
+          },
+          text: {
+            primary: mode === 'dark' ? '#e8eaed' : '#333333',
+            secondary: mode === 'dark' ? '#9aa0a6' : '#666666',
+            disabled: mode === 'dark' ? '#5f6368' : '#aaaaaa',
+          },
+          divider: mode === 'dark' ? '#3c4043' : '#E8E8E8',
         },
-      },
-    },
-  }), [mode]);
+        customShadows: {
+          sm: mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+          md: mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.15)',
+          lg: mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.6)' : '0 8px 24px rgba(0,0,0,0.2)',
+        },
+        components: {
+          MuiPaper: {
+            styleOverrides: {
+              root: { backgroundImage: 'none' },
+            },
+          },
+        },
+      }),
+    [mode],
+  );
 
   return (
     <ColorModeContext.Provider value={colorMode}>

@@ -16,24 +16,29 @@
 ## 主な機能
 
 ### 学習記録
+
 - 教材ごとに学習時間・ページ数・メモ・画像を記録
 - 記録の編集・削除
 
 ### 教材管理
+
 - 教材の登録・カテゴリ分類
 - ドラッグ&ドロップで並び替え
 - 楽天ブックス API を使った書籍検索・自動登録
 
 ### レポート
+
 - 期間別の学習時間推移グラフ
 - 教材別の割合を示す円グラフ
 - 教材ランキング
 
 ### ホーム / タイムライン
+
 - フォロー中ユーザーの学習記録を表示
 - 同じ目標グループのユーザーの記録を閲覧
 
 ### ユーザー機能
+
 - プロフィール・自己紹介・目標の設定
 - 志望校の検索・登録（全国の高校 5,093校 / 大学 834校に対応）
 - フォロー / フォロワー管理・フォロー申請の承認
@@ -41,10 +46,12 @@
 - アカウントの公開 / 非公開切り替え
 
 ### ストリーク
+
 - 連続学習日数のカウント
 - 試験日までのカウントダウン
 
 ### その他
+
 - ダークモード / ライトモード対応
 - メール認証・Google OAuth ログイン
 
@@ -52,18 +59,18 @@
 
 ## 技術スタック
 
-| カテゴリ | 技術 |
-|---------|------|
-| フロントエンド | React 19, TypeScript, Vite |
-| UI ライブラリ | Material UI (MUI) v7, Emotion |
-| ルーティング | React Router v7 |
-| グラフ | Recharts |
-| ドラッグ&ドロップ | dnd-kit |
-| バックエンド / DB | Supabase (PostgreSQL) |
-| 認証 | Supabase Auth, Google OAuth 2.0 |
-| 外部 API | 楽天ブックス API, 学校コード検索 API (edu-data.jp) |
-| CI/CD | GitHub Actions (学校データ月次自動更新) |
-| デプロイ | Vercel |
+| カテゴリ          | 技術                                               |
+| ----------------- | -------------------------------------------------- |
+| フロントエンド    | React 19, TypeScript, Vite                         |
+| UI ライブラリ     | Material UI (MUI) v7, Emotion                      |
+| ルーティング      | React Router v7                                    |
+| グラフ            | Recharts                                           |
+| ドラッグ&ドロップ | dnd-kit                                            |
+| バックエンド / DB | Supabase (PostgreSQL)                              |
+| 認証              | Supabase Auth, Google OAuth 2.0                    |
+| 外部 API          | 楽天ブックス API, 学校コード検索 API (edu-data.jp) |
+| CI/CD             | GitHub Actions (学校データ月次自動更新)            |
+| デプロイ          | Vercel                                             |
 
 ---
 
@@ -99,6 +106,7 @@ StudyLog/
 ## セットアップ
 
 ### 前提条件
+
 - Node.js 18 以上
 - npm
 
@@ -126,12 +134,12 @@ RAKUTEN_APP_ID         = your_rakuten_app_id
 RAKUTEN_ACCESS_KEY     = your_rakuten_access_key
 ```
 
-| 変数名 | 取得場所 |
-|--------|---------|
-| `VITE_SUPABASE_URL` | Supabase プロジェクト設定 > API |
-| `VITE_SUPABASE_ANON_KEY` | Supabase プロジェクト設定 > API |
-| `RAKUTEN_APP_ID` | [楽天デベロッパー](https://webservice.rakuten.co.jp/) |
-| `RAKUTEN_ACCESS_KEY` | [楽天デベロッパー](https://webservice.rakuten.co.jp/) > アプリ管理 |
+| 変数名                   | 取得場所                                                           |
+| ------------------------ | ------------------------------------------------------------------ |
+| `VITE_SUPABASE_URL`      | Supabase プロジェクト設定 > API                                    |
+| `VITE_SUPABASE_ANON_KEY` | Supabase プロジェクト設定 > API                                    |
+| `RAKUTEN_APP_ID`         | [楽天デベロッパー](https://webservice.rakuten.co.jp/)              |
+| `RAKUTEN_ACCESS_KEY`     | [楽天デベロッパー](https://webservice.rakuten.co.jp/) > アプリ管理 |
 
 ### 4. 開発サーバーの起動
 
@@ -145,13 +153,13 @@ npm run dev
 
 ## スクリプト
 
-| コマンド | 説明 |
-|---------|------|
-| `npm run dev` | 開発サーバーを起動（ホットリロード対応） |
-| `npm run build` | 本番用ビルドを生成 |
-| `npm run preview` | ビルド結果をローカルでプレビュー |
-| `npm run lint` | ESLint によるコード検査 |
-| `EDU_DATA_TOKEN=<token> node scripts/fetch-school-data.mjs` | 学校データを手動更新 |
+| コマンド                                                    | 説明                                     |
+| ----------------------------------------------------------- | ---------------------------------------- |
+| `npm run dev`                                               | 開発サーバーを起動（ホットリロード対応） |
+| `npm run build`                                             | 本番用ビルドを生成                       |
+| `npm run preview`                                           | ビルド結果をローカルでプレビュー         |
+| `npm run lint`                                              | ESLint によるコード検査                  |
+| `EDU_DATA_TOKEN=<token> node scripts/fetch-school-data.mjs` | 学校データを手動更新                     |
 
 ---
 

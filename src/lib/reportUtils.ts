@@ -105,7 +105,10 @@ export function getPeriodStart(period: Period): string {
 // ==========================================
 // 期間オフセット（ダイアログ用）
 // ==========================================
-export function getPeriodInfo(period: Period, offset: number): {
+export function getPeriodInfo(
+  period: Period,
+  offset: number,
+): {
   startDate: string;
   endDate: string;
   dates: string[];
@@ -183,9 +186,12 @@ export function getWeekSunday(mondayStr: string): string {
   return dateObjToStr(sun);
 }
 
-export function getTrendPeriodInfo(mode: TrendViewMode, offset: number): {
+export function getTrendPeriodInfo(
+  mode: TrendViewMode,
+  offset: number,
+): {
   startDate: string;
-  endDate: string;    // day/week: 最後の日付 (month: 最終YM)
+  endDate: string; // day/week: 最後の日付 (month: 最終YM)
   endDateFull: string; // 表示用: week=最終日曜, それ以外=endDate
   dates: string[];
 } {
@@ -221,7 +227,11 @@ export function getTrendPeriodInfo(mode: TrendViewMode, offset: number): {
   return { startDate: dates[0], endDate: dates[6], endDateFull: dates[6], dates };
 }
 
-export function formatTrendPeriodRange(startDate: string, endDateFull: string, mode: TrendViewMode): string {
+export function formatTrendPeriodRange(
+  startDate: string,
+  endDateFull: string,
+  mode: TrendViewMode,
+): string {
   if (mode === 'month') {
     const [sy, sm] = startDate.split('-');
     const [ey, em] = endDateFull.split('-');
@@ -260,7 +270,7 @@ export function buildStackedBarData(logs: LogEntry[], period: Period): StackedBa
     const result: StackedBarItem[] = [];
     for (let i = days - 1; i >= 0; i--) {
       const dateStr = daysAgoStr(i);
-      const dayLogs = logs.filter(l => toLocalDate(l.studyDatetime) === dateStr);
+      const dayLogs = logs.filter((l) => toLocalDate(l.studyDatetime) === dateStr);
       const item: StackedBarItem = { label: shortDate(dateStr), fullLabel: shortDate(dateStr) };
       for (const l of dayLogs) {
         if ((l.durationMinutes ?? 0) <= 0) continue;
@@ -278,7 +288,7 @@ export function buildStackedBarData(logs: LogEntry[], period: Period): StackedBa
     d.setDate(1);
     d.setMonth(d.getMonth() - i);
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const monthLogs = logs.filter(l => toLocalDate(l.studyDatetime).slice(0, 7) === ym);
+    const monthLogs = logs.filter((l) => toLocalDate(l.studyDatetime).slice(0, 7) === ym);
     const item: StackedBarItem = {
       label: `${parseInt(ym.split('-')[1])}月`,
       fullLabel: shortMonth(ym),

@@ -26,22 +26,27 @@ export default function UnitSelector({ value, onChange, disabled = false }: Unit
               key={unit}
               onClick={() => !disabled && onChange(unit)}
               sx={{
-                px: 2, py: 0.75,
+                px: 2,
+                py: 0.75,
                 borderRadius: '20px',
                 border: selected ? '2px solid' : '1.5px solid',
                 borderColor: selected ? 'primary.main' : 'divider',
-                backgroundColor: selected ? alpha(theme.palette.primary.main, 0.1) : 'background.default',
+                backgroundColor: selected
+                  ? alpha(theme.palette.primary.main, 0.1)
+                  : 'background.default',
                 color: selected ? 'primary.main' : 'text.primary',
                 fontWeight: selected ? 'bold' : 'normal',
                 fontSize: '14px',
                 cursor: disabled ? 'default' : 'pointer',
                 userSelect: 'none',
                 transition: '0.15s',
-                '&:hover': !disabled ? {
-                  borderColor: 'primary.main',
-                  backgroundColor: alpha(theme.palette.primary.main, 0.15),
-                  color: 'primary.main',
-                } : {},
+                '&:hover': !disabled
+                  ? {
+                      borderColor: 'primary.main',
+                      backgroundColor: alpha(theme.palette.primary.main, 0.15),
+                      color: 'primary.main',
+                    }
+                  : {},
               }}
             >
               {unit}

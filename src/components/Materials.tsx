@@ -3,8 +3,21 @@
 import React, { useState } from 'react';
 import { useNavigate, useBlocker } from 'react-router-dom';
 import {
-  Box, Typography, Grid, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon, Tooltip,
-  Snackbar, Alert, useMediaQuery, useTheme, alpha,
+  Box,
+  Typography,
+  Grid,
+  Button,
+  CircularProgress,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  Tooltip,
+  Snackbar,
+  Alert,
+  useMediaQuery,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import AddIcon from '@mui/icons-material/Add';
@@ -33,12 +46,7 @@ import {
   DragOverlay,
   useDroppable,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  rectSortingStrategy,
-  arrayMove,
-} from '@dnd-kit/sortable';
+import { SortableContext, useSortable, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 // ==========================================
@@ -46,7 +54,7 @@ import { CSS } from '@dnd-kit/utilities';
 // ==========================================
 function buildSortedEntries(
   materials: Material[],
-  allCategories?: CategoryInfo[]
+  allCategories?: CategoryInfo[],
 ): [string, Material[], CategoryInfo | undefined][] {
   const grouped: Record<string, Material[]> = {};
   for (const m of materials) {
@@ -63,7 +71,11 @@ function buildSortedEntries(
     for (const cat of allCategories) catInfoMap.set(cat.name, cat);
   }
   return Object.entries(grouped)
-    .map(([name, items]): [string, Material[], CategoryInfo | undefined] => [name, items, catInfoMap.get(name)])
+    .map(([name, items]): [string, Material[], CategoryInfo | undefined] => [
+      name,
+      items,
+      catInfoMap.get(name),
+    ])
     .sort((a, b) => {
       const orderA = a[2]?.sortOrder ?? a[1][0]?.categorySortOrder ?? 0;
       const orderB = b[2]?.sortOrder ?? b[1][0]?.categorySortOrder ?? 0;
@@ -75,13 +87,17 @@ function buildSortedEntries(
 // ソータブル教材アイテム
 // ==========================================
 function SortableMaterialItem({
-  item, onDelete, onEdit,
+  item,
+  onDelete,
+  onEdit,
 }: {
   item: Material;
   onDelete: (id: string) => void;
   onEdit: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -104,7 +120,13 @@ function SortableMaterialItem({
 // ==========================================
 // 空カテゴリ用ドロップゾーン
 // ==========================================
-function EmptyCategoryDropzone({ categoryName, isOver }: { categoryName: string; isOver: boolean }) {
+function EmptyCategoryDropzone({
+  categoryName,
+  isOver,
+}: {
+  categoryName: string;
+  isOver: boolean;
+}) {
   const { setNodeRef } = useDroppable({ id: `cat-drop-${categoryName}` });
   const theme = useTheme();
   return (
@@ -122,7 +144,10 @@ function EmptyCategoryDropzone({ categoryName, isOver }: { categoryName: string;
         transition: 'all 0.2s',
       }}
     >
-      <Typography variant="body2" sx={{ color: isOver ? 'primary.main' : 'text.disabled', pointerEvents: 'none' }}>
+      <Typography
+        variant="body2"
+        sx={{ color: isOver ? 'primary.main' : 'text.disabled', pointerEvents: 'none' }}
+      >
         ここにドロップして移動
       </Typography>
     </Box>
@@ -149,19 +174,25 @@ export default function Materials() {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editMaterialId, setEditMaterialId] = useState<string | null>(null);
   const [deleteMaterialId, setDeleteMaterialId] = useState<string | null>(null);
-  const deleteMaterialName = materials.find(m => m.id === deleteMaterialId)?.name ?? '';
+  const deleteMaterialName = materials.find((m) => m.id === deleteMaterialId)?.name ?? '';
 
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'info' | 'success' }>({
-    open: false, message: '', severity: 'error',
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'info' | 'success';
+  }>({
+    open: false,
+    message: '',
+    severity: 'error',
   });
   const showSnackbar = (message: string, severity: 'error' | 'info' | 'success' = 'error') =>
     setSnackbar({ open: true, message, severity });
-  const handleSnackbarClose = () => setSnackbar(s => ({ ...s, open: false }));
+  const handleSnackbarClose = () => setSnackbar((s) => ({ ...s, open: false }));
 
   // 並べ替えモード中は離脱ブロック
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      isReorderMode && currentLocation.pathname !== nextLocation.pathname
+      isReorderMode && currentLocation.pathname !== nextLocation.pathname,
   );
 
   // ==========================================
@@ -178,9 +209,14 @@ export default function Materials() {
   // ==========================================
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
-  const openCategoryDialog = () => { handleMenuClose(); setIsCategoryDialogOpen(true); };
-  const handleReorderModeStart = () => { handleMenuClose(); setIsReorderMode(true); };
-
+  const openCategoryDialog = () => {
+    handleMenuClose();
+    setIsCategoryDialogOpen(true);
+  };
+  const handleReorderModeStart = () => {
+    handleMenuClose();
+    setIsReorderMode(true);
+  };
 
   // ==========================================
   // dnd-kit ドラッグハンドラ
@@ -191,7 +227,10 @@ export default function Materials() {
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    if (!over) { setOverDropId(null); return; }
+    if (!over) {
+      setOverDropId(null);
+      return;
+    }
 
     const activeId = String(active.id);
     const overId = String(over.id);
@@ -199,34 +238,40 @@ export default function Materials() {
 
     if (activeId === overId) return;
 
-    const activeMat = materials.find(m => m.id === activeId);
+    const activeMat = materials.find((m) => m.id === activeId);
     if (!activeMat) return;
 
     // 空カテゴリへのドロップはドラッグ中に状態更新しない（handleDragEnd で処理）
     if (overId.startsWith('cat-drop-')) return;
 
-    const overMat = materials.find(m => m.id === overId);
+    const overMat = materials.find((m) => m.id === overId);
     if (!overMat) return;
 
     if (activeMat.categoryName === overMat.categoryName) {
       // 同カテゴリ内で並べ替え
-      setMaterials(prev => {
-        const oldIndex = prev.findIndex(m => m.id === activeId);
-        const newIndex = prev.findIndex(m => m.id === overId);
+      setMaterials((prev) => {
+        const oldIndex = prev.findIndex((m) => m.id === activeId);
+        const newIndex = prev.findIndex((m) => m.id === overId);
         if (oldIndex === newIndex) return prev;
         return arrayMove(prev, oldIndex, newIndex);
       });
     } else {
       // カテゴリをまたいで移動
-      const catInfo = allCategories.find(c => c.name === overMat.categoryName);
+      const catInfo = allCategories.find((c) => c.name === overMat.categoryName);
       if (!catInfo) return;
-      setMaterials(prev => {
-        const idx = prev.findIndex(m => m.id === activeId);
+      setMaterials((prev) => {
+        const idx = prev.findIndex((m) => m.id === activeId);
         if (idx === -1) return prev;
         const updated = [...prev];
-        const item = { ...updated[idx], categoryId: catInfo.id, categoryName: catInfo.name, colorCode: catInfo.colorCode, categorySortOrder: catInfo.sortOrder };
+        const item = {
+          ...updated[idx],
+          categoryId: catInfo.id,
+          categoryName: catInfo.name,
+          colorCode: catInfo.colorCode,
+          categorySortOrder: catInfo.sortOrder,
+        };
         updated.splice(idx, 1);
-        const overIdx = updated.findIndex(m => m.id === overId);
+        const overIdx = updated.findIndex((m) => m.id === overId);
         updated.splice(overIdx, 0, item);
         return updated;
       });
@@ -242,14 +287,23 @@ export default function Materials() {
       const overId = String(over.id);
       if (overId.startsWith('cat-drop-')) {
         const overCategoryName = overId.replace('cat-drop-', '');
-        const activeMat = materials.find(m => m.id === activeId);
+        const activeMat = materials.find((m) => m.id === activeId);
         if (activeMat && activeMat.categoryName !== overCategoryName) {
-          const catInfo = allCategories.find(c => c.name === overCategoryName);
+          const catInfo = allCategories.find((c) => c.name === overCategoryName);
           if (catInfo) {
-            setMaterials(prev => prev.map(m => m.id === activeId
-              ? { ...m, categoryId: catInfo.id, categoryName: catInfo.name, colorCode: catInfo.colorCode, categorySortOrder: catInfo.sortOrder }
-              : m
-            ));
+            setMaterials((prev) =>
+              prev.map((m) =>
+                m.id === activeId
+                  ? {
+                      ...m,
+                      categoryId: catInfo.id,
+                      categoryName: catInfo.name,
+                      colorCode: catInfo.colorCode,
+                      categorySortOrder: catInfo.sortOrder,
+                    }
+                  : m,
+              ),
+            );
           }
         }
       }
@@ -262,7 +316,10 @@ export default function Materials() {
   // ==========================================
   // 完了ボタン（DB保存）
   // ==========================================
-  const sortedCategoryEntries = buildSortedEntries(materials, isReorderMode ? allCategories : undefined);
+  const sortedCategoryEntries = buildSortedEntries(
+    materials,
+    isReorderMode ? allCategories : undefined,
+  );
 
   const handleReorderModeEnd = async () => {
     setIsSaving(true);
@@ -270,11 +327,14 @@ export default function Materials() {
       const allItems = sortedCategoryEntries.flatMap(([, items]) => items);
       await Promise.all(
         allItems.map((item, index) =>
-          supabase.from('materials')
+          supabase
+            .from('materials')
             .update({ sort_order: index, category_id: item.categoryId })
             .eq('id', item.id)
-            .then(({ error }) => { if (error) throw error; })
-        )
+            .then(({ error }) => {
+              if (error) throw error;
+            }),
+        ),
       );
       setIsReorderMode(false);
       showSnackbar('並べ替えを保存しました', 'success');
@@ -296,25 +356,43 @@ export default function Materials() {
     const id = deleteMaterialId;
     setDeleteMaterialId(null);
     const { error } = await supabase.from('materials').update({ status: 'archived' }).eq('id', id);
-    if (error) { console.error(error); showSnackbar('削除に失敗しました。時間をおいて再度お試しください。'); return; }
-    setMaterials(prev => prev.filter(m => m.id !== id));
+    if (error) {
+      console.error(error);
+      showSnackbar('削除に失敗しました。時間をおいて再度お試しください。');
+      return;
+    }
+    setMaterials((prev) => prev.filter((m) => m.id !== id));
     showSnackbar('教材を削除しました', 'success');
   };
 
   const handleEdit = (id: string) => setEditMaterialId(id);
 
-  const activeDragMat = materials.find(m => m.id === activeDragId);
+  const activeDragMat = materials.find((m) => m.id === activeDragId);
 
   // ==========================================
   // レンダリング
   // ==========================================
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1 }}>
-
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 2 : 4, color: 'text.primary', justifyContent: 'space-between' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: isMobile ? 2 : 4,
+          color: 'text.primary',
+          justifyContent: 'space-between',
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5, '& svg': { fontSize: isMobile ? '24px' : '32px' } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              mr: 1.5,
+              '& svg': { fontSize: isMobile ? '24px' : '32px' },
+            }}
+          >
             <MenuBookOutlinedIcon />
           </Box>
           <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 'bold' }}>
@@ -323,13 +401,27 @@ export default function Materials() {
         </Box>
 
         {isReorderMode ? (
-          <Button variant="contained" size="large" onClick={handleReorderModeEnd} disabled={isSaving} disableElevation sx={{ borderRadius: '8px', fontWeight: 'bold', px: 4 }}>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleReorderModeEnd}
+            disabled={isSaving}
+            disableElevation
+            sx={{ borderRadius: '8px', fontWeight: 'bold', px: 4 }}
+          >
             {isSaving ? '保存中...' : '完了'}
           </Button>
         ) : (
           <Box sx={{ display: 'flex', alignContent: 'center', gap: isMobile ? 0.3 : 2 }}>
             <Tooltip title="カテゴリや教材の整理">
-              <IconButton onClick={handleMenuOpen} sx={{ color: 'text.secondary', borderRadius: '50%', '&:hover': { backgroundColor: 'action.hover' } }}>
+              <IconButton
+                onClick={handleMenuOpen}
+                sx={{
+                  color: 'text.secondary',
+                  borderRadius: '50%',
+                  '&:hover': { backgroundColor: 'action.hover' },
+                }}
+              >
                 <FormatListBulletedIcon />
               </IconButton>
             </Tooltip>
@@ -337,14 +429,28 @@ export default function Materials() {
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              sx={{ '& .MuiPaper-root': { borderRadius: '12px', minWidth: '180px', backgroundImage: 'none', boxShadow: theme.palette.mode === 'dark' ? '0 4px 16px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.3)' } }}
+              sx={{
+                '& .MuiPaper-root': {
+                  borderRadius: '12px',
+                  minWidth: '180px',
+                  backgroundImage: 'none',
+                  boxShadow:
+                    theme.palette.mode === 'dark'
+                      ? '0 4px 16px rgba(0,0,0,0.5)'
+                      : '0 4px 12px rgba(0,0,0,0.3)',
+                },
+              }}
             >
               <MenuItem onClick={openCategoryDialog} sx={{ borderRadius: '8px', mx: 1, mb: 0.5 }}>
-                <ListItemIcon><BookmarksOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} /></ListItemIcon>
+                <ListItemIcon>
+                  <BookmarksOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                </ListItemIcon>
                 カテゴリを編集
               </MenuItem>
               <MenuItem onClick={handleReorderModeStart} sx={{ borderRadius: '8px', mx: 1 }}>
-                <ListItemIcon><SwapVertOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} /></ListItemIcon>
+                <ListItemIcon>
+                  <SwapVertOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                </ListItemIcon>
                 教材を並べ替え
               </MenuItem>
             </Menu>
@@ -354,8 +460,14 @@ export default function Materials() {
               size={isMobile ? 'small' : 'large'}
               onClick={() => navigate('/materials/add-new-material')}
               sx={{
-                borderRadius: '5px', boxShadow: 'none', fontWeight: 'bold', px: isMobile ? 1.5 : 3,
-                '& .MuiButton-startIcon': { marginRight: isMobile ? '4px' : '8px', marginLeft: isMobile ? '-4px' : '-4px' }
+                borderRadius: '5px',
+                boxShadow: 'none',
+                fontWeight: 'bold',
+                px: isMobile ? 1.5 : 3,
+                '& .MuiButton-startIcon': {
+                  marginRight: isMobile ? '4px' : '8px',
+                  marginLeft: isMobile ? '-4px' : '-4px',
+                },
               }}
             >
               教材を追加
@@ -370,13 +482,36 @@ export default function Materials() {
           <CircularProgress />
         </Box>
       ) : materials.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, flexDirection: 'column', color: 'text.disabled' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexGrow: 1,
+            flexDirection: 'column',
+            color: 'text.disabled',
+          }}
+        >
           <MenuBookOutlinedIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
-          <Typography variant="h6" sx={{ color: 'text.secondary' }}>まだ教材がありません</Typography>
-          <Typography variant="body2" sx={{ color: 'text.disabled' }}>右上のボタンから追加してみましょう</Typography>
+          <Typography variant="h6" sx={{ color: 'text.secondary' }}>
+            まだ教材がありません
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+            右上のボタンから追加してみましょう
+          </Typography>
         </Box>
       ) : (
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', px: isMobile ? 1 : 1, pr: isMobile ? 1 : 1, pb: isMobile ? 0 : 3, pt: 1 }}>
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            px: isMobile ? 1 : 1,
+            pr: isMobile ? 1 : 1,
+            pb: isMobile ? 0 : 3,
+            pt: 1,
+          }}
+        >
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -386,7 +521,8 @@ export default function Materials() {
           >
             <Grid container spacing={isMobile ? 2 : 4} direction="column">
               {sortedCategoryEntries.map(([categoryName, items, catInfo]) => {
-                const groupColor = catInfo?.colorCode ?? items[0]?.colorCode ?? theme.palette.primary.main;
+                const groupColor =
+                  catInfo?.colorCode ?? items[0]?.colorCode ?? theme.palette.primary.main;
                 const isEmpty = items.length === 0;
                 if (isEmpty && !isReorderMode) return null;
 
@@ -396,31 +532,47 @@ export default function Materials() {
                   <Grid size={12} key={categoryName} sx={{ mb: 2 }}>
                     <Typography
                       variant="h6"
-                      sx={{ fontWeight: 'bold', color: 'text.primary', mb: 2, pl: 1.5, borderLeft: `4px solid ${groupColor}` }}
+                      sx={{
+                        fontWeight: 'bold',
+                        color: 'text.primary',
+                        mb: 2,
+                        pl: 1.5,
+                        borderLeft: `4px solid ${groupColor}`,
+                      }}
                     >
                       {categoryName}
                     </Typography>
 
-                    <SortableContext items={items.map(i => i.id)} strategy={rectSortingStrategy}>
+                    <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
                       {isEmpty ? (
                         <EmptyCategoryDropzone categoryName={categoryName} isOver={isOverEmpty} />
                       ) : (
                         <Box
                           sx={{
                             display: 'grid',
-                            gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(auto-fill, 195px)',
+                            gridTemplateColumns: isMobile
+                              ? 'repeat(3, 1fr)'
+                              : 'repeat(auto-fill, 195px)',
                             gap: isMobile ? 1 : 2,
                           }}
                         >
-                          {isReorderMode ? (
-                            items.map(item => (
-                              <SortableMaterialItem key={item.id} item={item} onDelete={handleDelete} onEdit={handleEdit} />
-                            ))
-                          ) : (
-                            items.map(item => (
-                              <MaterialCard key={item.id} material={item} onDelete={handleDelete} onEdit={handleEdit} />
-                            ))
-                          )}
+                          {isReorderMode
+                            ? items.map((item) => (
+                                <SortableMaterialItem
+                                  key={item.id}
+                                  item={item}
+                                  onDelete={handleDelete}
+                                  onEdit={handleEdit}
+                                />
+                              ))
+                            : items.map((item) => (
+                                <MaterialCard
+                                  key={item.id}
+                                  material={item}
+                                  onDelete={handleDelete}
+                                  onEdit={handleEdit}
+                                />
+                              ))}
                         </Box>
                       )}
                     </SortableContext>
@@ -432,8 +584,20 @@ export default function Materials() {
             {/* ドラッグ中に指/カーソルに吸い付くオーバーレイ */}
             <DragOverlay>
               {activeDragMat && (
-                <Box sx={{ transform: 'scale(1.03)', boxShadow: '0 16px 40px rgba(0,0,0,0.25)', borderRadius: '12px', cursor: 'grabbing' }}>
-                  <MaterialCard material={activeDragMat} onDelete={() => {}} onEdit={() => {}} isReorderMode />
+                <Box
+                  sx={{
+                    transform: 'scale(1.03)',
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
+                    borderRadius: '12px',
+                    cursor: 'grabbing',
+                  }}
+                >
+                  <MaterialCard
+                    material={activeDragMat}
+                    onDelete={() => {}}
+                    onEdit={() => {}}
+                    isReorderMode
+                  />
                 </Box>
               )}
             </DragOverlay>
@@ -445,7 +609,13 @@ export default function Materials() {
       <ConfirmDialog
         open={deleteMaterialId !== null}
         title="教材を削除しますか？"
-        message={<><strong>「{deleteMaterialName}」</strong>を削除します。<br />削除した教材は元に戻せません。</>}
+        message={
+          <>
+            <strong>「{deleteMaterialName}」</strong>を削除します。
+            <br />
+            削除した教材は元に戻せません。
+          </>
+        }
         confirmLabel="削除する"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteMaterialId(null)}
@@ -460,7 +630,10 @@ export default function Materials() {
       <MaterialEditDialog
         materialId={editMaterialId}
         onClose={() => setEditMaterialId(null)}
-        onUpdated={() => { refetch(); showSnackbar('教材を更新しました', 'success'); }}
+        onUpdated={() => {
+          refetch();
+          showSnackbar('教材を更新しました', 'success');
+        }}
       />
 
       <NavigationBlockerDialog
@@ -470,7 +643,12 @@ export default function Materials() {
         message={'並べ替えの変更が保存されていません。\nこのページを離れると、変更が破棄されます。'}
       />
 
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
         <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
