@@ -1,5 +1,5 @@
 // src/features/users/api.ts
-// フォロー関係のDB操作（Profile / Users 共通）
+// フォロー関係のDB操作（ProfilePage / UsersPage 共通）
 
 import { supabase } from '../../lib/supabase';
 

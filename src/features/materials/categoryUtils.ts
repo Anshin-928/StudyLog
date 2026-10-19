@@ -1,5 +1,5 @@
 // src/features/materials/categoryUtils.ts
-// カテゴリ関連の型・定数・ユーティリティ。AddMaterial / MaterialEditDialog で共用。
+// カテゴリ関連の型・定数・ユーティリティ。AddMaterialPage / MaterialEditDialog で共用。
 
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../types/supabase';
