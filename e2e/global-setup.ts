@@ -22,7 +22,7 @@ async function assertSupabaseIsRunning(url: string) {
     await fetch(`${url}/auth/v1/health`);
   } catch {
     throw new Error(
-      `ローカルSupabase(${url})に接続できません。npm run supabase:local:start を実行してください。`,
+      `ローカルSupabase(${url})に接続できません。pnpm supabase:local:start を実行してください。`,
     );
   }
 }

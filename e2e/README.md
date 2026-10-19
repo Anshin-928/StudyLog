@@ -26,22 +26,22 @@
 ## 実行方法
 
 ```bash
-npm run supabase:local:start                    # Docker Desktopを起動してから実行（ローカルSupabaseはDocker上で動く）
+pnpm supabase:local:start                    # Docker Desktopを起動してから実行（ローカルSupabaseはDocker上で動く）
 cp .env.e2e.local.example .env.e2e.local        # 初回のみ
-npm run test:e2e                                # もしくは npm run test:e2e:ui
+pnpm test:e2e                                # もしくは pnpm test:e2e:ui
 
-npm run test:e2e:headed                         # ブラウザを表示し、1操作0.5秒ずつゆっくり実行
+pnpm test:e2e:headed                         # ブラウザを表示し、1操作0.5秒ずつゆっくり実行
 
-npx playwright test e2e/tests/record            # 特定の機能だけ実行
+pnpm exec playwright test e2e/tests/record            # 特定の機能だけ実行
 ```
 
-スキーマを初期状態に戻したいときは、実行前に `npm run supabase:local:reset` を実行する（CIでは毎回実行している）。
+スキーマを初期状態に戻したいときは、実行前に `pnpm supabase:local:reset` を実行する（CIでは毎回実行している）。
 `supabase/seed.sql` は意図的に空にしている。共有のテストデータは入れないこと。
 
 e2e用のアプリはポート5174で `--mode e2e` として起動され、ローカルSupabaseに接続する。
-普段の `npm run dev`（5173、本番Supabase接続）とは別のサーバーなので、起動したままでも問題ない。
+普段の `pnpm dev`（5173、本番Supabase接続）とは別のサーバーなので、起動したままでも問題ない。
 
-実行後にテストデータが残っていないかは `npm run test:e2e:assert-clean` で確認できる。
+実行後にテストデータが残っていないかは `pnpm test:e2e:assert-clean` で確認できる。
 「残り」とは既に終了した実行が作成したユーザーを指し、実行中の別の実行（UIモード等）のユーザーは対象外になる。
 
 途中で強制終了した場合、その実行のユーザーは次回の実行開始時に回収される。

@@ -12,25 +12,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # バージョンは package.json の packageManager から読み込まれる
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
 
       - name: Format check
-        run: npm run format:check
+        run: pnpm format:check
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       # Service Worker が Supabase の API 応答をキャッシュしていないこと（個人データが端末に残り、別のユーザーに返るため）
       - name: Assert service worker does not cache API responses
@@ -64,40 +67,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # バージョンは package.json の packageManager から読み込まれる
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       # e2eに不要なサービスは起動しない（起動時間短縮）
       - name: Start local Supabase
-        run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta,mailpit,realtime
+        run: pnpm exec supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta,mailpit,realtime
 
       # マイグレーションとseedから、毎回まっさらなDBを作り直す
       - name: Reset database
-        run: npm run supabase:local:reset
+        run: pnpm supabase:local:reset
 
       - name: Prepare e2e env
         run: cp .env.e2e.local.example .env.e2e.local
 
       - name: Type check e2e
-        run: npx tsc -p e2e/tsconfig.json
+        run: pnpm exec tsc -p e2e/tsconfig.json
 
       - name: Run e2e
         id: e2e
-        run: npm run test:e2e
+        run: pnpm test:e2e
 
       # 実行後にテストデータが残っていないこと（冪等性）を検証する。
       # テストが失敗した場合の後始末も検証するため、e2eが実行された限り成否に関わらず実行する
       - name: Assert no e2e data remains
         if: ${{ !cancelled() && steps.e2e.conclusion != 'skipped' }}
-        run: npm run test:e2e:assert-clean
+        run: pnpm test:e2e:assert-clean
 
       - name: Upload Playwright report
         if: failure()

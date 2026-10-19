@@ -108,7 +108,7 @@ StudyLog/
 ### 前提条件
 
 - Node.js 18 以上
-- npm
+- pnpm（`corepack enable pnpm` で、package.json の `packageManager` に指定したバージョンが使われます）
 
 ### 1. リポジトリのクローン
 
@@ -120,7 +120,7 @@ cd StudyLog
 ### 2. 依存パッケージのインストール
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 3. 環境変数の設定
@@ -144,7 +144,7 @@ RAKUTEN_ACCESS_KEY     = your_rakuten_access_key
 ### 4. 開発サーバーの起動
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ブラウザで http://localhost:5173 を開くと確認できます。
@@ -155,10 +155,10 @@ npm run dev
 
 | コマンド                                                    | 説明                                     |
 | ----------------------------------------------------------- | ---------------------------------------- |
-| `npm run dev`                                               | 開発サーバーを起動（ホットリロード対応） |
-| `npm run build`                                             | 本番用ビルドを生成                       |
-| `npm run preview`                                           | ビルド結果をローカルでプレビュー         |
-| `npm run lint`                                              | ESLint によるコード検査                  |
+| `pnpm dev`                                                  | 開発サーバーを起動（ホットリロード対応） |
+| `pnpm build`                                                | 本番用ビルドを生成                       |
+| `pnpm preview`                                              | ビルド結果をローカルでプレビュー         |
+| `pnpm lint`                                                 | ESLint によるコード検査                  |
 | `EDU_DATA_TOKEN=<token> node scripts/fetch-school-data.mjs` | 学校データを手動更新                     |
 
 ---

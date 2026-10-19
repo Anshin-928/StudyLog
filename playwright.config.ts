@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.e2e.local', quiet: true });
 
-// 普段の `npm run dev`(5173, 本番Supabase接続) と衝突・誤って再利用しないよう専用ポートを使う
+// 普段の `pnpm dev`(5173, 本番Supabase接続) と衝突・誤って再利用しないよう専用ポートを使う
 const E2E_PORT = 5174;
 const baseURL = `http://localhost:${E2E_PORT}`;
 
@@ -27,7 +27,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run dev:e2e',
+    command: 'pnpm dev:e2e',
     url: baseURL,
     // 既存サーバーを使い回さず、必ず --mode e2e で起動したサーバーに対してテストする
     reuseExistingServer: false,
