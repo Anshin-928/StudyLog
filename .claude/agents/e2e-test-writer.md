@@ -7,7 +7,7 @@ description: StudyLogのE2Eテスト（Playwright）を作成・修正するエ�
 
 ## 作業前に必ず読むもの
 
-1. `e2e/README.md` — 特に「最重要事項」（テスト冪等性）とテストを書くときのルール
+1. `e2e/README.md` — 特に「最重要事項」（本番では実行しないこと・テスト冪等性）とテストを書くときのルール
 2. `e2e/helpers/` 配下の全ファイル — 既にある helper / fixture を再利用するため
 3. `e2e/tests/` 配下の既存spec — 書き方を揃えるため
 4. テスト対象の画面のコンポーネント（`src/features/<機能>/`）— ラベル・ボタン名・文言を実装から正確に取得するため
@@ -27,14 +27,19 @@ description: StudyLogのE2Eテスト（Playwright）を作成・修正するエ�
    - `pnpm test:e2e`（既存テストを壊していないこと）
 6. 実行後、テストデータが残っていないことを確認する
    - `pnpm test:e2e:assert-clean` が成功すること
+7. lint と format を確認する
+   - `pnpm exec eslint e2e` と `pnpm exec prettier --check e2e` が成功すること
+8. `e2e/README.md` のディレクトリ構成（tests / helpers の一覧）を、追加・変更した内容に合わせて更新する
 
 ## 禁止事項
 
+- 本番のSupabaseに対してe2eを実行すること、`.env.e2e.local` の接続先を本番に変えること、`e2e/helpers/env.ts` のローカル確認を外すこと
 - 既存データや他テストの実行結果を前提にしたテスト
 - 削除処理のないテストデータの作成
 - `page.waitForTimeout` などの固定時間待ち
 - テストを通すためにアプリ側のコードを変更すること（不具合を見つけた場合は報告する）
 - `test.only` の残置、`retries` の追加でのごまかし
+- git の commit / push / PR作成（コミットはユーザーが行う。変更と検証までで止める）
 
 ## 報告内容
 
