@@ -27,7 +27,7 @@ interface SidebarItem {
   icon: React.ReactElement;
 }
 
-export const mainMenus: SidebarItem[] = [
+const mainMenus: SidebarItem[] = [
   { text: 'ホーム', path: '/home', icon: <HomeOutlinedIcon /> },
   { text: '記録する', path: '/record', icon: <ModeEditOutlineOutlinedIcon /> },
   { text: 'レポート', path: '/report', icon: <BarChartOutlinedIcon /> },
@@ -35,8 +35,8 @@ export const mainMenus: SidebarItem[] = [
   { text: '設定', path: '/settings', icon: <SettingsOutlinedIcon /> },
 ];
 
-export const closedDrawerWidth = 72;
-export const openDrawerWidth = 250;
+const closedDrawerWidth = 72;
+const openDrawerWidth = 250;
 
 interface SidebarProps {
   isSidebarOpen: boolean;
