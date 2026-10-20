@@ -11,6 +11,8 @@ import {
   useTheme,
   alpha,
   IconButton,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
@@ -96,6 +98,21 @@ export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<EditableEntry | null>(null);
   const [likersLogId, setLikersLogId] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'success';
+    key: number;
+  }>({
+    open: false,
+    message: '',
+    severity: 'error',
+    key: 0,
+  });
+  // 表示中に次のメッセージを出しても自動で閉じるまでの時間が引き継がれないよう、key を変えて作り直す
+  const showSnackbar = (message: string, severity: 'error' | 'success' = 'error') =>
+    setSnackbar((s) => ({ open: true, message, severity, key: s.key + 1 }));
+  const handleSnackbarClose = () => setSnackbar((s) => ({ ...s, open: false }));
 
   const mapLogs = useCallback(
     (
@@ -263,16 +280,30 @@ export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => 
     if (myId && myProfile?.goalGroup) fetchGoalLogs(myId, myProfile.goalGroup);
   }, [myId, myProfile, fetchFollowLogs, fetchGoalLogs]);
 
+  // 操作しようとした記録がDBに無かった場合。画面に残っている古いカードを消すため一覧を取り直す
+  const handleRecordNotFound = () => {
+    handleRefresh();
+    showSnackbar('記録が見つかりませんでした。すでに削除されている可能性があります。');
+  };
+
   const handleDelete = async () => {
     if (!deleteConfirmId) return;
-    try {
-      await supabase.from('study_logs').delete().eq('id', deleteConfirmId);
-      handleRefresh();
-      onRecordDeleted?.();
-    } catch (e) {
-      console.error(e);
-    }
+    const id = deleteConfirmId;
     setDeleteConfirmId(null);
+    const { data, error } = await supabase.from('study_logs').delete().eq('id', id).select('id');
+    if (error) {
+      console.error(error);
+      showSnackbar('削除に失敗しました。時間をおいて再度お試しください。');
+      return;
+    }
+    // 別の端末で削除済みの場合やRLSで弾かれた場合は、エラーにならず0件削除になる
+    if (data.length === 0) {
+      handleRecordNotFound();
+      return;
+    }
+    handleRefresh();
+    onRecordDeleted?.();
+    showSnackbar('記録を削除しました', 'success');
   };
 
   useEffect(() => {
@@ -507,8 +538,24 @@ export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => 
             setEditEntry(null);
             handleRefresh();
           }}
+          onNotFound={() => {
+            setEditEntry(null);
+            handleRecordNotFound();
+          }}
         />
       )}
+
+      <Snackbar
+        key={snackbar.key}
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

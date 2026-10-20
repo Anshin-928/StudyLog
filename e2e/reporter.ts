@@ -292,8 +292,10 @@ class StudyLogReporter implements Reporter {
     const elapsed =
       row.status === 'running' ? Date.now() - row.result.startTime.getTime() : row.result.duration;
     const time = row.status === 'skipped' ? '' : `(${formatDuration(elapsed)})`;
+    // 実行中のテストは名前も灰色にし、終わったものと見分けやすくする（終わったら端末の標準色に戻す）
     const name = padEnd(this.formatName(row, nameWidth), nameWidth);
-    return `  ${symbol}  ${this.formatIndex(row.index)}  ${name}  ${gray(time.padStart(TIME_WIDTH))}`;
+    const paintedName = row.status === 'running' ? gray(name) : name;
+    return `  ${symbol}  ${gray(this.formatIndex(row.index))}  ${paintedName}  ${gray(time.padStart(TIME_WIDTH))}`;
   }
 
   private nameWidth(columns: number) {
