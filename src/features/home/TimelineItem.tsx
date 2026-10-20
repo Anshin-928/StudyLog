@@ -121,6 +121,7 @@ export default function TimelineItem({
 
   return (
     <Box
+      component="article"
       sx={{
         backgroundColor: 'background.paper',
         borderRadius: '8px',
@@ -166,6 +167,7 @@ export default function TimelineItem({
           {isOwn && (
             <IconButton
               size="small"
+              aria-label="記録のメニュー"
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 setMenuAnchor(e.currentTarget);
@@ -385,6 +387,8 @@ export default function TimelineItem({
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
           <IconButton
             size="small"
+            aria-label="いいね"
+            aria-pressed={entry.likedByMe}
             onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
               e.stopPropagation();
               handleLikeClick();
