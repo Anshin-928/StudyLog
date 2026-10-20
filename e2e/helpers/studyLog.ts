@@ -33,6 +33,13 @@ export async function createStudyLog(userId: string, input: StudyLogInput): Prom
   return data.id;
 }
 
+// 記録をDBから直接削除する（画面を開いた後に別の端末で消された状況を作る）
+export async function deleteStudyLog(id: string): Promise<void> {
+  const admin = createSupabaseAdmin();
+  const { error } = await admin.from('study_logs').delete().eq('id', id);
+  if (error) throw new Error(`記録の削除に失敗しました: ${error.message}`);
+}
+
 // 記録をDBから直接取得する（存在しなければ null）
 export async function findStudyLog(id: string): Promise<StudyLogRow | null> {
   const admin = createSupabaseAdmin();

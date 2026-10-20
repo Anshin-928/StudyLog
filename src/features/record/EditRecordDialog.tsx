@@ -59,11 +59,14 @@ export default function EditRecordDialog({
   onClose,
   entry,
   onSaved,
+  onNotFound,
 }: {
   open: boolean;
   onClose: () => void;
   entry: EditableEntry;
   onSaved: () => void;
+  // 保存しようとした記録がDBに無かったとき（別の端末で削除済みなど）。編集内容は保存できないので呼び出し側で閉じる
+  onNotFound: () => void;
 }) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null | 'none'>(null);
@@ -82,6 +85,7 @@ export default function EditRecordDialog({
   const [imageError, setImageError] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [isMaterialDialogOpen, setIsMaterialDialogOpen] = useState(false);
   const [isDateDialogOpen, setIsDateDialogOpen] = useState(false);
@@ -110,6 +114,7 @@ export default function EditRecordDialog({
     setImage(null);
     setPreviewUrl(null);
     setExistingImageUrl(entry.imageUrl);
+    setSaveError(null);
   }, [open, entry]);
 
   // 教材フェッチ（ダイアログが開くたびに）
@@ -156,6 +161,7 @@ export default function EditRecordDialog({
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveError(null);
     try {
       const {
         data: { user },
@@ -164,7 +170,11 @@ export default function EditRecordDialog({
 
       let imageUrl = existingImageUrl;
       if (image) {
-        if (validateImageFile(image)) return;
+        const validationError = validateImageFile(image);
+        if (validationError) {
+          setImageError(validationError);
+          return;
+        }
         imageUrl = await uploadStudyLogImage(user.id, image);
       }
 
@@ -175,7 +185,7 @@ export default function EditRecordDialog({
             ? null
             : (selectedMaterial as Material).id;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('study_logs')
         .update({
           material_id: materialId,
@@ -185,13 +195,20 @@ export default function EditRecordDialog({
           memo: memo.trim() || null,
           image_url: imageUrl,
         })
-        .eq('id', entry.id);
+        .eq('id', entry.id)
+        .select('id');
       if (error) throw error;
+      // 別の端末で削除済みの場合やRLSで弾かれた場合は、エラーにならず0件更新になる
+      if (data.length === 0) {
+        onNotFound();
+        return;
+      }
 
       onSaved();
       onClose();
     } catch (e) {
       console.error('更新エラー:', e);
+      setSaveError('保存に失敗しました。時間をおいて再度お試しください。');
     } finally {
       setIsSaving(false);
     }
@@ -444,6 +461,12 @@ export default function EditRecordDialog({
           )}
         </Box>
       </DialogContent>
+
+      {saveError && (
+        <Typography role="alert" variant="caption" sx={{ color: 'error.main', px: 3 }}>
+          {saveError}
+        </Typography>
+      )}
 
       <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
         <Button onClick={onClose} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
