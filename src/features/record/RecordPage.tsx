@@ -33,7 +33,7 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
 import { useBlocker, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import { validateImageFile } from '../../lib/imageValidation';
 import { formatDuration, formatDatetime, nowDatetimeLocal } from '../../lib/datetimeUtils';
 import { fetchActiveMaterials } from '../materials/api';
@@ -742,9 +742,7 @@ export default function RecordPage({ onRecordSaved }: { onRecordSaved?: () => vo
 
     setIsSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       let imageUrl: string | null = null;

@@ -26,7 +26,7 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
-import { supabase } from '../lib/supabase';
+import { supabase, getSessionUser } from '../lib/supabase';
 import { calcStreakFromDates } from '../features/streak/streak';
 import defaultAvatar from '../assets/defaultAvatar.webp';
 import Sidebar from './Sidebar';
@@ -140,9 +140,7 @@ export default function AppShell() {
   }, []);
 
   const fetchStreak = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     if (!user) return;
     const { data } = await supabase
       .from('study_logs')
@@ -167,9 +165,7 @@ export default function AppShell() {
   }, []);
 
   const fetchProfile = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     if (!user) return;
     const { data } = await supabase
       .from('profiles')

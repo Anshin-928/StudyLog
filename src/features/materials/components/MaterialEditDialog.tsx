@@ -17,7 +17,7 @@ import {
   useTheme, // 🌟 useTheme を追加
 } from '@mui/material';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
-import { supabase } from '../../../lib/supabase';
+import { supabase, getSessionUser } from '../../../lib/supabase';
 import { validateImageFile, safeImageExt } from '../../../lib/imageValidation';
 import { TEMPLATES, isTemplateUrl } from '../materialTemplates';
 import { CategoryOption, buildCategoryOptions } from '../categoryUtils';
@@ -73,9 +73,7 @@ export default function MaterialEditDialog({
   const fetchData = async (id: string) => {
     setIsLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       const [materialRes, categoriesRes] = await Promise.all([
@@ -155,9 +153,7 @@ export default function MaterialEditDialog({
 
     setIsSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       let categoryId: string;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@mui/material';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 
 // ==========================================
 // 型定義（MaterialsPage.tsx と共有）
@@ -45,9 +45,7 @@ export function useMaterials(): UseMaterialsReturn {
   const refetch = useCallback(async () => {
     setIsLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       const [{ data, error }, { data: catData, error: catError }] = await Promise.all([

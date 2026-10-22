@@ -1,13 +1,11 @@
 // src/features/materials/api.ts
 // アクティブな教材の取得（RecordPage / EditRecordDialog 共通）
 
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import type { Material } from '../../types/record';
 
 export async function fetchActiveMaterials(fallbackColor = '#ccc'): Promise<Material[]> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return [];
   const { data, error } = await supabase
     .from('materials')

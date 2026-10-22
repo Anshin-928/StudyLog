@@ -19,7 +19,7 @@ import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import { goalCategoryLabel } from '../../constants/goalGroups';
 import { fetchLikes, useLikeToggle } from './useLikes';
 import EditRecordDialog, { EditableEntry } from '../record/EditRecordDialog';
@@ -146,9 +146,7 @@ export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => 
 
   useEffect(() => {
     const init = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) return;
       setMyId(user.id);
       const { data } = await supabase

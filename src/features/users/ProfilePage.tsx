@@ -34,7 +34,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import { follow, unfollow } from './api';
 import type { FollowStatus } from './api';
 import { formatDuration, formatExactTime } from '../../lib/datetimeUtils';
@@ -401,9 +401,7 @@ export default function ProfilePage() {
   // 自分のIDとターゲットユーザーIDを確定する
   useEffect(() => {
     const init = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) return;
       setMyId(user.id);
       setTargetUserId(paramUserId || user.id);
