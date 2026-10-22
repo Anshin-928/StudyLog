@@ -1,7 +1,7 @@
 // src/features/report/useStudyLogs.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import type { LogEntry } from './reportUtils';
 
 interface UseStudyLogsReturn {
@@ -17,9 +17,7 @@ export function useStudyLogs(): UseStudyLogsReturn {
   const refetch = useCallback(async () => {
     setIsLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase

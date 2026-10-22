@@ -25,7 +25,7 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import CloseIcon from '@mui/icons-material/Close';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import { validateImageFile } from '../../lib/imageValidation';
 import { formatDuration, formatDatetime } from '../../lib/datetimeUtils';
 import { fetchActiveMaterials } from '../materials/api';
@@ -163,9 +163,7 @@ export default function EditRecordDialog({
     setIsSaving(true);
     setSaveError(null);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       let imageUrl = existingImageUrl;

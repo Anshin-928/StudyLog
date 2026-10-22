@@ -40,7 +40,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { supabase } from '../../../lib/supabase';
+import { supabase, getSessionUser } from '../../../lib/supabase';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 
 const PALETTE = ['#1A73E8', '#E53935', '#43A047', '#FFB300', '#8E24AA', '#00ACC1', '#9E9E9E'];
@@ -206,9 +206,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('categories')
@@ -278,9 +276,7 @@ export default function CategoryEditDialog({ open, onClose, onUpdated }: Categor
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       let nullCategoryId;

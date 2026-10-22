@@ -1,7 +1,7 @@
 // src/features/materials/categoryUtils.ts
 // カテゴリ関連の型・定数・ユーティリティ。AddMaterialPage / MaterialEditDialog で共用。
 
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import type { Database } from '../../types/supabase';
 
 type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
@@ -53,9 +53,7 @@ export const resolveCategory = async (name: string, colorCode?: string): Promise
 
   if (existing) return existing.id;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) throw new Error('Not authenticated');
 
   const insertData: CategoryInsert = { name, user_id: user.id };

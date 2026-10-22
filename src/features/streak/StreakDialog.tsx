@@ -24,7 +24,7 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import CalendarTodayRoundedIcon from '@mui/icons-material/CalendarTodayRounded';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 
 interface StreakDialogProps {
   open: boolean;
@@ -321,9 +321,7 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) return;
 
       const [logsRes, eventsRes] = await Promise.all([
@@ -366,9 +364,7 @@ export default function StreakDialog({ open, onClose }: StreakDialogProps) {
     if (!newEventName.trim() || !newEventDate) return;
     setIsSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) return;
       const { data, error } = await supabase
         .from('exam_events')
