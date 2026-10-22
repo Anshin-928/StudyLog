@@ -10,6 +10,28 @@ const logoUrl = '/images/lp/studylog-logo.svg';
 const womanUrl = '/images/lp/woman-studying.webp';
 const manUrl = '/images/lp/man-studying.webp';
 
+const FONT_STYLESHEETS = [
+  'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=Caveat:wght@600;700&family=Yomogi&display=swap',
+  'https://fonts.googleapis.com/icon?family=Material+Icons+Outlined',
+];
+
+// フォントの CSS は、このページを読み込んだときにスクリプトから追加する。
+// index.html に書くと、Google Fonts の応答が返ってこないときにアプリ本体の実行まで止まり、どの画面も表示されなくなるため。
+// 読み込めなくても（失敗しても）解決する
+const fontStylesheetsLoaded = Promise.all(
+  FONT_STYLESHEETS.map(
+    (href) =>
+      new Promise<void>((resolve) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.onload = () => resolve();
+        link.onerror = () => resolve();
+        document.head.appendChild(link);
+      }),
+  ),
+);
+
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -21,11 +43,12 @@ export default function LandingPage() {
   }, [navigate]);
 
   // アイコンフォントの読み込み完了後にアイコンを表示
+  // （CSS を読み込む前の document.fonts.ready は、フォントを待たずに解決するので、CSS の読み込みを待ってから使う）
   useEffect(() => {
     const root = document.querySelector('.lp-root');
     const reveal = () => root?.classList.add('fonts-ready');
     if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(reveal);
+      fontStylesheetsLoaded.then(() => document.fonts.ready).then(reveal);
     }
     const fallback = setTimeout(reveal, 2000);
     return () => clearTimeout(fallback);
