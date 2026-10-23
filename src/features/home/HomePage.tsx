@@ -20,6 +20,7 @@ import OutlinedFlagOutlinedIcon from '@mui/icons-material/OutlinedFlagOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getSessionUser } from '../../lib/supabase';
+import { removeStudyLogImageByUrl } from '../record/studyLogImages';
 import { goalCategoryLabel } from '../../constants/goalGroups';
 import { fetchLikes, useLikeToggle } from './useLikes';
 import EditRecordDialog, { EditableEntry } from '../record/EditRecordDialog';
@@ -81,7 +82,7 @@ function EmptyState({
 // ==========================================
 // メイン
 // ==========================================
-export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => void }) {
+export default function HomePage({ onRecordChanged }: { onRecordChanged?: () => void }) {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -279,8 +280,10 @@ export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => 
   }, [myId, myProfile, fetchFollowLogs, fetchGoalLogs]);
 
   // 操作しようとした記録がDBに無かった場合。画面に残っている古いカードを消すため一覧を取り直す
+  // 消えていたのが今日の記録ならストリークも変わるので、削除できたときと同じく取り直す
   const handleRecordNotFound = () => {
     handleRefresh();
+    onRecordChanged?.();
     showSnackbar('記録が見つかりませんでした。すでに削除されている可能性があります。');
   };
 
@@ -288,19 +291,28 @@ export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => 
     if (!deleteConfirmId) return;
     const id = deleteConfirmId;
     setDeleteConfirmId(null);
-    const { data, error } = await supabase.from('study_logs').delete().eq('id', id).select('id');
-    if (error) {
-      console.error(error);
+    // 通信エラーなどは { error } で返らず例外になることがあるので、どちらも失敗として扱う
+    try {
+      const { data, error } = await supabase
+        .from('study_logs')
+        .delete()
+        .eq('id', id)
+        .select('id, image_url');
+      if (error) throw error;
+      // 別の端末で削除済みの場合やRLSで弾かれた場合は、エラーにならず0件削除になる
+      if (data.length === 0) {
+        handleRecordNotFound();
+        return;
+      }
+      // 削除できたと確実に分かったので、記録に付いていた画像はどこからも参照されなくなった
+      removeStudyLogImageByUrl(data[0].image_url);
+    } catch (e) {
+      console.error(e);
       showSnackbar('削除に失敗しました。時間をおいて再度お試しください。');
       return;
     }
-    // 別の端末で削除済みの場合やRLSで弾かれた場合は、エラーにならず0件削除になる
-    if (data.length === 0) {
-      handleRecordNotFound();
-      return;
-    }
     handleRefresh();
-    onRecordDeleted?.();
+    onRecordChanged?.();
     showSnackbar('記録を削除しました', 'success');
   };
 
@@ -535,6 +547,9 @@ export default function HomePage({ onRecordDeleted }: { onRecordDeleted?: () => 
           onSaved={() => {
             setEditEntry(null);
             handleRefresh();
+            // 日付を変えるとストリークも変わることがあるので取り直す
+            onRecordChanged?.();
+            showSnackbar('記録を更新しました', 'success');
           }}
           onNotFound={() => {
             setEditEntry(null);

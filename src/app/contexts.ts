@@ -12,10 +12,11 @@ export const ColorModeContext = createContext<ColorModeContextType>({
 });
 
 export interface AppCallbacksContextType {
-  onRecordSaved: () => void;
+  // 記録の保存・編集・削除などで、ストリークが変わりうるときに呼ぶ
+  onRecordChanged: () => void;
   onProfileSaved: () => void;
 }
 export const AppCallbacksContext = createContext<AppCallbacksContextType>({
-  onRecordSaved: () => {},
+  onRecordChanged: () => {},
   onProfileSaved: () => {},
 });

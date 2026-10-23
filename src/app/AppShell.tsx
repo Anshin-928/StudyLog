@@ -187,7 +187,7 @@ export default function AppShell() {
 
   const callbacks = useMemo<AppCallbacksContextType>(
     () => ({
-      onRecordSaved: fetchStreak,
+      onRecordChanged: fetchStreak,
       onProfileSaved: fetchProfile,
     }),
     [fetchStreak, fetchProfile],

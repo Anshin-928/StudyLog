@@ -490,12 +490,13 @@
   text-align: left;
 }
 
-/* hide icon ligatures until the icon font is ready (prevents text flash) */
+/* hide icon ligatures until the icon font is ready (prevents text flash).
+   display: none so that, if the font never loads, the hidden ligature text doesn't leave a blank gap */
 .lp-root .material-icons-outlined {
-  visibility: hidden;
+  display: none;
 }
 .lp-root.fonts-ready .material-icons-outlined {
-  visibility: visible;
+  display: inline-block;
 }
 
 /* motivation */

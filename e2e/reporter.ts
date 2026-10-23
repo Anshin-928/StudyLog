@@ -15,6 +15,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   app: 'アプリ全体',
   auth: '認証',
   follow: 'フォロー',
+  landing: 'ランディングページ',
   record: '記録',
   storage: '画像アップロード',
 };

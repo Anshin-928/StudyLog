@@ -11,13 +11,13 @@ const RecordPage = lazyWithReload(() => import('../features/record/RecordPage'))
 const EditProfilePage = lazyWithReload(() => import('../features/users/EditProfilePage'));
 
 export function RecordRoute() {
-  const { onRecordSaved } = useContext(AppCallbacksContext);
-  return <RecordPage onRecordSaved={onRecordSaved} />;
+  const { onRecordChanged } = useContext(AppCallbacksContext);
+  return <RecordPage onRecordChanged={onRecordChanged} />;
 }
 
 export function HomeRoute() {
-  const { onRecordSaved } = useContext(AppCallbacksContext);
-  return <HomePage onRecordDeleted={onRecordSaved} />;
+  const { onRecordChanged } = useContext(AppCallbacksContext);
+  return <HomePage onRecordChanged={onRecordChanged} />;
 }
 
 export function EditProfileRoute() {
