@@ -29,7 +29,13 @@ import { supabase, getSessionUser } from '../../lib/supabase';
 import { validateImageFile } from '../../lib/imageValidation';
 import { formatDuration, formatDatetime } from '../../lib/datetimeUtils';
 import { fetchActiveMaterials } from '../materials/api';
-import { uploadStudyLogImage } from './studyLogImages';
+import {
+  uploadStudyLogImage,
+  removeStudyLogImage,
+  removeStudyLogImageByUrl,
+  removeUploadedImageIfRejected,
+  type UploadedStudyLogImage,
+} from './studyLogImages';
 import type { Material, PagesData } from '../../types/record';
 import CompactCell from './components/CompactCell';
 import DateDialog from './components/DateDialog';
@@ -159,6 +165,29 @@ export default function EditRecordDialog({
     }
   };
 
+  // 保存に失敗した後で入力を直したら、古いエラー表示は消す
+  // （教材は開いたときの取得でも変わり、そのときに消すと見る前のエラーが消えるので、選び直したときに handleSelectMaterial で消す）
+  // 学習量はダイアログで「決定」するたびに新しいオブジェクトになるので、値が変わったときだけ消えるよう中身を比べる
+  useEffect(() => {
+    setSaveError(null);
+  }, [
+    recordDatetime,
+    hours,
+    minutes,
+    pagesData.mode,
+    pagesData.total,
+    pagesData.rangeStart,
+    pagesData.rangeEnd,
+    memo,
+    image,
+    existingImageUrl,
+  ]);
+
+  const handleSelectMaterial = (material: Material | 'none') => {
+    setSelectedMaterial(material);
+    setSaveError(null);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setSaveError(null);
@@ -166,14 +195,15 @@ export default function EditRecordDialog({
       const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
-      let imageUrl = existingImageUrl;
+      // 今回アップロードした画像。記録を更新できなかったと確実に言えるときは、参照されずに残るので消す
+      let uploaded: UploadedStudyLogImage | null = null;
       if (image) {
         const validationError = validateImageFile(image);
         if (validationError) {
           setImageError(validationError);
           return;
         }
-        imageUrl = await uploadStudyLogImage(user.id, image);
+        uploaded = await uploadStudyLogImage(user.id, image);
       }
 
       const materialId =
@@ -183,7 +213,7 @@ export default function EditRecordDialog({
             ? null
             : (selectedMaterial as Material).id;
 
-      const { data, error } = await supabase
+      const { data, error, status } = await supabase
         .from('study_logs')
         .update({
           material_id: materialId,
@@ -191,16 +221,25 @@ export default function EditRecordDialog({
           duration_minutes: totalMinutes > 0 ? totalMinutes : null,
           pages: pagesData.total ? parseInt(pagesData.total) || null : null,
           memo: memo.trim() || null,
-          image_url: imageUrl,
+          // 画像は選び直したときだけ書き換える。開いたときの URL を書き戻すと、その後に別の端末で差し替えられていた場合、
+          // 記録が削除済みの前の画像を指してしまう
+          ...(uploaded && { image_url: uploaded.publicUrl }),
         })
         .eq('id', entry.id)
         .select('id');
-      if (error) throw error;
+      if (error) {
+        removeUploadedImageIfRejected(uploaded, status);
+        throw error;
+      }
       // 別の端末で削除済みの場合やRLSで弾かれた場合は、エラーにならず0件更新になる
       if (data.length === 0) {
+        if (uploaded) void removeStudyLogImage(uploaded.path);
         onNotFound();
         return;
       }
+
+      // 画像を差し替えたので、前の画像はどこからも参照されなくなった
+      if (uploaded) removeStudyLogImageByUrl(existingImageUrl);
 
       onSaved();
       onClose();
@@ -486,7 +525,7 @@ export default function EditRecordDialog({
         onClose={() => setIsMaterialDialogOpen(false)}
         materials={materials}
         currentMaterial={selectedMaterial}
-        onSelect={setSelectedMaterial}
+        onSelect={handleSelectMaterial}
       />
       <DateDialog
         open={isDateDialogOpen}

@@ -1,7 +1,13 @@
 // ホームのタイムラインから自分の記録を削除する
 // 記録は画面から作らず DB に直接用意する（作成の画面操作は create-record.spec.ts で検証している）
 import { test, expect } from '../../helpers/fixtures';
-import { createStudyLog, deleteStudyLog, findStudyLog } from '../../helpers/studyLog';
+import {
+  createStudyLog,
+  deleteStudyLog,
+  findStudyLog,
+  setStudyLogImageUrl,
+} from '../../helpers/studyLog';
+import { studyLogImageExists } from '../../helpers/studyLogImage';
 import { chooseTimelineItemMenu, timelineItem } from '../../helpers/timeline';
 
 test.describe('記録の削除', () => {
@@ -85,5 +91,37 @@ test.describe('記録の削除', () => {
     // 一覧を取り直すため、残す記録が再表示されるのを待ってから、古いカードが消えたことを確かめる
     await expect(timelineItem(page, keptMemo)).toBeVisible();
     await expect(timelineItem(page, memo)).toHaveCount(0);
+  });
+
+  test('削除すると、その記録の画像が Storage から消え、ほかの記録の画像は残る', async ({
+    loggedInPage: page,
+    testUser,
+    studyLogImages,
+  }) => {
+    const targetMemo = `画像付きの削除する記録 ${testUser.id}`;
+    const keptMemo = `画像付きの残す記録 ${testUser.id}`;
+    const targetImage = await studyLogImages.upload('target');
+    const keptImage = await studyLogImages.upload('kept');
+    const targetId = await createStudyLog(testUser.id, { memo: targetMemo });
+    await setStudyLogImageUrl(targetId, targetImage.publicUrl);
+    const keptId = await createStudyLog(testUser.id, {
+      memo: keptMemo,
+      studyDatetime: new Date(Date.now() - 60 * 60 * 1000),
+    });
+    await setStudyLogImageUrl(keptId, keptImage.publicUrl);
+    expect(await studyLogImageExists(targetImage.path)).toBe(true);
+
+    await page.goto('/home');
+    await expect(timelineItem(page, keptMemo)).toBeVisible();
+    await chooseTimelineItemMenu(page, targetMemo, '削除');
+    const dialog = page.getByRole('dialog', { name: '記録を削除' });
+    await dialog.getByRole('button', { name: '削除' }).click();
+
+    // 画像の削除は完了を待たずに行われる。記録の削除が終わったことを確かめてから、画像が消えるのを待つ
+    await expect(page.getByRole('alert')).toHaveText('記録を削除しました');
+    expect(await findStudyLog(targetId)).toBeNull();
+    await expect.poll(() => studyLogImageExists(targetImage.path)).toBe(false);
+    expect(await studyLogImageExists(keptImage.path)).toBe(true);
+    expect((await findStudyLog(keptId))?.image_url).toBe(keptImage.publicUrl);
   });
 });
