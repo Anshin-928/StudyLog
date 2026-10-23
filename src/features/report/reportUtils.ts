@@ -96,8 +96,9 @@ export function getPeriodStart(period: Period): string {
   if (period === '7d') return daysAgoStr(6);
   if (period === '30d') return daysAgoStr(29);
   const d = new Date();
-  d.setMonth(d.getMonth() - 11);
+  // 先に1日にしてから月を戻す。逆だと、月末の日（3/31 など）に31日のない月へ戻したときに翌月へ繰り上がる
   d.setDate(1);
+  d.setMonth(d.getMonth() - 11);
   const offset = d.getTimezoneOffset();
   return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
 }
