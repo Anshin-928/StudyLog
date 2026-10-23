@@ -33,11 +33,15 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
 import { useBlocker, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import { validateImageFile } from '../../lib/imageValidation';
 import { formatDuration, formatDatetime, nowDatetimeLocal } from '../../lib/datetimeUtils';
 import { fetchActiveMaterials } from '../materials/api';
-import { uploadStudyLogImage } from './studyLogImages';
+import {
+  uploadStudyLogImage,
+  removeUploadedImageIfRejected,
+  type UploadedStudyLogImage,
+} from './studyLogImages';
 import type { Material, PagesData } from '../../types/record';
 import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
 import CompactCell from './components/CompactCell';
@@ -619,7 +623,7 @@ function StopwatchTab({
 // ==========================================
 // メインコンポーネント
 // ==========================================
-export default function RecordPage({ onRecordSaved }: { onRecordSaved?: () => void }) {
+export default function RecordPage({ onRecordChanged }: { onRecordChanged?: () => void }) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -742,24 +746,23 @@ export default function RecordPage({ onRecordSaved }: { onRecordSaved?: () => vo
 
     setIsSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
-      let imageUrl: string | null = null;
+      // 今回アップロードした画像。記録を保存できなかったと確実に言えるときは、参照されずに残るので消す
+      let uploaded: UploadedStudyLogImage | null = null;
       if (image) {
         const validationError = validateImageFile(image);
         if (validationError) {
           showSnackbar(validationError, 'error');
           return;
         }
-        imageUrl = await uploadStudyLogImage(user.id, image);
+        uploaded = await uploadStudyLogImage(user.id, image);
       }
 
       const materialId = selectedMaterial !== 'none' ? (selectedMaterial as Material).id : null;
 
-      const { error } = await supabase.from('study_logs').insert([
+      const { error, status } = await supabase.from('study_logs').insert([
         {
           user_id: user.id,
           material_id: materialId,
@@ -767,10 +770,13 @@ export default function RecordPage({ onRecordSaved }: { onRecordSaved?: () => vo
           duration_minutes: totalMinutes > 0 ? totalMinutes : null,
           pages: pages ? parseInt(pages) : null,
           memo: memo.trim() || null,
-          image_url: imageUrl,
+          image_url: uploaded?.publicUrl ?? null,
         },
       ]);
-      if (error) throw error;
+      if (error) {
+        removeUploadedImageIfRejected(uploaded, status);
+        throw error;
+      }
 
       const label = selectedMaterial === 'none' ? '教材なし' : (selectedMaterial as Material).name;
 
@@ -778,7 +784,7 @@ export default function RecordPage({ onRecordSaved }: { onRecordSaved?: () => vo
       setPresetHours('');
       setPresetMinutes('');
       setManualIsDirty(false);
-      onRecordSaved?.();
+      onRecordChanged?.();
 
       setSavePopupLabel(label);
       setSavePopupOpen(true);

@@ -69,6 +69,7 @@
 | バックエンド / DB | Supabase (PostgreSQL)                              |
 | 認証              | Supabase Auth, Google OAuth 2.0                    |
 | 外部 API          | 楽天ブックス API, 学校コード検索 API (edu-data.jp) |
+| テスト            | Vitest（単体テスト）, Playwright（E2E）            |
 | CI/CD             | GitHub Actions (学校データ月次自動更新)            |
 | デプロイ          | Vercel                                             |
 
@@ -79,7 +80,7 @@
 ```
 StudyLog/
 ├── .github/workflows/
-│   ├── ci.yml                # lint・型チェック・ビルド・E2E
+│   ├── ci.yml                # lint・型チェック・単体テスト・ビルド・E2E
 │   └── sync-school-data.yml  # 学校データ月次自動更新ワークフロー
 ├── api/                      # Vercel Functions
 │   ├── contact.js            # お問い合わせの送信
@@ -120,7 +121,8 @@ StudyLog/
 │   ├── types/                # TypeScript 型定義
 │   └── assets/               # ロゴ・デフォルト画像
 ├── vercel.json               # Vercel デプロイ設定
-└── vite.config.ts            # Vite 設定
+├── vite.config.ts            # Vite 設定
+└── vitest.config.ts          # 単体テスト（Vitest）の設定。テストは対象のファイルの隣に *.test.ts で置く
 ```
 
 ---
@@ -181,6 +183,8 @@ pnpm dev
 | `pnpm build`                                                | 本番用ビルドを生成                       |
 | `pnpm preview`                                              | ビルド結果をローカルでプレビュー         |
 | `pnpm lint`                                                 | ESLint によるコード検査                  |
+| `pnpm test`                                                 | 単体テスト（Vitest）を実行               |
+| `pnpm test:e2e`                                             | E2E テストを実行（e2e/README.md を参照） |
 | `EDU_DATA_TOKEN=<token> node scripts/fetch-school-data.mjs` | 学校データを手動更新                     |
 
 ---

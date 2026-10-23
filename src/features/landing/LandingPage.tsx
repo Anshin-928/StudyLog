@@ -10,6 +10,29 @@ const logoUrl = '/images/lp/studylog-logo.svg';
 const womanUrl = '/images/lp/woman-studying.webp';
 const manUrl = '/images/lp/man-studying.webp';
 
+const TEXT_FONT_STYLESHEET =
+  'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=Caveat:wght@600;700&family=Yomogi&display=swap';
+const ICON_FONT_STYLESHEET = 'https://fonts.googleapis.com/icon?family=Material+Icons+Outlined';
+const ICON_FONT_FAMILY = 'Material Icons Outlined';
+
+// フォントの CSS は、このページを読み込んだときにスクリプトから追加する。
+// index.html に書くと、Google Fonts の応答が返ってこないときにアプリ本体の実行まで止まり、どの画面も表示されなくなるため。
+// 読み込めたら true、失敗したら false で解決する（応答が返ってこなければ解決しない）
+function loadStylesheet(href: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.onload = () => resolve(true);
+    link.onerror = () => resolve(false);
+    document.head.appendChild(link);
+  });
+}
+
+// 文字のフォントは読み込めなくても代替フォントで表示されるので、待たない
+void loadStylesheet(TEXT_FONT_STYLESHEET);
+const iconStylesheetLoaded = loadStylesheet(ICON_FONT_STYLESHEET);
+
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -20,15 +43,26 @@ export default function LandingPage() {
     });
   }, [navigate]);
 
-  // アイコンフォントの読み込み完了後にアイコンを表示
+  // アイコンフォントを読み込めたらアイコンを表示する。読み込めないときは表示しない。
+  // 表示すると「arrow_forward」のようなアイコン名の文字がそのまま見えてしまう
+  // （CSS を読み込めても、フォントファイル（fonts.gstatic.com）だけ失敗することがあるので、フォントそのものを確かめる）
   useEffect(() => {
     const root = document.querySelector('.lp-root');
     const reveal = () => root?.classList.add('fonts-ready');
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(reveal);
-    }
-    const fallback = setTimeout(reveal, 2000);
-    return () => clearTimeout(fallback);
+    iconStylesheetLoaded.then(async (loaded) => {
+      if (!loaded) return;
+      // フォントを確かめる手段が無い古いブラウザでは、CSS を読み込めた時点で表示する
+      if (!document.fonts) {
+        reveal();
+        return;
+      }
+      // 確かめる文字を省略すると空白1文字で確かめる。フォントの unicode-range に空白が含まれないと、
+      // 読み込めるフォントでも対象外として何も読み込まず、アイコンが表示されないままになるので、アイコン名の文字で確かめる
+      const faces = await document.fonts
+        .load(`24px "${ICON_FONT_FAMILY}"`, 'bar_chart')
+        .catch(() => [] as FontFace[]);
+      if (faces.some((face) => face.status === 'loaded')) reveal();
+    });
   }, []);
 
   const goAuth = () => navigate('/login');

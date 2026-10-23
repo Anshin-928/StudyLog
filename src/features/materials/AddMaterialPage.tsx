@@ -31,7 +31,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import { validateImageFile, safeImageExt } from '../../lib/imageValidation';
 import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
 import { MaterialUnit, DEFAULT_UNIT } from './materialUnits';
@@ -80,9 +80,7 @@ export default function AddMaterialPage() {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) return;
       const { data } = await supabase
         .from('categories')
@@ -232,9 +230,7 @@ export default function AddMaterialPage() {
 
     setIsAdding(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       const categoryId = await resolveCategory(categoryName, user.id);
@@ -291,9 +287,7 @@ export default function AddMaterialPage() {
 
     setIsAdding(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not authenticated');
 
       let finalImageUrl = selectedTemplate;

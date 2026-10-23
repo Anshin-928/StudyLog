@@ -32,7 +32,7 @@ import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import { ColorModeContext } from '../../app/contexts';
 
 // ==========================================
@@ -274,6 +274,7 @@ export default function SettingsContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // セッションのメールアドレスは変更直後だと古いことがあるので、Auth サーバーから取得する
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -304,9 +305,7 @@ export default function SettingsContent() {
     setIsPublic(newValue);
     setIsPublicSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) throw new Error('Not logged in');
       const { error } = await supabase
         .from('profiles')
@@ -338,6 +337,7 @@ export default function SettingsContent() {
     if (!canChangePassword) return;
     setIsChangingPassword(true);
     try {
+      // パスワードの変更は、Auth サーバーで本人を確かめてから行う
       const {
         data: { user },
       } = await supabase.auth.getUser();

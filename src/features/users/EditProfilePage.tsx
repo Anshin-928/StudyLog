@@ -24,7 +24,7 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import AddIcon from '@mui/icons-material/Add';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { useBlocker, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, getSessionUser } from '../../lib/supabase';
 import NavigationBlockerDialog from '../../components/NavigationBlockerDialog';
 import { compressImage } from '../../lib/compressImage';
 import { validateImageFile, safeImageExt } from '../../lib/imageValidation';
@@ -92,9 +92,7 @@ export default function EditProfilePage({ onProfileSaved }: EditProfileProps) {
     const fetchProfile = async () => {
       setIsLoading(true);
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const user = await getSessionUser();
         if (!user) return;
         const [{ data }, { data: goalsData }] = await Promise.all([
           supabase
@@ -172,9 +170,7 @@ export default function EditProfilePage({ onProfileSaved }: EditProfileProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getSessionUser();
       if (!user) return;
 
       let newAvatarUrl: string | undefined;
